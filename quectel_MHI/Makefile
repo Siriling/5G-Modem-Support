@@ -15,7 +15,7 @@ include $(INCLUDE_DIR)/kernel.mk
 include $(INCLUDE_DIR)/package.mk
 
 define KernelPackage/pcie_mhi
-  SUBMENU:=WWAN Support
+  SUBMENU:=PCIE Support
   TITLE:=Kernel pcie driver for MHI device
   DEPENDS:=+pciids +pciutils +quectel-CM-5G
   FILES:=$(PKG_BUILD_DIR)/pcie_mhi.ko
