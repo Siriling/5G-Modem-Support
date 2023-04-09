@@ -20,11 +20,12 @@ chk_zone() {
 
 do_dns() {
 	cdns=$1
-	ldns=$(uci -q get network.wg0.dns)
+	local ifce=$2
+	ldns=$(uci -q get network.wg$ifce.dns)
 	ex=$(echo "$ldns" | grep "$cdns")
 	if [ -z $ex ]; then
-		log "Add DNS $cdns to WG0"
-		uci add_list network.wg0.dns="$cdns"
+		log "Add DNS $cdns to WG$ifce"
+		uci add_list network.wg$ifce.dns="$cdns"
 		uci commit network
 		/etc/init.d/network reload
 	fi
@@ -87,8 +88,9 @@ create_speer() {
 
 create_cpeer() {
 	local config=$1
+	local ifce=$2
 	
-	uci set network.$config="wireguard_wg0"
+	uci set network.$config="wireguard_wg$ifce"
 
 	publickey=$(uci -q get wireguard."$config".publickey)
 	uci set network.$config.public_key="$publickey"
@@ -176,50 +178,51 @@ handle_server() {
 }
 
 handle_client() {
-	config_foreach do_delete wireguard_wg0
+	ifce=$1
+	config_foreach do_delete wireguard_wg$ifce
 	
-	uci delete network.wg0
-	uci set network.wg0="interface"
-	uci set network.wg0.proto="wireguard"
+	uci delete network.wg$ifce
+	uci set network.wg$ifce="interface"
+	uci set network.wg$ifce.proto="wireguard"
 	
 	auto=$(uci -q get wireguard."$WG".auto)
 	if [ -z $auto ]; then
 		auto="0"
 	fi
-	uci set network.wg0.auto="$auto"
+	uci set network.wg$ifce.auto="$auto"
 	mtu=$(uci -q get wireguard."$WG".mtu)
 	if [ ! -z $mtu ]; then
-		uci set network.wg0.mtu="$mtu"
+		uci set network.wg$ifce.mtu="$mtu"
 	fi
 	dns=$(uci -q get wireguard."$WG".dns)
 	if [ ! -z $dns ]; then
-		do_dns $dns
+		do_dns $dns $ifce
 	fi
 	port=$(uci -q get wireguard."$WG".port)
 	if [ -z $port ]; then
 		port="51280"
 	fi
-	uci set network.wg0.listen_port="$port"
+	uci set network.wg$ifce.listen_port="$port"
 	do_port $port udp
 	
 	privatekey=$(uci -q get wireguard."$WG".privatekey)
-	uci set network.wg0.private_key="$privatekey"
+	uci set network.wg$ifce.private_key="$privatekey"
 
 	ips=$(uci -q get wireguard."$WG".addresses)","
 	cips=$(echo $ips | cut -d, -f1)
 	i=1
 	while [ ! -z "$cips" ]
 	do
-		uci add_list network.wg0.addresses="$cips"
+		uci add_list network.wg$ifce.addresses="$cips"
 		i=$((i+1))
 		cips=$(echo "$ips" | cut -d, -f"$i")
 		if [ -z "$cips" ]; then
 			break
 		fi
 	done
-	uci add_list network.wg0.addresses="::/0"
+	uci add_list network.wg$ifce.addresses="::/0"
 	
-	create_cpeer $WG
+	create_cpeer $WG $ifce
 	
 	uci commit network
 }
@@ -298,17 +301,19 @@ if [ $SERVE = "0" ]; then
 else
 	running=$(uci -q get wireguard.settings.client)
 	log "Client running $running"
-	if [ $running = 1 ]; then
-		exit 0
+	
+	INTER=$(uci -q get wireguard."$WG".wginter)
+	if [ -z "$INTER" ]; then
+		INTER=0
 	fi
 	UDP=$(uci -q get wireguard."$WG".udptunnel)
 	if [ $UDP = 1 ]; then
 		udp_client $WG
 	fi
-	handle_client
+	handle_client $INTER
 	uci commit network
 	log "Start Interface"
-	ifup wg0
+	ifup wg$INTER
 	sleep 2
 	uci set wireguard.settings.client="1"
 fi

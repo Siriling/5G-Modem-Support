@@ -202,6 +202,14 @@ for isp in $isplist
 if [[ -z $(echo "$CONN" | grep -o "disconnected") ]]; then
 	ret=0
 
+	uci set modem.modem$CURRMODEM.mdevice=$device
+	uci set modem.modem$CURRMODEM.mcid=$cid
+	uci set modem.modem$CURRMODEM.mapn=$NAPN
+	uci set modem.modem$CURRMODEM.mauth=$auth
+	uci set modem.modem$CURRMODEM.musername=$username
+	uci set modem.modem$CURRMODEM.mpassword=$password
+	uci commit modem
+	
 	CONN4=$(uqmi -s -d "$device" --set-client-id wds,"$cid" --get-current-settings)
 	log "GET-CURRENT-SETTINGS is $CONN4"
 

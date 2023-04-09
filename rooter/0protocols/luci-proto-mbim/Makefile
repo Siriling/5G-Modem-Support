@@ -47,7 +47,16 @@ endef
 Build/Compile = $(Build/Compile/Default)
 
 define Package/luci-proto-mbim/install
-	$(CP) ./files/* $(1)/
+	$(INSTALL_DIR) $(1)/usr
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(INSTALL_DIR) $(1)/usr/lib/lua
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model/network
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model/cbi
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model/cbi/admin_network
+	$(INSTALL_DATA) ./files/usr/lib/lua/luci/model/network/proto_mbim.lua $(1)/usr/lib/lua/luci/model/network/
+	$(INSTALL_DATA) ./files/usr/lib/lua/luci/model/cbi/admin_network/proto_mbim.lua $(1)/usr/lib/lua/luci/model/cbi/admin_network/
 endef
 
 $(eval $(call BuildPackage,luci-proto-mbim))

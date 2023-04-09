@@ -69,12 +69,16 @@ log "Hotspot Firewall"
 	if [ -z $PRO ]; then
 		uci set network.wwan2=interface
 		uci set network.wwan2.proto=dhcp 
+		uci set network.wwan2.metric='2'
 		uci set network.wwan26=interface
 		uci set network.wwan26.proto=dhcpv6 
+		uci set network.wwan26.metric='2'
 		uci set network.wwan5=interface
 		uci set network.wwan5.proto=dhcp 
+		uci set network.wwan5.metric='2'
 		uci set network.wwan56=interface
 		uci set network.wwan56.proto=dhcpv6 
+		uci set network.wwan56.metric='2'
 		uci commit network
 	fi
 	config_load firewall

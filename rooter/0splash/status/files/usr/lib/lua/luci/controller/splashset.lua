@@ -2,10 +2,10 @@
 luci-app-argon-config
 ]]--
 
-module("luci.controller.splash", package.seeall)
+module("luci.controller.splashset", package.seeall)
 
 function index()
 	if nixio.fs.access("/etc/config/splash") then
-		entry({"admin", "theme", "splash"}, cbi("splash"), _("Splash Screen"), 71)
+		entry({"admin", "theme", "splashset"}, cbi("splash"), _("Splash Screen"), 71)
 	end
 end

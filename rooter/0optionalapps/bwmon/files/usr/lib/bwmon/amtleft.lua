@@ -23,8 +23,14 @@ end
 
 aamt = arg[1]
 uamt = arg[2]
-amt = aamt - uamt
-amts = calc(amt)
+if uamt > aamt then
+	amt = uamt - aamt
+	amts = calc(amt)
+	amts = "-" .. amts
+else
+	amt = aamt - uamt
+	amts = calc(math.abs(amt))
+end
 tfile = io.open("/tmp/amtleft", "w")
 tfile:write(amts, "\n")
 tfile:close()

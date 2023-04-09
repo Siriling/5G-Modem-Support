@@ -41,7 +41,8 @@ Date:   Thu Aug 6 19:23:58 2015 +0300
 */
 unsigned qusb_zlp_mode = 1; //MT7621 donot support USB ZERO PACKET
 unsigned q_erase_all_before_download = 0;
-int sahara_main(const char *firehose_dir, void *usb_handle, int edl_mode_05c69008);
+const char *q_device_type = "nand"; //nand/emmc/ufs
+int sahara_main(const char *firehose_dir, const char *firehose_mbn, void *usb_handle, int edl_mode_05c69008);
 int firehose_main (const char *firehose_dir, void *usb_handle, unsigned qusb_zlp_mode);
 int stream_download(const char *firehose_dir, void *usb_handle, unsigned qusb_zlp_mode);
 int retrieve_soft_revision(void *usb_handle, uint8_t *mobile_software_revision, unsigned length);
@@ -52,8 +53,6 @@ void ql_stop_usbmon_log();
 //process vals
 static long long all_bytes_to_transfer = 0;    //need transfered
 static long long transfer_bytes = 0;        //transfered bytes;
-
-const char *g_part_upgrade = NULL;
 
 int switch_to_edl_mode(void *usb_handle) {
     //DIAG commands used to switch the Qualcomm devices to EDL (Emergency download mode)
@@ -110,6 +109,7 @@ static void usage(int status, const char *program_name)
         dbg_time("    -l [dir_name]                  Sync log into a file(will create qfirehose_timestamp.log)\n");
         dbg_time("    -u [usbmon_log]                Catch usbmon log and save to file (need debugfs and usbmon driver)\n");
         dbg_time("    -n                             Skip MD5 check\n");
+        dbg_time("    -d                             Device Type, default nand, support emmc/ufs\n");
     }
     exit(status);
 }
@@ -119,28 +119,37 @@ static void usage(int status, const char *program_name)
 2. md5 examine
 3. furture
 */
-static int system_ready(char** dirhose_dir)
+static char * find_firehose_mbn(char** firehose_dir, size_t size)
 {
-    char temp[255+2];
+    char *firehose_mbn = NULL;
 
-    if(strstr(*dirhose_dir, "/update/firehose") != NULL)
-    {
-    }else
-    {
-        //set_transfer_allbytes(calc_filesizes(*dirhose_dir));
-        sprintf(temp, "%s/update/firehose", *dirhose_dir);
-        if (access(temp, R_OK))
-        {
-            if (strstr(*dirhose_dir, "SC600Y") || strstr(*dirhose_dir, "SC60"))
-                return 0;
+    if (strstr(*firehose_dir, "/update/firehose") == NULL) {
+        size_t len = strlen(*firehose_dir);
 
-            error_return();
+        strncat(*firehose_dir, "/update/firehose", size);
+        if (access(*firehose_dir, R_OK)) {
+            (*firehose_dir)[len] = '\0'; // for smart module
         }
-        free(*dirhose_dir);
-        *dirhose_dir = strdup(temp);
-        return 0;
     }
-    error_return();
+
+    if (access(*firehose_dir, R_OK)) {
+        dbg_time("%s access(%s fail), errno: %d (%s)\n", __func__, *firehose_dir, errno, strerror(errno));
+        return NULL;
+    }
+
+    if (!qfile_find_file(*firehose_dir, "prog_nand_firehose_", ".mbn", &firehose_mbn)
+        && !qfile_find_file(*firehose_dir, "prog_emmc_firehose_", ".mbn", &firehose_mbn)
+        && !qfile_find_file(*firehose_dir, "prog_firehose_", ".mbn", &firehose_mbn)
+        && !qfile_find_file(*firehose_dir, "prog_firehose_", ".elf", &firehose_mbn)
+        && !qfile_find_file(*firehose_dir, "firehose-prog", ".mbn", &firehose_mbn)
+        && !qfile_find_file(*firehose_dir, "prog_", ".mbn", &firehose_mbn)
+      ) {
+        dbg_time("%s fail to find firehose mbn file in %s\n", __func__, *firehose_dir);
+        return NULL;
+    }
+
+    dbg_time("%s %s\n", __func__, firehose_mbn);
+    return firehose_mbn;
 }
 
 static int detect_and_judge_module_version(void *usb_handle) {
@@ -185,6 +194,7 @@ int main(int argc, char* argv[])
     int edl_retry = 30; //SDX55 require long time by now 20190412
     double start;
     char *firehose_dir = malloc(MAX_PATH);
+    char *firehose_mbn = NULL;
     char *module_port_name = malloc(MAX_PATH);
     char *module_sys_path = malloc(MAX_PATH);
     int xhci_usb3_to_usb2_cause_syspatch_chage = 1;
@@ -197,7 +207,7 @@ int main(int argc, char* argv[])
     /* set file priviledge mask 0 */
     umask(0);
     /*build V1.0.8*/
-    dbg_time("Version: QFirehose_Linux_Android_V1.4.9\n"); //when release, rename to V1.X
+    dbg_time("Version: QFirehose_Linux_Android_V1.4.11\n"); //when release, rename to V1.X
 #ifndef __clang__
     dbg_time("Builded: %s %s\n", __DATE__,__TIME__);
 #endif
@@ -218,7 +228,7 @@ int main(int argc, char* argv[])
 #endif
 
     optind = 1;
-    while ( -1 != (opt = getopt(argc, argv, "f:p:z:s:l:u:neh"))) {
+    while ( -1 != (opt = getopt(argc, argv, "f:p:z:s:l:u:d:neh"))) {
         switch (opt) {
             case 'n':
                 check_hash = 0;
@@ -251,9 +261,12 @@ int main(int argc, char* argv[])
             case 'e':    
                 q_erase_all_before_download = 1;
                 break;
-                case 'u':
-                    usbmon_logfile = strdup(optarg);
-                break;
+            case 'u':
+                usbmon_logfile = strdup(optarg);
+            break;
+            case 'd':
+                q_device_type = strdup(optarg);
+            break;
             case 'h':
                 usage(EXIT_SUCCESS, argv[0]);
                 break;
@@ -285,37 +298,23 @@ int main(int argc, char* argv[])
     if (firehose_dir[opt-1] == '/') {
         firehose_dir[opt-1] = '\0';
     }
-    
-    if (strstr(firehose_dir, "SC600Y") || strstr(firehose_dir, "SC60"))
-        check_hash = 0;
-	
-    if (!g_part_upgrade) {
-        struct stat st;
-        const char *update_dir = "/update/";
-        char *update_pos = strstr(firehose_dir, update_dir);
-
-        if (update_pos && lstat(firehose_dir, &st) == 0 && S_ISDIR(st.st_mode) == 0) {
-            *update_pos = '\0';            
-
-            g_part_upgrade = strdup(update_pos + strlen(update_dir));
-        }
-    }
-    
+        
     // check the md5 value of the upgrade file
-    if (check_hash && !g_part_upgrade && md5_check(firehose_dir)) {
+    if (check_hash && md5_check(firehose_dir)) {
         update_transfer_bytes(-1);
         error_return();
     }
 
     //hunter.lv add check dir 2018-07-28
-    if(system_ready(&firehose_dir)) {
+    firehose_mbn = find_firehose_mbn(&firehose_dir, MAX_PATH);
+    if (!firehose_mbn) {
         update_transfer_bytes(-1);
         error_return();
     }
     //hunter.lv add check dir 2018-07-28
 
     if (module_port_name[0] && !strncmp(module_port_name, "/dev/mhi", strlen("/dev/mhi"))) {
-        if (qpcie_open(firehose_dir)) {
+        if (qpcie_open(firehose_dir, firehose_mbn)) {
             update_transfer_bytes(-1);
             error_return();
         }      
@@ -430,7 +429,7 @@ __edl_retry:
     }
 
     start = get_now();
-    retval = sahara_main(firehose_dir, usb_handle, idVendor == 0x05c6);
+    retval = sahara_main(firehose_dir, firehose_mbn, usb_handle, idVendor == 0x05c6);
 
     if (!retval) {
         if (idVendor != 0x05C6) {
@@ -454,7 +453,6 @@ __firehose_main:
     if (firehose_dir) free(firehose_dir);
     if (module_port_name) free(module_port_name);
     if (module_sys_path) free(module_sys_path);
-    if (g_part_upgrade) free((char *)g_part_upgrade);
 
     dbg_time("Upgrade module %s.\n", retval == 0 ? "successfully" : "failed");
     if (loghandler) fclose(loghandler);

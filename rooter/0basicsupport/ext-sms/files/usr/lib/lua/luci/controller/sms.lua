@@ -5,15 +5,13 @@ translate = I18N.translate
 
 function index()
 	local fs = require "nixio.fs"
-																					 
-																				   
-																	 
-	if not fs.stat("/etc/nosms") then
-		local page
-		page = entry({"admin", "modem", "sms"}, template("rooter/sms"), translate("短信功能"), 35)
-		page.dependent = true
-	 
-	end
+		if not fs.stat("/etc/nosms") then
+			local page
+			page = entry({"admin", "modem", "sms"}, template("rooter/sms"), translate("短信功能"), 35)
+			page.dependent = true
+			
+		end
+	
 
 	entry({"admin", "modem", "check_read"}, call("action_check_read"))
 	entry({"admin", "modem", "del_sms"}, call("action_del_sms"))
@@ -21,6 +19,7 @@ function index()
 	entry({"admin", "modem", "change_sms"}, call("action_change_sms"))
 	entry({"admin", "modem", "change_smsdn"}, call("action_change_smsdn"))
 	entry({"admin", "modem", "change_smsflag"}, call("action_change_smsflag"))
+	entry({"admin", "modem", "delall_sms"}, call("action_delall_sms"))
 end
 
 function trim(s)
@@ -71,12 +70,16 @@ function action_send_sms()
 	luci.http.write_json(rv)
 end
 
+function action_delall_sms()
+	smsnum = luci.model.uci.cursor():get("modem", "general", "smsnum")
+	os.execute("/usr/lib/sms/delall.sh " .. smsnum)
+end
+
 function action_del_sms()
-	local set = tonumber(luci.http.formvalue("set"))
-	if set ~= nil and set > 0 then
-		set = set - 1;
+	local set = luci.http.formvalue("set")
+	if set ~= nil then
 		smsnum = luci.model.uci.cursor():get("modem", "general", "smsnum")
-		os.execute("/usr/lib/sms/delsms.sh " .. smsnum .. " " .. set)
+		os.execute("/usr/lib/sms/delsms.sh " .. smsnum .. " "  .. set)
 		os.execute("touch /tmp/smswakeup" .. smsnum)
 	end
 end
@@ -122,7 +125,7 @@ function action_check_read()
 									line = file:read("*line")
 									full = full .. line
 									if k < i then
-										full = full .. '<br />'
+										full = full .. '\n'
 									end
 								end
 							else
@@ -157,4 +160,3 @@ function action_change_smsflag()
 	local set = tonumber(luci.http.formvalue("set"))
 	os.execute("/usr/lib/sms/toggle.sh " .. set)
 end
-

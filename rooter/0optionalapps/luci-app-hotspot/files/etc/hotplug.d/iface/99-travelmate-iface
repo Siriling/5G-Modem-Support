@@ -1,12 +1,13 @@
 #!/bin/sh
 
-if [ "$ACTION" = ifup -a "$INTERFACE" = "wwan" ]; then
+wif=$(uci -q get travelmate.global.freq)
+if [ "$ACTION" = ifup -a "$INTERFACE" = "wwan$wif" ]; then
 	exit 1
 fi
 
-if [ "$ACTION" = ifdown -a "$INTERFACE" = "wwan" ]; then
+if [ "$ACTION" = ifdown -a "$INTERFACE" = "wwan$wif" ]; then
+	wifilog "HOTSPOT" "hotplug (iface): action='$ACTION' interface='$INTERFACE'"
 	conn=$(uci -q get travelmate.global.connecting)
-	wif=$(uci -q get travelmate.global.freq)
 	if [ "$conn" != "1" ]; then
 		uci -q set wireless.wwan$wif.ssid="Hotspot Manager Interface"
 		uci -q set wireless.wwan$wif.encryption="none"
@@ -30,6 +31,7 @@ if [ "$ACTION" = ifdown -a "$INTERFACE" = "wwan" ]; then
 					uci set travelmate.global.lost=$lost
 					uci set travelmate.global.delay="30"
 					uci commit travelmate
+					sleep 10
 					/usr/lib/hotspot/travelmate.sh &
 					exit 0
 				fi

@@ -22,7 +22,7 @@ trm_iw=1
 trm_auto=$(uci -q get travelmate.global.trm_auto)
 
 check_wwan() {
-	uci set travelmate.global.ssid="0"
+	uci set travelmate.global.ssid="8"
 	wif=$(uci -q get travelmate.global.freq)
 	if [ -z "$wif" ]; then
 		uci set travelmate.global.freq="2"
@@ -280,7 +280,7 @@ f_main()
 				cnt=0
 				delay=10
 				reconn=$(uci -q get travelmate.global.reconn)
-				while [ ${cnt} -le $reconn ]
+				while [ ${cnt} -lt $reconn ]
 				do
 					f_log "info" " Retry Count ${cnt}"
 					if [ $reconn -eq 99 ]; then
@@ -381,8 +381,10 @@ f_main()
 					# No connection to any in list
 					cnt=$((cnt+1))
 					if [ $reconn -gt 0 ]; then
-						f_log "info " "Sleep before retrying"
-						sleep 30
+						if [ ${cnt} -lt $reconn ]; then
+							f_log "info " "Sleep before retrying"
+							sleep 30
+						fi
 					fi
 					# repeat scan and connect
 				done

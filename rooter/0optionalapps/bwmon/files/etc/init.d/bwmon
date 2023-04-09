@@ -6,7 +6,7 @@ START=60
 start() {
 	WX=$(uci -q get custom.bwallocate.lock)
 	if [ "$WX" = "1" ]; then
-		uci set bwmon.general.enabled=$enable
+		uci set bwmon.general.enabled=1
 		uci commit bwmon
 	fi
 	/usr/lib/bwmon/wrtbwmon.sh &
