@@ -16,6 +16,8 @@
 #include "usb_linux.h"
 #include "sahara_protocol.h"
 
+int g_is_sc600y_chip = 0;
+
 static uint32_t le_uint32(uint32_t v32) {
     const int is_bigendian = 1;
     uint32_t tmp = v32;
@@ -177,24 +179,11 @@ static int start_image_transfer(void *usb_handle, void *tx_buffer, const sahara_
     return 1;
 }
 
-static int start_image_transfer_64bit(void *usb_handle, void *tx_buffer, const sahara_packet_read_data_64bit *sahara_read_data_64bit, FILE *file_handle)
-{
-    sahara_packet_read_data sahara_read_data;
-
-    sahara_read_data.header = sahara_read_data_64bit->header;
-    sahara_read_data.image_id = sahara_read_data_64bit->image_id;
-    sahara_read_data.data_offset = sahara_read_data_64bit->data_offset;
-    sahara_read_data.data_length = sahara_read_data_64bit->data_length;
-
-    return start_image_transfer(usb_handle, tx_buffer, &sahara_read_data, file_handle);
-}
-
 static int sahara_start(void *usb_handle, void *tx_buffer, void *rx_buffer, FILE *file_handle) {
     uint32_t image_id = 0;
     sahara_packet_header* sahara_cmd = (sahara_packet_header *)rx_buffer;
     sahara_packet_hello *sahara_hello = (sahara_packet_hello *)rx_buffer;
     sahara_packet_read_data *sahara_read_data = (sahara_packet_read_data *)rx_buffer;
-    sahara_packet_read_data_64bit *sahara_read_data_64bit = (sahara_packet_read_data_64bit *)rx_buffer;
     sahara_packet_done_resp *sahara_done_resp = (sahara_packet_done_resp *)rx_buffer;
     sahara_packet_end_image_tx *sahara_end_image_tx = (sahara_packet_end_image_tx *)rx_buffer;
 
@@ -272,9 +261,6 @@ static int sahara_start(void *usb_handle, void *tx_buffer, void *rx_buffer, FILE
         if (le_uint32(sahara_cmd->command) == SAHARA_READ_DATA_ID) {
             start_image_transfer(usb_handle, tx_buffer, sahara_read_data, file_handle);
         }
-        else if (le_uint32(sahara_cmd->command) == SAHARA_64_BITS_READ_DATA_ID) {
-            start_image_transfer_64bit(usb_handle, tx_buffer, sahara_read_data_64bit, file_handle);
-        }
         else if (le_uint32(sahara_cmd->command) == SAHARA_END_IMAGE_TX_ID) {
             dbg(LOG_EVENT, "image_id = %d, status = %d", le_uint32(sahara_end_image_tx->image_id), le_uint32(sahara_end_image_tx->status));
             if (le_uint32(sahara_end_image_tx->status) == SAHARA_STATUS_SUCCESS) {
@@ -322,31 +308,40 @@ static int sahara_start(void *usb_handle, void *tx_buffer, void *rx_buffer, FILE
     return 0;
 }
 
-int sahara_main(const char *firehose_dir, const char *firehose_mbn, void *usb_handle, int edl_mode_05c69008) {
+int sahara_main(const char *firehose_dir, void *usb_handle, int edl_mode_05c69008) {
     int retval = 0;
+    char* prog_nand_firehose_filename = NULL; 
     char full_path[512];
     FILE *file_handle;
     void *tx_buffer;
     void *rx_buffer;
 
     if (edl_mode_05c69008) {
-        snprintf(full_path, sizeof(full_path), "%.255s/%.240s", firehose_dir, firehose_mbn);
+    if(qfile_find_xmlfile(firehose_dir, "prog", &prog_nand_firehose_filename) != 0
+        && qfile_find_xmlfile(firehose_dir, "prog_firehose", &prog_nand_firehose_filename) != 0) {
+        dbg(LOG_ERROR, "retrieve prog nand firehose failed.");
+        return ENOENT;
+    }
+    dbg(LOG_INFO, "prog_nand_firehose_filename = %s", prog_nand_firehose_filename);
+
+    if (!strncmp(prog_nand_firehose_filename, "prog_emmc_firehose_8953_ddr.mbn", strlen(prog_nand_firehose_filename)))
+        g_is_sc600y_chip = 1;
+
+    snprintf(full_path, sizeof(full_path), "%.255s/%.240s", firehose_dir, prog_nand_firehose_filename);
     }
     else {
-        char *prog_nand_firehose_filename = NULL;
-
         snprintf(full_path, sizeof(full_path), "%.255s/..", firehose_dir);
-        if (!qfile_find_file(full_path, "NPRG9x", ".mbn", &prog_nand_firehose_filename)
-            && !qfile_find_file(full_path, "NPRG9x", ".mbn", &prog_nand_firehose_filename)) {
+        if(qfile_find_xmlfile(full_path, "NPRG9x", &prog_nand_firehose_filename) != 0
+            && qfile_find_xmlfile(full_path, "NPRG9x", &prog_nand_firehose_filename) != 0) {
             dbg(LOG_ERROR, "retrieve NPRG MBN failed.");
             return ENOENT;
         }
         dbg(LOG_INFO, "prog_nand_firehose_filename = %s", prog_nand_firehose_filename);
 
         snprintf(full_path, sizeof(full_path), "%.255s/../%.240s", firehose_dir, prog_nand_firehose_filename);
-        free(prog_nand_firehose_filename);
     }
     
+    free(prog_nand_firehose_filename);
     file_handle = fopen(full_path, "rb");
     if (file_handle == NULL) {
         dbg(LOG_INFO, "%s %d %s errno: %d (%s)", __func__, __LINE__, full_path, errno, strerror(errno));

@@ -23,8 +23,8 @@ o = d1:option(DummyValue, "zonename", translate("Timezone : "), translate("Be su
 d = m:section(TypedSection, "reboot", " ")
 
 c1 = d:option(ListValue, "enable", " ");
-c1:value("0", "Disabled")
-c1:value("1", "Enabled")
+c1:value("0", translate("Disabled"))
+c1:value("1", translate("Enabled"))
 c1.default=0
 
 sdhour = d:option(ListValue, "sdhour", translate("Reboot Time :"))

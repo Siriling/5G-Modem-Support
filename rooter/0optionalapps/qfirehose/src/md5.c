@@ -285,7 +285,7 @@ int md5_check(const char *firehose_dir)
 	snprintf(md5_file_path, sizeof(md5_file_path), "%.240s/md5.txt", firehose_dir);
 	if (access(md5_file_path, R_OK)) {
 		dbg_time("Cann't find md5.txt in %s, Please check it!\n", firehose_dir);
-		return 0; //allow skip md5 check by delete md5.txt
+		return -1;
 	} else {
 		dbg_time("Find md5 check file <%s>\n", md5_file_path);
 	}

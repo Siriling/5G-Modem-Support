@@ -4,8 +4,7 @@
 require("nixio.fs")
 
 m = Map("hd-idle", "Hard Drive Idle",
-	translate("This is a utility program for spinning-down external " ..
-		"disks after a period of idle time."))
+	translate("This is a utility program for spinning-down external disks after a period of idle time."))
 
 s = m:section(TypedSection, "hd-idle", translate("Settings"))
 s.anonymous = true

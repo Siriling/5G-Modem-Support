@@ -10,9 +10,9 @@ m = Map("ping", translate("Custom Ping Test"), translate("Enable/Disable Custom 
 d = m:section(TypedSection, "ping", " ")
 d.anonymous = true
 
-c1 = d:option(ListValue, "enable", "Ping Test Status : ", "Ping every 20 seconds and, if it fails, restart modem or reboot router");
-c1:value("0", "Disabled")
-c1:value("1", "Enabled")
+c1 = d:option(ListValue, "enable", translate("Ping Test Status : "), translate("Ping every 20 seconds and, if it fails, restart modem or reboot router"));
+c1:value("0", translate("Disabled"))
+c1:value("1", translate("Enabled"))
 c1.default=0
 
 interval = d:option(Value, "interval", translate("Test Interval :"), translate("Number of seconds between testing the connection. Range is 20 to 120 secs.")); 
@@ -21,12 +21,12 @@ interval.optional=false;
 interval.datatype = 'range(20,120)';
 interval.default="20";
 
-type = d:option(ListValue, "type", "Test Type :", "Type of test - Page Retrieval or Ping");
-type:value("0", "Ping")
-type:value("1", "Page Retrieval")
+type = d:option(ListValue, "type", translate("Test Type :"), translate("Type of test - Page Retrieval or Ping"));
+type:value("0", translate("Ping"))
+type:value("1", translate("Page Retrieval"))
 type.default=1
 
-d1 = d:option(ListValue, "delay", "Reconnection Delay","Delay in seconds after restarting modem before checking for connection");
+d1 = d:option(ListValue, "delay", translate("Reconnection Delay"),translate("Delay in seconds after restarting modem before checking for connection"));
 d1:value("40", "40 seconds")
 d1:value("45", "45 seconds")
 d1:value("50", "50 seconds")

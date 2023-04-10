@@ -40,14 +40,10 @@
 
   XHR.poll(5, '<%=luci.dispatcher.build_url("admin", "vpn", "wirestatus")%>', null,
    function(x, data) {
-	both = {};
-	bothbp={};
-	iii = 1;
     for (var key in data) {
       if (!data.hasOwnProperty(key)) { continue; }
       var ifname = key;
       var iface = data[key];
-	  
       var s = "";
       if (iface.public_key == '(none)') {
         s += '<em><%:Interface does not have a public key!%></em>';
@@ -69,16 +65,7 @@
           iface.fwmark
         );
       }
-	if ( iii == 1 )
-	{
-		document.getElementById("iinfo").innerHTML = s;
-		document.getElementById("leg").innerHTML = ifname;
-	}
-	else
-	{
-		document.getElementById("iinfo1").innerHTML = s;
-		document.getElementById("leg1").innerHTML = ifname;
-	}
+      document.getElementById("iinfo").innerHTML = s;
       for (var i = 0, ilen = iface.peers.length; i < ilen; i++) {
         var peer = iface.peers[i];
         var s = String.format(
@@ -118,18 +105,9 @@
           bytes_to_str(peer.transfer_rx),
           bytes_to_str(peer.transfer_tx)
         );
-		if ( iii == 1 )
-		{
-			 document.getElementById("config").innerHTML = icon;
-			 document.getElementById("info").innerHTML = s;
-		}
-		else
-		{
-			 document.getElementById("config1").innerHTML = icon;
-			 document.getElementById("info1").innerHTML = s;
-		}
+        document.getElementById("config").innerHTML = icon;
+        document.getElementById("info").innerHTML = s;
       }
-	iii = iii + 1;
     }
   });
 //]]></script>
@@ -138,16 +116,9 @@
 
 <fieldset class="cbi-section">
 
-  	<div>
-		<table width="900" border="0">
-			<tr>
-				<td width="50px"  style="vertical-align:center;font-size : 25px">
-					<div><%:Interface %></div>
-				</td>
-				<td width="100px" id="leg" style="width:100px; text-align:left; padding:3px;font-size : 25px">&nbsp;</td>
-				<td width="650px">&nbsp;</td>
-			</tr>
-		</table>
+  <legend><%:Interface%> WG0</legend>
+  
+	<div>
 		<table width="900" border="0">
 			<tr>
 				<td width="20px">&nbsp;</td>
@@ -176,52 +147,6 @@
 				</td>
 			</tr>
 		</table>
-		
-		<table width="900" border="0" id="second1">
-			<tr>
-				<td width="50px"  style="vertical-align:center;font-size : 25px">
-					<div><%:Interface %></div>
-				</td>
-				<td width="100px" id="leg1" style="width:100px; text-align:left; padding:3px;font-size : 25px">&nbsp;</td>
-				<td width="650px">&nbsp;</td>
-			</tr>
-		</table>
-		<table width="900" border="0" id="second">
-			<tr>
-				<td width="20px">&nbsp;</td>
-				<td width="150px"  style="vertical-align:center;font-size : 20px">
-					<div><%:Configuration%></div>
-				</td>
-				<td width="100px" id="config1" style="width:16px; text-align:center; padding:3px">&nbsp;</td>
-				<td width="50px">&nbsp;</td>
-				<td width="580px">
-					<div id="info1" style="vertical-align:middle; padding: 3px">
-						<em><%:Collecting data...%></em>
-					</div>				
-				</td>
-			</tr>
-			<tr>
-				<td>&nbsp;</td>
-				<td style="vertical-align:center;font-size : 20px">
-					<div><%:Peer%></div>
-				</td>
-				<td>&nbsp;</td>
-				<td>&nbsp;</td>
-				<td>
-					<div id="iinfo1" style="vertical-align:middle; padding: 3px">
-						<em><%:Collecting data...%></em>
-					</div>				
-				</td>
-			</tr>
-		</table>
-<!--		
-		<table id="cmdtxt" width="700"  border="0" style="display:table;">
-		<tr>
-				<td width="100%">
-			<textarea readonly="readonly" name="attxt" id="attxt" rows="6" style="width: 600px;" maxlength="160"></textarea>
-			</td>
-		</tr>
-		</table> -->
 	</div>
 	
 </fieldset>

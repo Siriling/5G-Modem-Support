@@ -17,6 +17,8 @@
 #define MAX_PATH 256
 #define MIN(a,b)	 ((a) < (b)? (a) : (b))
 
+extern const char *g_part_upgrade;
+
 typedef struct module_sys_info {
 /*
 MAJOR=189
@@ -40,7 +42,7 @@ void * qusb_noblock_open(const char *module_sys_path, int *idVendor, int *idProd
 int qusb_noblock_close(void *handle);
 int qusb_noblock_write(const void *handle, void *pbuf, int max_size, int min_size, int timeout_msec, int need_zlp);
 int qusb_noblock_read(const void *handle, void *pbuf, int max_size, int min_size, int timeout_msec);
-int qfile_find_file(const char *dir, const char *prefix, const char *suffix, char** filename);
+int qfile_find_xmlfile(const char *dir, const char *prefix, char** xmlfile);
 #define errno_nodev() (errno == ENOENT || errno == ENODEV)
 // void dbg_time (const char *fmt, ...);
 const char * firehose_get_time(void);
@@ -121,7 +123,7 @@ enum MHI_EE {
    MHI_EE_DISABLE_TRANSITION = 0x9,
    MHI_EE_MAX
 };
-int qpcie_open(const char *firehose_dir, const char *firehose_mbn);
+int qpcie_open(const char *firehose_dir);
 
 #define Q_USB2TCP_VERSION 0x12345678
 typedef struct {

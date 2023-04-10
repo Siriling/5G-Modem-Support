@@ -2,7 +2,7 @@
 . /lib/functions.sh
 
 log() {
-	modlog "TEXTING" "$@"
+	logger -t "TEXTING" "$@"
 }
 
 checktime() {
@@ -96,7 +96,7 @@ checkper() {
 	istime=$(checktime)
 	if [ $istime = '1' ]; then
 		prev=$(uci -q get custom.texting.used)
-		per=$(uci -q get custom.texting.percent)
+		per=$(uci -q get custom.bwallocate.percent)
 		persent=$(uci -q get custom.bwallocate.persent)
 		if [ "$persent" != "1" ]; then
 			getbw
@@ -141,7 +141,7 @@ do
 		if [ $running = "1" ]; then
 			EN=$(uci -q get custom.texting.text)
 			if [ $EN = "1" ]; then
-				/usr/lib/bwmon/dotext.sh &
+				/usr/lib/bwmon/dotext.sh
 				sleep $delay
 			fi
 		else

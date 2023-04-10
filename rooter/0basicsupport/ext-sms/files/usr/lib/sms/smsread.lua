@@ -855,7 +855,6 @@ else
 	end
 	tfile:close()
 end
-os.execute("/usr/lib/sms/merge.lua " .. tfname)
 os.execute("mv " .. tfname .. " /tmp/smstext" .. modemn)
 
 if #delslots > 0 then

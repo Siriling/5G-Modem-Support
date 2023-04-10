@@ -6,14 +6,14 @@ local interface = luci.model.network.interface
 local proto = netmod:register_protocol("mbim")
 
 function proto.get_i18n(self)
-	return luci.i18n.translate("MBIM")
+	return luci.i18n.translate("MBIM Cellular")
 end
 
 function proto.ifname(self)
 	local base = netmod._M.protocol
 	local ifname = base.ifname(self) -- call base class "protocol.ifname(self)"
 
-		-- Note: ifname might be nil if the adapter could not be determined through ubus (default name to qmi-wan in this case)
+		-- Note: ifname might be nil if the adapter could not be determined through ubus (default name to mbim-wan in this case)
 	if ifname == nil then
 		ifname = "mbim-" .. self.sid
 	end
@@ -48,4 +48,8 @@ function proto.contains_interface(self, ifc)
 	 return (netmod:ifnameof(ifc) == self:ifname())
 end
 
-netmod:register_pattern_virtual("^mbim-%w")
+netmod:register_pattern_virtual("^mbim%-%w")
+
+netmod:register_error_code("CALL_FAILED",	luci.i18n.translate("Call failed"))
+netmod:register_error_code("NO_CID",		luci.i18n.translate("Unable to obtain client ID"))
+netmod:register_error_code("PLMN_FAILED",	luci.i18n.translate("Setting PLMN failed"))

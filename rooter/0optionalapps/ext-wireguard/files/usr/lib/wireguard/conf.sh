@@ -1,9 +1,5 @@
 #!/bin/sh
 
-log() {
-	modlog "Wireguard Conf" "$@"
-}
-
 name=$1
 file=$2
 auto=$3
@@ -28,13 +24,6 @@ extract() {
 	PRK=$(echo "$line" | grep "PresharedKey" | tr " " ",")
 	if [ ! -z "$PRK" ]; then
 		PreSharedKey=$(echo $PRK | cut -d, -f3)
-	fi
-	INTER=$(echo "$line" | grep "WGinterface" | tr " " ",")
-	if [ ! -z "$INTER" ]; then
-		wginter=$(echo $INTER | cut -d, -f3)
-		if [ "$wginter" -gt 1 ]; then
-			wginter="1"
-		fi
 	fi
 	PRK=$(echo "$line" | grep "Address" | tr " " "#")
 	if [ ! -z "$PRK" ]; then
@@ -84,8 +73,6 @@ sed -i -e "s!PresharedKey= !PresharedKey=!g" $file
 sed -i -e "s!PresharedKey=!PresharedKey = !g" $file
 sed -i -e "s!Address= !Address=!g" $file
 sed -i -e "s!Address=!Address = !g" $file
-sed -i -e "s!WGinterface=!WGinterface = !g" $file
-sed -i -e "s!WGinterface= !WGinterface = !g" $file
 sed -i -e "s!dns= !dns=!g" $file
 sed -i -e "s!dns=!dns = !g" $file
 sed -i -e "s!DNS= !DNS=!g" $file
@@ -107,9 +94,7 @@ extract "$linex"
 PRK=$(echo "$endpoint" | tr ":" ",")
 endpoint=$(echo $PRK | cut -d, -f1)
 sport=$(echo $PRK | cut -d, -f2)
-if [ -z "$wginter" ]; then
-	wginter="0"
-fi
+
 uci delete wireguard.$name
 uci set wireguard.$name=wireguard
 uci set wireguard.$name.auto=$auto
@@ -120,7 +105,6 @@ uci set wireguard.$name.presharedkey="$PreSharedKey"
 uci set wireguard.$name.port="$listenport"
 uci set wireguard.$name.addresses="$Address"	
 uci set wireguard.$name.dns="$dns"
-uci set wireguard.$name.wginter="$wginter"
 uci set wireguard.$name.publickey="$PublicKey"
 uci set wireguard.$name.endpoint_host="$endpoint"
 uci set wireguard.$name.ips="$allowedips"

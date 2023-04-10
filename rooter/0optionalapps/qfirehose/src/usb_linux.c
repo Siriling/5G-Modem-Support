@@ -50,6 +50,7 @@ int switch_to_edl_mode(void *usb_handle);
 extern uint32_t      inet_addr(const char *);
 
 #define MAX_USBFS_BULK_IN_SIZE (4 * 1024)
+#define MAX_USBFS_BULK_OUT_SIZE (16 * 1024)
 #define EC20_MAX_INF 4
 #define MKDEV(__ma, __mi) (((__ma & 0xfff) << 8) | (__mi & 0xff) | ((__mi & 0xfff00) << 12))
 
@@ -73,9 +74,6 @@ static int usb_dm_interface = 0;
 
 static int strStartsWith(const char *line, const char *prefix)
 {
-    if (!prefix || prefix[0] == '\0')
-        return 1;
-
     for ( ; *line != '\0' && *prefix != '\0' ; line++, prefix++) {
         if (*line != *prefix) {
             return 0;
@@ -85,24 +83,12 @@ static int strStartsWith(const char *line, const char *prefix)
     return *prefix == '\0';
 }
 
-static int strEndsWith(const char *line, const char *suffix)
-{
-    size_t a, b;
-
-    if (!suffix || suffix[0] == '\0')
-        return 1;
-
-    a = strlen(line);
-    b = strlen(suffix);
-    return (a >= b) && (strcmp(line + (a -b), suffix) == 0);
-}
-
 static int quectel_get_sysinfo_by_uevent(const char *uevent, MODULE_SYS_INFO *pSysInfo) {
     FILE *fp;
     char line[MAX_PATH];
 
     memset(pSysInfo, 0x00, sizeof(MODULE_SYS_INFO));
-
+  
     fp = fopen(uevent, "r");
     if (fp == NULL) {
         dbg_time("fail to fopen %s, errno: %d (%s)\n", uevent, errno, strerror(errno));
@@ -173,7 +159,7 @@ int auto_find_quectel_modules(char *module_sys_path, unsigned size)
         if (sysinfo.PRODUCT[0] == '\0') {
             continue;
         }
-
+        
         if (!(strStartsWith(sysinfo.PRODUCT, "2c7c/")
             || strStartsWith(sysinfo.PRODUCT, "5c6/9008")
             || strStartsWith(sysinfo.PRODUCT, "5c6/901f")
@@ -310,11 +296,11 @@ static void quectel_get_usb_device_info(const char *module_sys_path, struct quec
         //maybe Linux have create /sys/ device, but not ready to create /dev/ device.
         usleep(100*1000);
     }
-
+    
     if (access(devname, R_OK) && errno_nodev())
     {
         char *p = strstr(devname+strlen("/dev/"), "/");
-
+        
         while (p) {
             p[0] = '_';
             p = strstr(p, "/");
@@ -330,16 +316,16 @@ static void quectel_get_usb_device_info(const char *module_sys_path, struct quec
                 return;
             }
         }
-
+        
         dev_mknod_and_delete_after_use = 1;
     }
 
     desc_fd = open(devname, O_RDWR | O_NOCTTY);
-
+    
     if (dev_mknod_and_delete_after_use) {
         remove(devname);
     }
-
+    
     if (desc_fd <= 0) {
         dbg_time("fail to open %s, errno: %d (%s)\n", devname, errno, strerror(errno));
         return;
@@ -401,24 +387,8 @@ static void quectel_get_usb_device_info(const char *module_sys_path, struct quec
 
     usb_dm_interface = 0;
     if ((udev->bulk_ep_in[usb_dm_interface] == 0 && udev->bulk_ep_in[usb_dm_interface] == 0)
-        || (udev->idVendor == 0x2c7c && udev->idProduct == 0x0127)    //EM05CEFC-LNV  Laptop
-        || (udev->idVendor == 0x2c7c && udev->idProduct == 0x0514)    //EG060K-EA
-        || (udev->idVendor == 0x2c7c && udev->idProduct == 0x0310)    //EM05-CN       Laptop
-        || (udev->idVendor == 0x2c7c && udev->idProduct == 0x030a)    //EM05-G        Laptop
-        || (udev->idVendor == 0x2c7c && udev->idProduct == 0x0309)    //EM05E-EDU     Laptop
-        || (udev->idVendor == 0x2c7c && udev->idProduct == 0x030d))   //EM05G-FCCL    Laptop
-    {
-
-        if ((udev->idVendor == 0x2c7c && udev->idProduct == 0x0127)       //EM05CEFC-LNV  Laptop
-            || (udev->idVendor == 0x2c7c && udev->idProduct == 0x0310)    //EM05-CN       Laptop
-            || (udev->idVendor == 0x2c7c && udev->idProduct == 0x030a)    //EM05-G        Laptop
-            || (udev->idVendor == 0x2c7c && udev->idProduct == 0x0309)    //EM05E-EDU     Laptop
-            || (udev->idVendor == 0x2c7c && udev->idProduct == 0x030d))   //EM05G-FCCL    Laptop
-            usb_dm_interface = 3;
-
-        if (udev->idVendor == 0x2c7c && udev->idProduct == 0x0514)   //EG060K-EA
-            usb_dm_interface = 2;
-    }
+        || (udev->idVendor == 0x2c7c && udev->idProduct == 0x0127))
+        usb_dm_interface = 3;
 }
 
 static int usbfs_bulk_write(struct quectel_usb_device *udev, const void *data, int len, int timeout_msec, int need_zlp) {
@@ -437,10 +407,10 @@ static int usbfs_bulk_write(struct quectel_usb_device *udev, const void *data, i
 
     urb->status = -1;
     urb->buffer = (void *)data;
-    urb->buffer_length = len;
+    urb->buffer_length = (len > MAX_USBFS_BULK_OUT_SIZE) ? MAX_USBFS_BULK_OUT_SIZE : len;
     urb->usercontext = urb;
 
-    if (need_zlp && (len%udev->wMaxPacketSize[bInterfaceNumber]) == 0) {
+    if ((len <= MAX_USBFS_BULK_OUT_SIZE) && need_zlp && (len%udev->wMaxPacketSize[bInterfaceNumber]) == 0) {
         //dbg_time("USBDEVFS_URB_ZERO_PACKET\n");
 #ifndef USBDEVFS_URB_ZERO_PACKET
 #define USBDEVFS_URB_ZERO_PACKET    0x40
@@ -478,8 +448,8 @@ static int usbfs_bulk_write(struct quectel_usb_device *udev, const void *data, i
 
 static int poll_wait(int poll_fd, short events, int timeout_msec) {
     struct pollfd pollfds[] = {{poll_fd, events, 0}};
-    int ret;
-
+    int ret; 
+    
     do {
         ret = poll(pollfds, 1, timeout_msec);
     } while(ret == -1 && errno == EINTR);
@@ -564,7 +534,7 @@ static int qtcp_connect(const char *port_name, int *idVendor, int *idProduct, in
     *idVendor = tlv_usb.idVendor;
     *idProduct = tlv_usb.idProduct;
     *interfaceNum = tlv_usb.interfaceNum;
-
+  
     dbg_time("idVendor=%04x, idProduct=%04x, interfaceNum=%d\n", *idVendor, *idProduct, *interfaceNum);
 
     return fd;
@@ -588,7 +558,7 @@ static int qtcp_read(int fd, void *pbuf, int size, int timeout_msec) {
         }
     }
 
-    if (size > tlv.length)
+    if (size > tlv.length)    
         size = tlv.length;
     tlv.length -= size;
 
@@ -690,7 +660,7 @@ void usbfs_detach_kernel_driver(int fd, int ifnum)
 
 #define KVERSION(j,n,p)	((j)*1000000 + (n)*1000 + (p))
 static struct utsname utsname;	/* for the kernel version */
-static int ql_get_kernel_version(void)
+static int ql_get_kernel_version(void)  
 {
     int osmaj, osmin, ospatch;
     int kernel_version;
@@ -757,7 +727,7 @@ void *qusb_noblock_open(const char *module_sys_path, int *idVendor, int *idProdu
         *interfaceNum = udev->bNumInterfaces;
 
         if (port_name[0] == '\0' || (port_name[0] != '\0' && access(port_name, R_OK)) || (udev->idVendor == 0x05c6 && udev->idProduct == 0x9008)) {
-            int bInterfaceNumber = usb_dm_interface;
+            int bInterfaceNumber = 0;
 
             if (usbfs_is_kernel_driver_alive(udev->desc, bInterfaceNumber)) {
                 usbfs_detach_kernel_driver(udev->desc, bInterfaceNumber);
@@ -772,7 +742,7 @@ void *qusb_noblock_open(const char *module_sys_path, int *idVendor, int *idProdu
                         char driver[255 * 2];
                     } *pl;
                     const char *driver = NULL;
-
+                    
                     pl = (typeof(pl)) malloc(sizeof(*pl));
 
                     snprintf(pl->infname, sizeof(pl->infname), "%.255s:1.%d/driver", module_sys_path, usb_dm_interface);
@@ -783,7 +753,7 @@ void *qusb_noblock_open(const char *module_sys_path, int *idVendor, int *idProdu
                             n--;
                         driver = (&pl->driver[n+1]);
                     }
-
+    
                     dbg_time("Error: when module in 'Emergency download mode', should not register any usb driver\n");
                     if (driver)
                         dbg_time("Error: it register to usb driver ' %s ' now, should delete 05c6&9008 from the source file of this driver\n", driver);
@@ -854,7 +824,7 @@ int qusb_noblock_close(void *handle) {
         close(udev->desc);
     }
     else if (handle == udev && udev->desc > 0) {
-        int bInterfaceNumber = usb_dm_interface;
+        int bInterfaceNumber = 0;
         ioctl(udev->desc, USBDEVFS_RELEASEINTERFACE, &bInterfaceNumber);
         close(udev->desc);
     }
@@ -988,27 +958,29 @@ int qusb_noblock_write(const void *handle, void *pbuf, int max_size, int min_siz
     return cur;
 }
 
-int qfile_find_file(const char *dir, const char *prefix, const char *suffix, char** filename) {
+int qfile_find_xmlfile(const char *dir, const char *prefix, char** xmlfile) {
     DIR *pdir;
     struct dirent* ent = NULL;
     pdir = opendir(dir);
 
-    *filename = NULL;
+    dbg_time("dir=%s\n", dir);
     if(pdir)
     {
         while((ent = readdir(pdir)) != NULL)
         {
-            if (strStartsWith(ent->d_name, prefix) && strEndsWith(ent->d_name, suffix))
+            if(!strncmp(ent->d_name, prefix, strlen(prefix)) && strncmp(ent->d_name, "rawprogram0.xml.bak", 15))
             {
-                dbg_time("find '%s'\n", ent->d_name);
-                *filename = strdup(ent->d_name);
-                break;
-            }
+                dbg_time("d_name=%s\n", ent->d_name);
+                *xmlfile = strdup(ent->d_name);
+                closedir(pdir);
+                return 0;
+            }  
         }
+
     }
 
     closedir(pdir);
-    return *filename != NULL;
+    return 1;
 }
 
 const char * firehose_get_time(void) {
@@ -1041,7 +1013,7 @@ const char * firehose_get_time(void) {
 //     fflush(stdout);
 // }
 
-int qpcie_open(const char *firehose_dir, const char *firehose_mbn) {
+int qpcie_open(const char *firehose_dir) {
     int bhifd, edlfd, diagfd;
     long ret;
     FILE *fp;
@@ -1050,7 +1022,10 @@ int qpcie_open(const char *firehose_dir, const char *firehose_mbn) {
     size_t filesize;
     void *filebuf;
 
-    snprintf(prog_firehose_sdx24, sizeof(prog_firehose_sdx24), "%.255s/%s", firehose_dir, firehose_mbn);
+    snprintf(prog_firehose_sdx24, sizeof(prog_firehose_sdx24), "%.255s/prog_firehose_sdx24.mbn", firehose_dir);
+    if (access(prog_firehose_sdx24, R_OK))
+        snprintf(prog_firehose_sdx24, sizeof(prog_firehose_sdx24), "%.255s/prog_firehose_sdx55.mbn", firehose_dir);
+
     fp = fopen(prog_firehose_sdx24, "rb");
     if (fp ==NULL) {
         dbg_time("fail to fopen %s, errno: %d (%s)\n", prog_firehose_sdx24, errno, strerror(errno));
@@ -1059,7 +1034,7 @@ int qpcie_open(const char *firehose_dir, const char *firehose_mbn) {
 
     fseek(fp, 0, SEEK_END);
     filesize = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
+    fseek(fp, 0, SEEK_SET);   
 
     filebuf = malloc(sizeof(filesize)+filesize);
     memcpy(filebuf, &filesize, sizeof(filesize));
@@ -1083,7 +1058,6 @@ int qpcie_open(const char *firehose_dir, const char *firehose_mbn) {
         edl_pcie_mhifd = -1;
     }
 
-    sleep(1); //see https://ticket.quectel.com/browse/FAE-39737
     bhifd = open("/dev/mhi_BHI", O_RDWR | O_NOCTTY);
     if (bhifd <= 0) {
         dbg_time("fail to open %s, errno: %d (%s)\n", "/dev/mhi_BHI", errno, strerror(errno));
@@ -1110,7 +1084,7 @@ int qpcie_open(const char *firehose_dir, const char *firehose_mbn) {
         dbg_time("fail to ioctl IOCTL_BHI_GETDEVINFO, errno: %d (%s)\n", errno, strerror(errno));
         error_return();
     }
-
+        
     close(bhifd);
     free(filebuf);
 
@@ -1122,7 +1096,7 @@ int qpcie_open(const char *firehose_dir, const char *firehose_mbn) {
     }
 
     edl_pcie_mhifd = edlfd;
-
+	
     return 0;
 }
 
@@ -1135,7 +1109,6 @@ void *catch_log(void *arg)
     char tbuff[256];
     size_t off = strlen("[999.999] ");
 
-    (void)arg;
     tbuff[off - 1] = ' ';
     while(1) {
         nreads = read(usbmon_fd, tbuff + off, sizeof(tbuff) - off);

@@ -59,11 +59,6 @@ pkey = s:option(Value, "privatekey", translate("Private Key :"), translate("Priv
 pkey.rmempty = true;
 pkey.optional=false;
 
-il = s:option(ListValue, "wginter", translate("Interface to Use :"));
-il:value("0", translate("WG0"))
-il:value("1", translate("WG1"))
-il.default="0"
-
 bl = s:option(ListValue, "auto", translate("Start on Boot :"));
 bl:value("0", translate("No"))
 bl:value("1", translate("Yes"))

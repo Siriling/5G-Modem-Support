@@ -46,22 +46,22 @@
 			if (parseInt(status) > 1)
 			{
 				indx = 1;
-				select.options[select.options.length] = new Option("Generating RSA Private Server key", indx);
+				select.options[select.options.length] = new Option("<%:Generating RSA Private Server key%>", indx);
 			}
 			if (parseInt(status) > 2)
 			{
 				indx = 2;
-				select.options[select.options.length] = new Option("Generating RSA Private Client key", indx);
+				select.options[select.options.length] = new Option("<%:Generating RSA Private Client key%>", indx);
 			}
 			if (parseInt(status) > 3)
 			{
 				indx = 3;
-				select.options[select.options.length] = new Option("Create the Diffie-Hellman parameters", indx);
+				select.options[select.options.length] = new Option("<%:Create the Diffie-Hellman parameters%>", indx);
 			}
 			if (parseInt(status) > 4)
 			{
 				indx = 4;
-				select.options[select.options.length] = new Option("Finished", indx);
+				select.options[select.options.length] = new Option("<%:Finished%>", indx);
 			}
 			if (parseInt(status) != 0)
 			{
@@ -102,7 +102,7 @@
 			genrate = "1";
 			clearListBox("status");
 			select = document.getElementById("status");
-			select.options[select.options.length] = new Option("Starting Key Generation Process", 0);
+			select.options[select.options.length] = new Option("<%:Starting Key Generation Process%>", 0);
 			XHR.get('<%=luci.dispatcher.build_url("admin", "vpn", "rsagenerate")%>',
 				null,
 				function(x, rv)

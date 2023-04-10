@@ -47,16 +47,7 @@ endef
 Build/Compile = $(Build/Compile/Default)
 
 define Package/luci-proto-3x/install
-	$(INSTALL_DIR) $(1)/usr
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(INSTALL_DIR) $(1)/usr/lib/lua
-	$(INSTALL_DIR) $(1)/usr/lib/lua/luci
-	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model
-	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model/network
-	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model/cbi
-	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model/cbi/admin_network
-	$(INSTALL_DATA) ./files/usr/lib/lua/luci/model/network/proto_3x.lua $(1)/usr/lib/lua/luci/model/network/
-	$(INSTALL_DATA) ./files/usr/lib/lua/luci/model/cbi/admin_network/proto_3x.lua $(1)/usr/lib/lua/luci/model/cbi/admin_network/
+	$(CP) ./files/* $(1)/
 endef
 
 $(eval $(call BuildPackage,luci-proto-3x))

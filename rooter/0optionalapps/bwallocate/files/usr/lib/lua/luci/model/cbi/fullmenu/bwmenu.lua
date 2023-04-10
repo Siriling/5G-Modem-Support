@@ -238,7 +238,7 @@ btn.inputtitle = translate("Send Test of Text or Email")
 btn.inputstyle = "apply"
 btn:depends("text", "1")
 function btn.write()
-	luci.sys.call("/usr/lib/bwmon/dotext.sh &")
+	luci.sys.call("/usr/lib/bwmon/dotext.sh")
 end
 
 b4 = s:option(DummyValue, "blank", " ");

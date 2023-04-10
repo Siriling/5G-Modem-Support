@@ -3,33 +3,34 @@
 #Copyright GNU act.
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=ext-blockport
+PKG_NAME:=ext-domain
 PKG_VERSION:=1.000
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=Created by DM/makefile by Cobia@whirlpool
 include $(INCLUDE_DIR)/package.mk
 
-define Package/ext-blockport
+define Package/ext-domain
   SECTION:=utils
   CATEGORY:=ROOter
   SUBMENU:=Optional Applications
-  TITLE:=Install Port Blocking
+  DEPENDS:=+dnsmasq-full +ipset
+  TITLE:=Domain Filter
   PKGARCH:=all
 endef
 
-define Package/ext-blockport/description
-  Helper scripts to install Port Blocking
+define Package/ext-domain/description
+  Helper scripts to install Domain Filter on ROOter
 endef
 
 
 define Build/Compile
 endef
 
-define Package/ext-blockport/install
+define Package/ext-domain/install
 	$(CP) ./files/* $(1)/
 
 
 endef
 
-$(eval $(call BuildPackage,ext-blockport))
+$(eval $(call BuildPackage,ext-domain))
