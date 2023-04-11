@@ -42,21 +42,21 @@ end
 	sca = 0;
 	selectall = 1 ;
 	selectall5g = 1 ;
-	selectall5gsa = 1 ;				
+	selectall5gsa = 1 ;
 	var sierra = new Array();
 	var uVid ;
 	var chkbox = new Array() ;
 	var chkbox5g = new Array() ;
-	var chkbox5gsa = new Array() ;						   
+	var chkbox5gsa = new Array() ;
 	var checkbox = new Array() ;
 	var checkbox5g = new Array() ;
-	var checkbox5gsa = new Array() ;							 
+	var checkbox5gsa = new Array() ;
 	var bx ;
 	var bx5g ;
 	var blen ;
 	var blen5g ;
-	var bx5gsa ;		 
-	var blen5gsa ;		   
+	var bx5gsa ;
+	var blen5gsa ;
 	var inr ;
 	var bndid = new Array() ;
 	var bndb1 ;
@@ -122,7 +122,7 @@ end
 			elem.options['1'].disabled=false;
 			return "MBIM"
 		}
-		if ( pro == "2"|| pro == "88" )
+		if ( pro == "2" )
 		{
 			elem.options['1'].disabled=true;
 			if ( mod == "1" )
@@ -130,7 +130,7 @@ end
 				elem.options['3'].disabled=false;
 			}
 			elem.options['2'].disabled=false;
-			return "QMI（RMNET）警告:如模块在PCIE 通道时此选项无效！！";
+			return "QMI";
 		}
 		if ( pro == "5" )
 		{
@@ -163,7 +163,7 @@ end
 			if ( stat == "0" )
 			{
 				bnds = "0" ;
-				document.getElementById("active").innerHTML="<%:无模块连接%>";
+				document.getElementById("active").innerHTML="<%:No Modem Present%>";
 				document.getElementById("conn").disabled=true;
 				document.getElementById("disconn").disabled=true;
 				<% if nosms == 0 then %>
@@ -220,7 +220,7 @@ end
 					{
 						x = document.getElementById("drop1");
 						option = document.createElement("option");
-						option.text = "<%:等待模块响应:%>";
+						option.text = "<%:Wait for Modem:%>";
 						x.add(option);
 					}
 					
@@ -246,7 +246,7 @@ end
 			}
 			if ( stat == "1" )
 			{
-				document.getElementById("active").innerHTML="<%:模块存在/未连接%>";
+				document.getElementById("active").innerHTML="<%:Modem Present/Not Connected%>";
 				document.getElementById("conn").disabled=false;
 				document.getElementById("disconn").disabled=true;
 				document.getElementById("apply1").disabled=false;
@@ -323,7 +323,7 @@ end
 					if ( usb == "1" )
 					{
 						document.getElementById("pwrtoggle").style.display="block";
-						document.getElementById("pwrtoggle").value="<%:复位 USB 1%>";
+						document.getElementById("pwrtoggle").value="<%:Reset USB 1%>";
 						document.getElementById("pwrtoggle").disabled=false;
 						document.getElementById("pwrtoggle").style.visibility="visible";
 						document.getElementById("pwrtoggle1").style.display="none";
@@ -331,11 +331,11 @@ end
 					if ( usb == "2" )
 					{
 						document.getElementById("pwrtoggle").style.display="block";
-						document.getElementById("pwrtoggle").value="<%:复位 USB 1%>";
+						document.getElementById("pwrtoggle").value="<%:Reset USB 1%>";
 						document.getElementById("pwrtoggle").disabled=false;
 						document.getElementById("pwrtoggle").style.visibility="visible";
 						document.getElementById("pwrtoggle1").style.display="block";
-						document.getElementById("pwrtoggle1").value="<%:复位 USB 2%>";
+						document.getElementById("pwrtoggle1").value="<%:Reset USB 2%>";
 						document.getElementById("pwrtoggle1").disabled=false;
 						document.getElementById("pwrtoggle1").style.visibility="visible";
 					}
@@ -343,7 +343,7 @@ end
 				if ( gpio == "1" )
 				{
 					document.getElementById("pwrtoggle").style.display="block";
-					document.getElementById("pwrtoggle").value="<%:电源切换 USB 1%>";
+					document.getElementById("pwrtoggle").value="<%:Power Toggle USB 1%>";
 					document.getElementById("pwrtoggle").disabled=false;
 					document.getElementById("pwrtoggle").style.visibility="visible";
 					document.getElementById("pwrtoggle1").style.display="none";
@@ -351,18 +351,18 @@ end
 				if ( gpio == "2" )
 				{
 					document.getElementById("pwrtoggle").style.display="block";
-					document.getElementById("pwrtoggle").value="<%:电源切换 USB 1%>";
+					document.getElementById("pwrtoggle").value="<%:Power Toggle USB 1%>";
 					document.getElementById("pwrtoggle").disabled=false;
 					document.getElementById("pwrtoggle").style.visibility="visible";
 					document.getElementById("pwrtoggle1").style.display="block";
-					document.getElementById("pwrtoggle1").value="<%:电源切换 USB 2%>";
+					document.getElementById("pwrtoggle1").value="<%:Power Toggle USB 2%>";
 					document.getElementById("pwrtoggle1").disabled=false;
 					document.getElementById("pwrtoggle1").style.visibility="visible";
 				}
 			}
 			if ( stat == "2" )
 			{
-				document.getElementById("active").innerHTML="<%:模块已连接%>";
+				document.getElementById("active").innerHTML="<%:Modem Connected%>";
 				document.getElementById("conn").disabled=true;
 				document.getElementById("disconn").disabled=false;
 				document.getElementById("apply1").disabled=false;
@@ -432,7 +432,7 @@ end
 					if ( usb == "1" )
 					{
 						document.getElementById("pwrtoggle").style.display="block";
-						document.getElementById("pwrtoggle").value="<%:复位 USB 1%>";
+						document.getElementById("pwrtoggle").value="<%:Reset USB 1%>";
 						document.getElementById("pwrtoggle").disabled=false;
 						document.getElementById("pwrtoggle").style.visibility="visible";
 						document.getElementById("pwrtoggle1").style.display="none";
@@ -440,11 +440,11 @@ end
 					if ( usb == "2" )
 					{
 						document.getElementById("pwrtoggle").style.display="block";
-						document.getElementById("pwrtoggle").value="<%:复位 USB 1%>";
+						document.getElementById("pwrtoggle").value="<%:Reset USB 1%>";
 						document.getElementById("pwrtoggle").disabled=false;
 						document.getElementById("pwrtoggle").style.visibility="visible";
 						document.getElementById("pwrtoggle1").style.display="block";
-						document.getElementById("pwrtoggle1").value="<%:复位 USB 2%>";
+						document.getElementById("pwrtoggle1").value="<%:Reset USB 2%>";
 						document.getElementById("pwrtoggle1").disabled=false;
 						document.getElementById("pwrtoggle1").style.visibility="visible";
 					}
@@ -452,7 +452,7 @@ end
 				if ( gpio == "1" )
 				{
 					document.getElementById("pwrtoggle").style.display="block";
-					document.getElementById("pwrtoggle").value="<%:电源切换 USB 1%>";
+					document.getElementById("pwrtoggle").value="<%:Power Toggle USB 1%>";
 					document.getElementById("pwrtoggle").disabled=false;
 					document.getElementById("pwrtoggle").style.visibility="visible";
 					document.getElementById("pwrtoggle1").style.display="none";
@@ -460,11 +460,11 @@ end
 				if ( gpio == "2" )
 				{
 					document.getElementById("pwrtoggle").style.display="block";
-					document.getElementById("pwrtoggle").value="<%:电源切换 USB 1%>";
+					document.getElementById("pwrtoggle").value="<%:Power Toggle USB 1%>";
 					document.getElementById("pwrtoggle").disabled=false;
 					document.getElementById("pwrtoggle").style.visibility="visible";
 					document.getElementById("pwrtoggle1").style.display="block";
-					document.getElementById("pwrtoggle1").value="<%:电源切换 USB 2%>";
+					document.getElementById("pwrtoggle1").value="<%:Power Toggle USB 2%>";
 					document.getElementById("pwrtoggle1").disabled=false;
 					document.getElementById("pwrtoggle1").style.visibility="visible";
 				}
@@ -484,38 +484,38 @@ end
 			switch(netm)
 			{
 				case "0":
-					mode = "<%:未知或不支持模块%>";
+					mode = "<%:Unknown%>";
 				break;
 				case "1":
-					mode = "<%:自动%>";
+					mode = "<%:Automatic%>";
 				break;
 				case "2":
-					mode = "<%:优先 2G%>";
+					mode = "<%:2G Preferred%>";
 				break;
 				case "3":
-					mode = "<%:锁定 2G%>";
+					mode = "<%:2G Only%>";
 				break;
 				case "4":
-					mode = "<%:首选 3G%>";
+					mode = "<%:3G Preferred%>";
 				break;
 				case "5":
-					mode = "<%:锁定 3G%>";
+					mode = "<%:3G Only%>";
 				break;
 				case "6":
-					mode = "<%:优先 4G%>";
+					mode = "<%:4G Preferred%>";
 				break;
 				case "7":
-					mode = "<%:锁定 4G%>";
+					mode = "<%:4G Only%>";
 				break;
 				case "8":
-					mode = "<%:5G NSA%>";
+					mode = "<%:4G & 5G Dual Mode%>";
 				break;
 				case "9":
-					mode = "<%:5G SA%>";
+					mode = "<%:5G Only%>";
 				break;
 				case "10":
-					mode = "<%:应用中....%>";
-					document.getElementById("apply1").value="<%:应用%>";
+					mode = "<%:Changing Mode ...%>";
+					document.getElementById("apply1").value="<%:Applying Change%>";
 					document.getElementById("apply1").disabled=true;
 				break;
 
@@ -620,6 +620,8 @@ end
 			bxs = parseInt(bxx);
 			bxx5g = rv.bndstr5g ;
 			bxs5g = parseInt(bxx5g);
+			bxx5gsa = rv.bndstr5gsa ;
+			bxs5gsa = parseInt(bxx5gsa);
 			
 			if ( uVid == "2c7c" )
 			{
@@ -636,16 +638,16 @@ end
 					document.getElementById("mdl").style.color = "inherit";
 					if ( netm == nsa )
 					{
-						model = rv.model + "<%: 5G NSA 模式%>";
+						model = rv.model + "<%: NSA Mode%>";
 						modelx = model ;
 						if ( bxs == 0 )
 						{
-							model = modelx + "<%: ***未选择 4G 频段 - 无法连接***%>";
+							model = modelx + "<%: ***No LTE Bands selected - will not connect***%>";
 							document.getElementById("mdl").style.color = "red";
 						}
 						if ( bxs5g == 0 )
 						{
-							model = modelx + "<%: ***未选择 5G 频段 - 无法连接***%>";
+							model = modelx + "<%: ***No 5G Bands selected***%>";
 							document.getElementById("mdl").style.color = "red";
 						}
 						//document.getElementById("5gbnd").innerHTML="<%:5G NSA Bands%>";
@@ -655,26 +657,26 @@ end
 					{
 						if ( netm == nsan )
 						{
-							model = rv.model + "<%: 5G SA 模式%>";
-							if ( bxs5g == 0 )
+							model = rv.model + "<%: SA Mode%>";
+							if ( bxs5gsa == 0 )
 							{
-								model = model + "<%: ***未选择 5G 频段 - 无法连接***%>";
+								model = model + "<%: ***No 5G Bands selected - will not connect***%>";
 								document.getElementById("mdl").style.color = "red";
 							}
-							//document.getElementById("5gbnd").innerHTML="<%:5G SA 频段%>";
+							//document.getElementById("5gbnd").innerHTML="<%:5G SA Bands%>";
 							//document.getElementById("5gbnd").style.fontWeight = "bold" ;
 						}
 					}
 				}
 			}
-			document.getElementById("mdl").innerHTML="<%:通信模块 : %>" + model;
+			document.getElementById("mdl").innerHTML="<%:Modem : %>" + model;
 			document.getElementById("mdl").style.fontWeight = "bold" ;
 
 			//
 			// Supported LTE bands
 			//
 			bx = rv.bndsup ;
-			//document.getElementById("attxt").value=bx + " " + stat + " " + bnds;															 
+			//document.getElementById("attxt").value=bx + " " + stat + " " + bnds;
 			if ( stat != "0" && bx != "0" )
 			{
 				//document.getElementById("tab5g").style.display = "none";
@@ -695,9 +697,9 @@ end
 					document.getElementById("tab14").style.display = "none";
 					document.getElementById("dym1").style.display = "none";
 					document.getElementById("dym5g1").style.display = "none";
-					document.getElementById("dym5gsa1").style.display = "none";											
+					document.getElementById("dym5gsa1").style.display = "none";
 					document.getElementById("tab5g").style.display = "none";
-					document.getElementById("tab5gsa").style.display = "none";										   
+					document.getElementById("tab5gsa").style.display = "none";
 					document.getElementById("tab4g").style.display = "none";
 					document.getElementById("dym2").style.display = "none";
 					document.getElementById("dym3").style.display = "none";
@@ -713,8 +715,8 @@ end
 						document.getElementById("cellbtn").disabled=false;
 						if ( cenable == "0" )
 						{
-							document.getElementById('cellbtn').value="<%:启用锁基站%>";
-							document.getElementById("cstatus").innerHTML="<%:未锁定%>";
+							document.getElementById('cellbtn').value="<%:Enable Cell Lock%>";
+							document.getElementById("cstatus").innerHTML="<%:Not Locked to Cell%>";
 							document.getElementById("earfcn").disabled=false;
 							document.getElementById("pci").disabled=false;
 							document.getElementById("earfcn1").disabled=false;
@@ -722,12 +724,12 @@ end
 							document.getElementById("earfcn2").disabled=false;
 							document.getElementById("pci2").disabled=false;
 							document.getElementById("earfcn3").disabled=false;
-							document.getElementById("pci3").disabled=false;							 
+							document.getElementById("pci3").disabled=false;
 						}
 						else
 						{
-							document.getElementById('cellbtn').value="<%:禁用锁基站%>";
-							document.getElementById("cstatus").innerHTML="<%:锁基站相关%>";
+							document.getElementById('cellbtn').value="<%:Disable Cell Lock%>";
+							document.getElementById("cstatus").innerHTML="<%:Locked to Cell%>";
 							document.getElementById("earfcn").disabled=true;
 							document.getElementById("pci").disabled=true;
 							document.getElementById("earfcn1").disabled=true;
@@ -839,7 +841,7 @@ end
 								row2 = tr.insertCell(-1);
 								if ( first == 0 )
 								{
-									row2.innerHTML = '<input type="button" align="right" id="selectc" class="cbi-button cbi-button-apply" value="<%:全选%>" onclick="return selectcell(this)" />'
+									row2.innerHTML = '<input type="button" align="right" id="selectc" class="cbi-button cbi-button-apply" value="<%:Select All%>" onclick="return selectcell(this)" />'
 									first = 1 ;
 									row2.style.width = '10%' ;
 									row2 = tr.insertCell(-1);
@@ -867,7 +869,7 @@ end
 					row2 = tr.insertCell(-1);
 					if ( first == 0 )
 					{
-						row2.innerHTML = '<input type="button" align="right" id="selectc" class="cbi-button cbi-button-apply" value="<%:全选%>" onclick="return selectcell(this)" />'
+						row2.innerHTML = '<input type="button" align="right" id="selectc" class="cbi-button cbi-button-apply" value="<%:Select All%>" onclick="return selectcell(this)" />'
 						first = 1 ;
 						row2.style.width = '10%' ;
 						row2 = tr.insertCell(-1);
@@ -910,8 +912,8 @@ end
 					//
 					// Supported 5G bands
 					//
-			  
-	   
+					// 5G NSA
+					//
 					if ( rv.bndsup5g != 'x' )
 					{
 						bx5g = rv.bndsup5g ;
@@ -934,7 +936,7 @@ end
 									row2 = tr.insertCell(-1);
 									if ( first == 0 )
 									{
-										row2.innerHTML = '<input type="button" align="right" id="selectc" class="cbi-button cbi-button-apply" value="<%:全选%>" onclick="return selectcell5g(this)" />'
+										row2.innerHTML = '<input type="button" align="right" id="selectc" class="cbi-button cbi-button-apply" value="<%:Select All%>" onclick="return selectcell5g(this)" />'
 										first = 1 ;
 										row2.style.width = '10%' ;
 										row2 = tr.insertCell(-1);
@@ -962,7 +964,7 @@ end
 						row2 = tr.insertCell(-1);
 						if ( first == 0 )
 						{
-							row2.innerHTML = '<input type="button" align="right" id="selectc" class="cbi-button cbi-button-apply" value="<%:全选%>" onclick="return selectcell5g(this)" />'
+							row2.innerHTML = '<input type="button" align="right" id="selectc" class="cbi-button cbi-button-apply" value="<%:Select All%>" onclick="return selectcell5g(this)" />'
 							first = 1 ;
 							row2.style.width = '10%' ;
 							row2 = tr.insertCell(-1);
@@ -1026,7 +1028,7 @@ end
 									row2 = tr.insertCell(-1);
 									if ( first == 0 )
 									{
-										row2.innerHTML = '<input type="button" align="right" id="selectc" class="cbi-button cbi-button-apply" value="<%:全选%>" onclick="return selectcell5gsa(this)" />'
+										row2.innerHTML = '<input type="button" align="right" id="selectc" class="cbi-button cbi-button-apply" value="<%:Select All%>" onclick="return selectcell5gsa(this)" />'
 										first = 1 ;
 										row2.style.width = '10%' ;
 										row2 = tr.insertCell(-1);
@@ -1054,7 +1056,7 @@ end
 						row2 = tr.insertCell(-1);
 						if ( first == 0 )
 						{
-							row2.innerHTML = '<input type="button" align="right" id="selectc" class="cbi-button cbi-button-apply" value="<%:全选%>" onclick="return selectcell5gsa(this)" />'
+							row2.innerHTML = '<input type="button" align="right" id="selectc" class="cbi-button cbi-button-apply" value="<%:Select All%>" onclick="return selectcell5gsa(this)" />'
 							first = 1 ;
 							row2.style.width = '10%' ;
 							row2 = tr.insertCell(-1);
@@ -1228,13 +1230,13 @@ end
 				document.getElementById("tab14").style.display = "none";
 				document.getElementById("tab13").style.display = "";
 				document.getElementById("tab5g").style.display = "none";
-				document.getElementById("tab5gsa").style.display = "none";											  
+				document.getElementById("tab5gsa").style.display = "none";
 				document.getElementById("tab4g").style.display = "none";
 				document.getElementById("dym1").style.display = "none";
 				document.getElementById("dym2").style.display = "none";
 				document.getElementById("dym3").style.display = "none";
 				document.getElementById("dym5g1").style.display = "none";
-				document.getElementById("dym5gsa1").style.display = "none";											   
+				document.getElementById("dym5gsa1").style.display = "none";
 				document.getElementById("celllock1").style.display = "none";
 				document.getElementById("celllock2").style.display = "none";
 				document.getElementById("celllock3").style.display = "none";
@@ -1248,13 +1250,13 @@ end
 		bnds = "0" ;
 		chnge = 1 ;
 		btn.disabled = true;
-		btn.value    = '<%:应用中...%>';
+		btn.value    = '<%:Changing...%>';
 		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "change_misc")%>',
 			null,
 			function(x, rv)
 			{
 				btn.disabled = false;
-				btn.value    = '<%:下一个%>';
+				btn.value    = '<%:Next Modem%>';
 				bnds = "0" ;
 			}
 		);
@@ -1267,13 +1269,13 @@ end
 		bnds = "0" ;
 		chnge = 1 ;
 		btn.disabled = true;
-		btn.value    = '<%:应用中...%>';
+		btn.value    = '<%:Changing...%>';
 		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "change_miscdn")%>',
 			null,
 			function(x, rv)
 			{
 				btn.disabled = false;
-				btn.value    = '<%:上一个%>';
+				btn.value    = '<%:Prev Modem%>';
 				bnds = "0" ;
 			}
 		);
@@ -1284,14 +1286,14 @@ end
 	function modemconnect(btn)
 	{
 		btn.disabled = true;
-		btn.value    = '<%:连接中...%>';
+		btn.value    = '<%:Connecting...%>';
 
 		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "connect")%>',
 			{ set: 1 },
 			function()
 			{
 				btn.disabled = false;
-				btn.value = '<%:选择当前模块%>';
+				btn.value = '<%:Connect Current Modem%>';
 			}
 		);
 		return false;
@@ -1300,13 +1302,13 @@ end
 	function modemdisconnect(btn)
 	{
 		btn.disabled = true;
-		btn.value    = '<%:断开中...%>';
+		btn.value    = '<%:Disconnecting...%>';
 		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "disconnect")%>',
 			{ set: 1 },
 			function()
 			{
 				btn.disabled = false;
-				btn.value = '<%:断开当前模块%>';
+				btn.value = '<%:Disconnect Current Modem%>';
 			}
 		);
 		return false;
@@ -1315,13 +1317,13 @@ end
 	function powertoggle(btn)
 	{
 		btn.disabled = true;
-		btn.value    = '<%:切换中....%>';
+		btn.value    = '<%:Toggling...%>';
 		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "pwrtoggle")%>',
 			{ set: 1 },
 			function()
 			{
 				btn.disabled = false;
-				btn.value = '<%:电源切换 USB 1%>';
+				btn.value = '<%:Power Toggle USB 1%>';
 			}
 		);
 		return false;
@@ -1330,13 +1332,13 @@ end
 	function powertoggle1(btn)
 	{
 		btn.disabled = true;
-		btn.value    = '<%:切换中...%>';
+		btn.value    = '<%:Toggling...%>';
 		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "pwrtoggle")%>',
 			{ set: 2 },
 			function()
 			{
 				btn.disabled = false;
-				btn.value = '<%:电源切换 USB 2%>';
+				btn.value = '<%:Power Toggle USB 2%>';
 			}
 		);
 		return false;
@@ -1351,11 +1353,11 @@ end
 			var s = document.getElementById("atcmd").value;
 			if ( s.length == 0 )
 			{
-				alert('<%:请输入AT命令!%>');
+				alert('<%:You must enter an AT-Command!!%>');
 				return false;
 			}
 			atsend=1;
-			document.getElementById("attxt").value='<%:正在等待模块回应......%>';
+			document.getElementById("attxt").value='<%:Waiting for a Response%>';
 			XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "send_atcmd")%>',
 				{ set: s },
 				function(x, rv)
@@ -1374,11 +1376,11 @@ end
 		var s = document.getElementById("atcmd").value;
 		if ( s.length == 0 )
 		{
-			alert("<%:请输入AT命令!%>");
+			alert("<%:You must enter an AT-Command!!%>");
 			return false;
 		}
 		atsend=1;
-		document.getElementById("attxt").value="<%:正在等待模块回应......%>";
+		document.getElementById("attxt").value="<%:Waiting for a Response%>";
 		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "send_atcmd")%>',
 			{ set: s },
 			function(x, rv)
@@ -1408,10 +1410,10 @@ end
 		{
 			return false;
 		}
-		if ( confirm("<%:协议更改后，模块将会重新启动，继续操作吗？%>") )
+		if ( confirm("<%:Modem will be restarted after Protocol change\nContinue?%>") )
 		{
-			document.getElementById("modpro").innerHTML = "<%:切换协议中.....%>";
-			document.getElementById("probutton").value="<%:应用%>";
+			document.getElementById("modpro").innerHTML = "<%:Changing Protocol ...%>";
+			document.getElementById("probutton").value="<%:Applying Change%>";
 			document.getElementById("probutton").disabled=true;
 			
 			XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "change_proto")%>',
@@ -1455,8 +1457,8 @@ end
 				nmode=document.getElementById("net4").value;
 				break;
 		}
-		document.getElementById("netmode").innerHTML = "<%:更改模式中.....%>";
-		document.getElementById("apply1").value="<%:应用%>";
+		document.getElementById("netmode").innerHTML = "<%:Changing Mode ...%>";
+		document.getElementById("apply1").value="<%:Applying Change%>";
 		document.getElementById("apply1").disabled=true;
 
 		var modemtype = 0;
@@ -1476,13 +1478,13 @@ end
 	{
 		if ( selectall == 1 )
 		{
-			btn.value    = '<%:清空%>';
+			btn.value    = '<%:Select None%>';
 			selectall = 0 ;
 			check = true ;
 			
 		}else
 		{
-			btn.value    = '<%:全选%>';
+			btn.value    = '<%:Select All%>';
 			selectall = 1 ;
 			check = false ;
 		}
@@ -1537,13 +1539,13 @@ end
 	{
 		if ( selectall5g == 1 )
 		{
-			btn.value    = '<%:清空%>';
+			btn.value    = '<%:Select None%>';
 			selectall5g = 0 ;
 			check = true ;
 			
 		}else
 		{
-			btn.value    = '<%:全选%>';
+			btn.value    = '<%:Select All%>';
 			selectall5g = 1 ;
 			check = false ;
 		}
@@ -1564,17 +1566,17 @@ end
 		return false;
 	}
 	
-function selectcell5gsa(btn)
+	function selectcell5gsa(btn)
 	{
 		if ( selectall5gsa == 1 )
 		{
-			btn.value    = '<%:清空%>';
+			btn.value    = '<%:Select None%>';
 			selectall5gsa = 0 ;
 			check = true ;
 			
 		}else
 		{
-			btn.value    = '<%:全选%>';
+			btn.value    = '<%:Select All%>';
 			selectall5gsa = 1 ;
 			check = false ;
 		}
@@ -1598,7 +1600,7 @@ function selectcell5gsa(btn)
 	function scanbnd()
 	{
 		s = " " ;
-		document.getElementById("bndtxt").value="<%:扫描中....%>";
+		document.getElementById("bndtxt").value="<%:Cell Scanner Start ...%>";
 		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "send_scancmd")%>',
 			{ set: s },
 			function(x, rv)
@@ -1633,7 +1635,7 @@ function selectcell5gsa(btn)
 			rstr = rstr + ',' + rstr5gsa ;
 		}
 
-		if ( confirm("<%:通信模块将锁定到选定的频段，继续操作吗？%>") )
+		if ( confirm("<%:Modem will be locked to selected bands.\nContinue?%>") )
 		{
 			locking = 1;
 			s = rstr ;
@@ -1755,7 +1757,7 @@ function selectcell5gsa(btn)
 		document.getElementById("attxt").value=index;
 		
 		atsend=1;
-		document.getElementById("attxt").value="<%:正在等待模块回应......%>";
+		document.getElementById("attxt").value="<%:Waiting for a Response%>";
 		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "send_atcmd")%>',
 			{ set: index },
 			function(x, rv)
@@ -1838,11 +1840,11 @@ function selectcell5gsa(btn)
 			var s = document.getElementById("atcmdlck").value;
 			if ( s.length == 0 )
 			{
-				alert("<%:请输入AT命令！%>");
+				alert("<%:You must enter an AT-Command!!%>");
 				return false;
 			}
 			atsend=1;
-			document.getElementById("attxt").value="<%:正在等待模块回应......%>";
+			document.getElementById("attxt").value="<%:Waiting for a Response%>";
 			XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "send_atcmd")%>',
 				{ set: s },
 				function(x, rv)
@@ -1861,11 +1863,11 @@ function selectcell5gsa(btn)
 		var s = document.getElementById("atcmdlck").value;
 		if ( s.length == 0 )
 		{
-			alert("<%:请输入AT命令！%>");
+			alert("<%:You must enter an AT-Command!!%>");
 			return false;
 		}
 		atsend=1;
-		document.getElementById("attxt").value="正在等待模块回应......";
+		document.getElementById("attxt").value="Waiting for a Response";
 		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "send_atcmd")%>',
 			{ set: s },
 			function(x, rv)
@@ -1894,12 +1896,12 @@ function selectcell5gsa(btn)
 			var pc3 = document.getElementById("pci3").value;
 			if ( ear.length == 0 )
 			{
-				alert("<%:丢漆李啊~，要锁又不填EARFCN，梨想点啊!!%>");
+				alert("<%:You must enter an EARFCN Number!!%>");
 				return false;
 			}
 			if ( pc.length == 0 )
 			{
-				alert("<%:丢漆李啊~，要锁又不填PCI，梨想点啊!!%>");
+				alert("<%:You must enter a PCI Number!!%>");
 				return false;
 			}
 			if ( ear1.length == 0 )
@@ -1934,7 +1936,7 @@ function selectcell5gsa(btn)
 			st = "0|0|0";
 			cenable = "0";
 		}
-		if ( confirm("<%:协议更改后，模块将会重新启动，继续操作吗？%>") )
+		if ( confirm("<%:Modem will be restarted after change in cell lock status.\nContinue?%>") )
 		{
 			document.getElementById("earfcn").disabled=true;
 			document.getElementById("pci").disabled=true;
@@ -1978,8 +1980,8 @@ function selectcell5gsa(btn)
 
 <form method="post" action="<%=REQUEST_URI%>">
 <div class="cbi-map" id="cbi-misc">
-<h2><a id="content" name="content"><%:锁频段/锁PCI/切换协议/AT命令%></a></h2>
-<div class="cbi-map-descr"><%:锁频段/锁PCI/切换协议/AT命令%></div>
+<h2><a id="content" name="content"><%:Miscellaneous Modem Features%></a></h2>
+<div class="cbi-map-descr"><%:A Collection of Modem Features%></div>
 <head>
      <style>
       input {
@@ -2004,35 +2006,35 @@ function selectcell5gsa(btn)
     </style>
 </head>
 <fieldset class="cbi-section" id="cbi-modi">
-	<legend><%:当前模块%></legend>
+	<legend><%:Current Modem%></legend>
 	<table width="550"  border="0">
   	<tr>
     		<td width="40%"><ul id="active"></ul></td>
     		<td width="17%"><strong id="conntype"></strong></td>
 		<td width="12%">
-			<input type="button" class="cbi-button cbi-button-apply" value="<%:上一个%>" onclick="return modemtoggledn(this)" />
+			<input type="button" class="cbi-button cbi-button-apply" value="<%:Prev Modem%>" onclick="return modemtoggledn(this)" />
 		</td>
 		<td width="31%">
-			<input type="button" class="cbi-button cbi-button-apply" value="<%:下一个%>" onclick="return modemtoggle(this)" />
+			<input type="button" class="cbi-button cbi-button-apply" value="<%:Next Modem%>" onclick="return modemtoggle(this)" />
 		</td>
   	</tr>
 	</table>
 </fieldset>
 <fieldset class="cbi-section" id="cbi-condis">
-	<legend><%:模块 连接/断开控制%></legend>
+	<legend><%:Connection/Disconnection%></legend>
 	<table width="550"  border="0">
   	<tr>
 		<td width="25%">
-			<input type="button" id="conn" class="cbi-button cbi-button-apply" value="<%:连接当前模块%>" onclick="return modemconnect(this)" />
+			<input type="button" id="conn" class="cbi-button cbi-button-apply" value="<%:Connect Current Modem%>" onclick="return modemconnect(this)" />
 		</td>
 		<td width="25%">
-			<input type="button" id="disconn" class="cbi-button cbi-button-apply" value="<%:断开当前模块%>" onclick="return modemdisconnect(this)" />
+			<input type="button" id="disconn" class="cbi-button cbi-button-apply" value="<%:Disconnect Current Modem%>" onclick="return modemdisconnect(this)" />
 		</td>
 		<td width="25%">
-			<input style="visibility:hidden;" type="button" id="pwrtoggle" class="cbi-button cbi-button-apply" value="<%:电源切换 USB 1%>" onclick="return powertoggle(this)" />
+			<input style="visibility:hidden;" type="button" id="pwrtoggle" class="cbi-button cbi-button-apply" value="<%:Power Toggle USB 1%>" onclick="return powertoggle(this)" />
 		</td>
 		<td width="25%">
-			<input style="visibility:hidden;" type="button" id="pwrtoggle1" class="cbi-button cbi-button-apply" value="<%:电源切换 USB 2%>" onclick="return powertoggle1(this)" />
+			<input style="visibility:hidden;" type="button" id="pwrtoggle1" class="cbi-button cbi-button-apply" value="<%:Power Toggle USB 2%>" onclick="return powertoggle1(this)" />
 		</td>
   	</tr>
 	</table>
@@ -2040,7 +2042,7 @@ function selectcell5gsa(btn)
 
 <% if nosms == 0 then %>
 <fieldset class="cbi-section" id="cbi-term">
-	<legend><%:AT命令终端%></legend>
+	<legend><%:AT-Command Terminal%></legend>
 	
 	<div id="popup">
 		<table width="500" border="0">
@@ -2058,20 +2060,20 @@ function selectcell5gsa(btn)
 	
 	<table width="700" border="0" id="droptxt">
 	<tr>
-		<td width="10%"><div align="right"><%:AT命令 : %></div></td>
+		<td width="10%"><div align="right"><%:AT-Command : %></div></td>
 		<td width="15%">
 			<select style="width:200px" name="atdrop" id="drop1">
 			</select>
 		</td>
 		
-		<td width="15%" ><input style="visibility:visible;width: 500px;maxlength="200" type="text" name="atcmdlck" id="atcmdlck" class="cbi-input-text"  onkeydown="sndfullcmd(event)" ></input>
+		<td width="15%" ><input style="visibility:hidden;width: 500px;maxlength="200" type="text" name="atcmdlck" id="atcmdlck" class="cbi-input-text"  onkeydown="sndfullcmd(event)" ></input>
 		</td>
-		<td width="10%"><input style="visibility:visible" type="submit" id="sendfullat" class="cbi-button cbi-button-apply" value="<%:发送%>" onclick="return sendfullcmd()" />
+		<td width="10%"><input style="visibility:hidden" type="submit" id="sendfullat" class="cbi-button cbi-button-apply" value="<%:Send Command%>" onclick="return sendfullcmd()" />
 		</td>
 		<td width="47%">&nbsp;</td>
 	</tr>
 	<tr>
-		<td><input type="submit" id="senddropat" class="cbi-button cbi-button-apply" value="<%:发送%>" onclick="return senddropcmd()" />
+		<td><input type="submit" id="senddropat" class="cbi-button cbi-button-apply" value="<%:Send Command%>" onclick="return senddropcmd()" />
 		</td>
 	</tr>
 	</table>
@@ -2084,12 +2086,12 @@ function selectcell5gsa(btn)
 	
 	<table width="700" border="0" id="linetxt">
 	<tr>
-		<td width="5%"><div align="right"><%:AT命令 : %></div></td>
+		<td width="5%"><div align="right"><%:AT-Command : %></div></td>
 		<td width="20%"><input type="text" name="atcmd" id="atcmd" class="cbi-input-text" style="width: 350px;" maxlength="500"  onkeydown="sndcmd(event)" ></input></td>
 		<td width="75%">&nbsp;</td>
 	</tr>
 	<tr>
-		<td><input type="submit" id="sendcmdat" class="cbi-button cbi-button-apply" value="<%:发送%>" onclick="return sendcmd()" /></td>
+		<td><input type="submit" id="sendcmdat" class="cbi-button cbi-button-apply" value="<%:Send Command%>" onclick="return sendcmd()" /></td>
 		<td> </td>
 	</tr>
 	</table>
@@ -2108,7 +2110,7 @@ function selectcell5gsa(btn)
 <% if nomulti == 1 then %>
 <% if block == 0 then %>
 <fieldset class="cbi-section" id="cbi-mode-cb">
-	<legend><%:4G/5G频段锁定%></legend>
+	<legend><%:Cellular Bands%></legend>
 	<table width="500" border="0" id ="tab10">
 		<tr>
 			<td width="50%"><div align="left" id="mdl" style="font-size : 15px; width: 100%; height: 25px;"></div></td>
@@ -2118,7 +2120,7 @@ function selectcell5gsa(btn)
 	
 	<table width="500" border="0" id ="tab13">
 		<tr>
-			<td width="25%"><%:没有模块/模块未适配本插件%></td>
+			<td width="25%"><%:No Modem Present%></td>
 			<td width="75%">&nbsp;</td>
 		</tr>
 	</table>
@@ -2126,7 +2128,7 @@ function selectcell5gsa(btn)
 	<table width="500" border="0" id="tab4g">
 		<tr>
 			<td width="8%">&nbsp;</td>
-			<td width="25%"><div align="left" style="font-size : 15px; width: 100%; height: 25px;"><strong><%:4G LTE频段%></strong></div></td>
+			<td width="25%"><div align="left" style="font-size : 15px; width: 100%; height: 25px;"><strong><%:LTE Bands%></strong></div></td>
 			<td width="20%">&nbsp;</td>
 		</tr>
 	</table>
@@ -2139,7 +2141,7 @@ function selectcell5gsa(btn)
 	<table width="500" border="0" id="tab5g">
 		<tr>
 			<td width="8%">&nbsp;</td>
-			<td width="25%"><div align="left" id="5gbnd" style="font-size : 15px; width: 100%; height: 25px;"><strong><%:5G NSA频段%></strong></div></td>
+			<td width="25%"><div align="left" id="5gbnd" style="font-size : 15px; width: 100%; height: 25px;"><strong><%:5G NSA Bands%></strong></div></td>
 			<td width="20%">&nbsp;</td>
 		</tr>
 	</table>
@@ -2152,7 +2154,7 @@ function selectcell5gsa(btn)
 	<table width="500" border="0" id="tab5gsa">
 		<tr>
 			<td width="8%">&nbsp;</td>
-			<td width="25%"><div align="left" id="5gsabnd" style="font-size : 15px; width: 100%; height: 25px;"><strong><%:5G SA 频段%></strong></div></td>
+			<td width="25%"><div align="left" id="5gsabnd" style="font-size : 15px; width: 100%; height: 25px;"><strong><%:5G SA Bands%></strong></div></td>
 			<td width="20%">&nbsp;</td>
 		</tr>
 	</table>
@@ -2165,7 +2167,7 @@ function selectcell5gsa(btn)
 	<table width="700" border="0" id="tab6">
 	<tr>
 		<td width="12%">&nbsp;</td>
-		<td width="20%"><input type="button" id="setbnd" class="cbi-button cbi-button-apply" value="<%:将通信模块锁定到选择频段%>" onclick="return lockbnd()" /></td>
+		<td width="20%"><input type="button" id="setbnd" class="cbi-button cbi-button-apply" value="<%:Lock Modem to Selected Bands%>" onclick="return lockbnd()" /></td>
 		<td width="68%">&nbsp;</td>
 		</tr>
 	</table>
@@ -2178,14 +2180,14 @@ function selectcell5gsa(btn)
 	
 	<table width="700" border="0" id="tab14">
 	<tr>
-		<td width="10%"><input type="submit" id="shwca" class="cbi-button cbi-button-apply" value="<%:显示3XCA（载波聚合）%>" onclick="return showca(this)" /></td>
+		<td width="10%"><input type="submit" id="shwca" class="cbi-button cbi-button-apply" value="<%:Show 3xCA%>" onclick="return showca(this)" /></td>
 		<td width="90%">&nbsp;</td>
 		</tr>
 	</table>
 	
 	<table width="800"  border="0" id="tab8">
   	<tr>
-    	<td width="20%"><div align="left"><strong><%:2 x 载波聚合%></strong></div></td>
+    	<td width="20%"><div align="left"><strong><%:2 x Carrier Aggregation%></strong></div></td>
 	</tr>
 	</table>
 	
@@ -2196,7 +2198,7 @@ function selectcell5gsa(btn)
 	
 	<table width="800"  border="0" id="tab9">
   	<tr>
-    	<td width="20%"><div align="left"><strong><%:3 x 载波聚合%></strong></div></td>
+    	<td width="20%"><div align="left"><strong><%:3 x Carrier Aggregation%></strong></div></td>
 	</tr>
 	</table>
 	
@@ -2214,9 +2216,9 @@ function selectcell5gsa(btn)
 	
 	<table width="700" border="0" id="tab7">
 	<tr>
-		<td width="8%"><input type="submit" id="sendbnd" class="cbi-button cbi-button-apply" value="<%:扫描%>" onclick="return scanbnd()" /></td>
+		<td width="8%"><input type="submit" id="sendbnd" class="cbi-button cbi-button-apply" value="<%:Scan%>" onclick="return scanbnd()" /></td>
 		<td width="4%">&nbsp;</td>
-		<td width="20%"><div align="left"><strong><%:扫描可用的频段%></strong></div></td>
+		<td width="20%"><div align="left"><strong><%:Scan to Find Bands Available in Area%></strong></div></td>
 		<td width="68%">&nbsp;</td>
 		</tr>
 	</table>
@@ -2235,7 +2237,7 @@ function selectcell5gsa(btn)
 		<td width="200">&nbsp;</td>
 	</tr>
 	<tr>
-		<td><div align="right" style="font-size:1.6em"><%:锁定基站%></div></td>
+		<td><div align="right" style="font-size:1.6em"><%:Lock to a Single Cell%></div></td>
 		<td>&nbsp;</td>
 	</tr>
 	</table>
@@ -2244,7 +2246,7 @@ function selectcell5gsa(btn)
 	
 	<table id="celllock3" width="700" border="0">
 	<tr>
-		<td width="8"><div align="right" style="font-size:1.3em"><strong><%:功能状态 : %></strong></div></td>
+		<td width="8"><div align="right" style="font-size:1.3em"><strong><%:Status : %></strong></div></td>
 		<td width="10"><ul><span id="cstatus" class="r"  style="font-size:1.3em"></span></ul></td>
 		<td width="5">&nbsp;</td>
 		<td width="10">&nbsp;</td>
@@ -2282,7 +2284,7 @@ function selectcell5gsa(btn)
 	
 	<table id="celllock2" width="550"  border="0">
   	<tr>
-		<td width="10%"><input type="submit" id="cellbtn" class="cbi-button cbi-button-apply" value="<%:锁定%>" onclick="return cellenable()" /></td>
+		<td width="10%"><input type="submit" id="cellbtn" class="cbi-button cbi-button-apply" value="<%:Enable Cell Lock%>" onclick="return cellenable()" /></td>
 		<td width="90%">&nbsp;</td>
 	</tr>
 	</table>
@@ -2291,77 +2293,77 @@ function selectcell5gsa(btn)
 <% end %>
 
 <fieldset class="cbi-section" id="cbi-mode-pro">
-	<legend><%:模块连接协议切换%></legend>
+	<legend><%:Modem Protocol%></legend>
 	<table id="prochnge" border="0">
 		<tr>
 				<td width="20%">&nbsp;</td>
-				<td width="30%"><div align="right"><%:当前模块连接协议  :%></div></td>
+				<td width="30%"><div align="right"><%:Current Modem Protocol :%></div></td>
 				<td width="20%"><ul><span id="modpro" class="r"></span></ul></td>
 				<td width="30%">&nbsp;</td>
 		</tr>
 		<tr>
 			<td width="10%">&nbsp;</td>
-    		<td><div align="right"><%:更改蜂窝模式 :%></div></td>
+    		<td><div align="right"><%:Change Cellular Mode :%></div></td>
     		<td>
 				<select style="visibility:hidden;width:auto" name="qspro" id="qpro">
-					<option value="0" selected="selected"><%:选择协议%></option>
-					<option value="1"><%:切换至QMI协议%></option>
-					<option value="2"><%:切换至MBIM协议%></option>
-					<option value="3"><%:切换至ECM模式%></option>
+					<option value="0" selected="selected"><%:Select Protocol%></option>
+					<option value="1"><%:Switch to QMI Protocol%></option>
+					<option value="2"><%:Switch to MBIM Protocol%></option>
+					<option value="3"><%:Switch to ECM Protocol%></option>
 				</select>
 				<select style="visibility:hidden;width:auto" name="qspro" id="spro">
-					<option value="0" selected="selected"><%:选择协议%></option>
-					<option value="1"><%:切换至QMI协议%></option>
-					<option value="2"><%:切换至MBIM协议%></option>
+					<option value="0" selected="selected"><%:Select Protocol%></option>
+					<option value="1"><%:Switch to QMI Protocol%></option>
+					<option value="2"><%:Switch to MBIM Protocol%></option>
 				</select>
 			</td>
-			<td><input type="button" id="probutton" class="cbi-button cbi-button-apply" value="<%:应用%>" onclick="return applyp(this)" /></td>
+			<td><input type="button" id="probutton" class="cbi-button cbi-button-apply" value="<%:Apply Protocol Change%>" onclick="return applyp(this)" /></td>
 		</tr>
 	</table>
 </fieldset>
 	
 <fieldset class="cbi-section" id="cbi-mode">
-	<legend><%:网络类型选择%></legend>
+	<legend><%:Cellular Mode%></legend>
 	<table width="550"  border="0">
   	<tr>
-    		<td width="30%"><div align="right"><%:当前网络类型 :%></div></td>
+    		<td width="30%"><div align="right"><%:Current Cellular Mode :%></div></td>
     		<td width="10%"><ul><span id="netmode" class="r"></span></ul></td>
     		<td width="50%">&nbsp;</td>
   	</tr>
 	<tr>
-    		<td><div align="right"><%:更改网络类型 :%></div></td>
+    		<td><div align="right"><%:Change Cellular Mode :%></div></td>
     		<td>
 		<select style="visibility:hidden;width:auto" name="net_mode" id="net1">
-			<option value="1" selected="selected"><%:自动%></option>
-			<option value="2"><%:优先 2G%></option>
-			<option value="3"><%:锁定 2G%></option>
-			<option value="4"><%:优先 3G%></option>
-			<option value="5"><%:锁定 3G%></option>
+			<option value="1" selected="selected"><%:Automatic%></option>
+			<option value="2"><%:2G Preferred%></option>
+			<option value="3"><%:2G Only%></option>
+			<option value="4"><%:3G Preferred%></option>
+			<option value="5"><%:3G Only%></option>
 		</select>
 		<select style="visibility:hidden;width:auto" name="net_mode" id="net2">
-			<option value="1" selected="selected"><%:自动%></option>
-			<option value="2"><%:优先 2G%></option>
-			<option value="3"><%:锁定 2G%></option>
-			<option value="4"><%:优先 3G%></option>
-			<option value="5"><%:锁定 3G%></option>
-			<option value="6"><%:优先 4G%></option>
-			<option value="7"><%:锁定 4G%></option>
+			<option value="1" selected="selected"><%:Automatic%></option>
+			<option value="2"><%:2G Preferred%></option>
+			<option value="3"><%:2G Only%></option>
+			<option value="4"><%:3G Preferred%></option>
+			<option value="5"><%:3G Only%></option>
+			<option value="6"><%:4G Preferred%></option>
+			<option value="7"><%:4G Only%></option>
 		</select>
 		<select style="visibility:hidden;width:auto" name="net_mode" id="net3">
-			<option value="1" selected="selected"><%:自动%></option>
-			<option value="4"><%:优先 3G%></option>
-			<option value="5"><%:锁定 3G%></option>
-			<option value="6"><%:优先 4G%></option>
-			<option value="7"><%:锁定 4G%></option>
+			<option value="1" selected="selected"><%:Automatic%></option>
+			<option value="4"><%:3G Preferred%></option>
+			<option value="5"><%:3G Only%></option>
+			<option value="6"><%:4G Preferred%></option>
+			<option value="7"><%:4G Only%></option>
 		</select>
 		<select style="visibility:hidden;width:auto" name="net_mode" id="net4">
-			<option value="1" selected="selected"><%:自动%></option>
-			<option value="7"><%:4G%></option>
-			<option value="8"><%:5G NSA %></option>
-			<option value="9"><%:5G SA %></option>
+			<option value="1" selected="selected"><%:Automatic%></option>
+			<option value="7"><%:4G Only%></option>
+			<option value="8"><%:4G & 5G : NSA Mode%></option>
+			<option value="9"><%:5G Only : SA Mode%></option>
 		</select>
 		</td>
-		<td><input style="visibility:hidden;" type="button" id="apply1" class="cbi-button cbi-button-apply" value="<%:应用%>" onclick="return applyc(this)" /></td>
+		<td><input style="visibility:hidden;" type="button" id="apply1" class="cbi-button cbi-button-apply" value="<%:Apply Mode Change%>" onclick="return applyc(this)" /></td>
 		<td>&nbsp;</td>
   	</tr>
 

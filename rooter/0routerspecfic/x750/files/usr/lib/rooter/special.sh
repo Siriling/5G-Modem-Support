@@ -17,7 +17,7 @@ fi
 uci set system.gpio2=gpio_switch
 uci set system.gpio2.name='gpio2'
 uci set system.gpio2.gpio_pin='2'
-uci set system.gpio2.value='0'
+uci set system.gpio2.value='1'
 uci commit system
 /etc/init.d/system restart
 

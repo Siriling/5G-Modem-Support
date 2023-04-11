@@ -2,6 +2,10 @@
 
 ROOTER=/usr/lib/rooter
 
+log() {
+	modlog "Get ICCID $CURRMODEM" "$@"
+}
+
 echo "0" > /tmp/block
 
 decode_crsm() {
@@ -64,6 +68,13 @@ if [ -z "$MODEL" ]; then
 	MODEL=$(uci get modem.modem$CURRMODEM.model)
 fi
 
+dell=$(echo "$MANUF" | grep "DELL")
+if [ ! -z "$dell" ]; then
+	if [ "$MODEL" = "4116" ]; then
+		MANUF="Dell"
+		MODEL="DW5821e/T77W968"
+	fi
+fi
 uci set modem.modem$CURRMODEM.manuf="$MANUF"
 uci set modem.modem$CURRMODEM.model="$MODEL"
 uci commit modem
@@ -142,6 +153,18 @@ if [ -n "$PBzero" ]; then
 	ATCMDD="AT\$QCPBMPREF=1"
 	OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
 fi
+ATCMDD="AT+CGDCONT?"
+OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
+ATCMDD="AT\$QCPDPIMSCFGE?"
+OX=$OX$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
+OX=$(echo $OX | tr 'a-z' 'A-Z')
+OX=$(echo "${OX//[ ]/}")
+imsAPN=$(echo $OX | grep -o "+CGDCONT:2,[^,]\+,\"IMS\"")
+ims_on=$(echo $OX | grep -o "\$QCPDPIMSCFGE:2,1,")
+if [ -n "$imsAPN" -a -z "$ims_on" ]; then
+	ATCMDD="AT\$QCPDPIMSCFGE=2,1"
+	OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
+fi
 if [ "$IDV" == "2c7c" ]; then
 	ATCMDD="AT+QLWCFG=\"startup\""
 	OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
@@ -155,6 +178,13 @@ if [ "$IDV" == "2c7c" ]; then
 	IMSon=$(echo "$OX" | grep "1")
 	if [ -z "$IMSon" ]; then
 		ATCMDD="AT+QCFG=\"ims\",1"
+		OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
+	fi
+	ATCMDD="AT+QCFG=\"ims/ut\""
+	OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
+	IMSussd=$(echo "$OX" | grep "[01],[01],0")
+	if [ -n "$IMSussd" ]; then
+		ATCMDD="AT+QCFG=\"ims/ut\",1,1,1"
 		OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
 	fi
 fi
@@ -181,27 +211,52 @@ fi
 echo "$IMSI" >> /tmp/msimdatax$CURRMODEM
 uci set modem.modem$CURRMODEM.imsi=$IMSI
 
-ATCMDD="AT+CRSM=176,12258,0,0,10"
-OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
-OX=$($ROOTER/common/processat.sh "$OX")
-ERROR="ERROR"
-if `echo ${OX} | grep "${ERROR}" 1>/dev/null 2>&1`
-then
-	ICCID="Unknown"
-else
-	ICCID=$(echo "$OX" | awk -F[,\ ] '/^\+CRSM:/ {print $4}')
-	if [ "x$ICCID" != "x" ]; then
-		sstring=$(echo "$ICCID" | sed -e 's/"//g')
-		length=${#sstring}
-		xstring=""
-		decode_crsm
-		ICCID=$xstring
-	else
+idV=$(uci -q get modem.modem$CURRMODEM.idV)
+idP=$(uci -q get modem.modem$CURRMODEM.idP)
+if [ $idV = 0e8d ]; then
+	ATCMDD="AT+CCID"
+	OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
+	OX=$($ROOTER/common/processat.sh "$OX")
+	ERROR="ERROR"
+	if `echo ${OX} | grep "${ERROR}" 1>/dev/null 2>&1`
+	then
 		ICCID="Unknown"
+	else
+		ICCID=$(echo "$OX" | awk -F[,\ ] '/^\+CCID:/ {print $2}')
+		if [ "x$ICCID" != "x" ]; then
+			sstring=$(echo "$ICCID" | sed -e 's/"//g')
+			ICCID=$sstring
+		else
+			ICCID="Unknown"
+		fi
+	fi
+else
+	ATCMDD="AT+CRSM=176,12258,0,0,10"
+	OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
+	OX=$($ROOTER/common/processat.sh "$OX")
+	ERROR="ERROR"
+	if `echo ${OX} | grep "${ERROR}" 1>/dev/null 2>&1`
+	then
+		ICCID="Unknown"
+	else
+		ICCID=$(echo "$OX" | awk -F[,\ ] '/^\+CRSM:/ {print $4}')
+		if [ "x$ICCID" != "x" ]; then
+			sstring=$(echo "$ICCID" | sed -e 's/"//g')
+			length=${#sstring}
+			xstring=""
+			decode_crsm
+			ICCID=$xstring
+		else
+			ICCID="Unknown"
+		fi
 	fi
 fi
 uci set modem.modem$CURRMODEM.iccid=$ICCID
 uci commit modem
+if [ -e /etc/config/modeinfo ]; then
+	uci set modeinfo.global.iccid$CURRMODEM=$ICCID
+	uci commit modeinfo
+fi
 echo "$ICCID" >> /tmp/msimdatax$CURRMODEM
 echo "0" >> /tmp/msimdatax$CURRMODEM
 echo "$CNUM" > /tmp/msimnumx$CURRMODEM

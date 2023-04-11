@@ -51,6 +51,23 @@ function action_check_bw()
 			end
 		end
 		file:close()
+		os.execute("/usr/lib/bwmon/genline.sh")
+		file = io.open("/tmp/monlist", "r")
+		if file ~= nil then
+			line = file:read("*all")
+			rv["genline"] = line
+			file:close()
+			file = io.open("/tmp/montot", "r")
+			if file ~= nil then
+				rv['gendays'] = file:read("*line")
+				rv['gendwn'] = file:read("*line")
+				rv['genupn'] = file:read("*line")
+				rv['gentotal'] = file:read("*line")
+				file:close()
+			end
+		else
+			rv['gendays'] = '0'
+		end
 	else
 		rv['days'] = 0
 	end

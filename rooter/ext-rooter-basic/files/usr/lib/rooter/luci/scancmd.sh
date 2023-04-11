@@ -104,9 +104,14 @@ case $uVid in
 		M5=""
 		case $uPid in
 			"0125" ) # EC25-A
-				EC25=$(echo $model | grep "EC25-AF")
-				if [ ! -z $EC25 ]; then
-					MX='400000000000003818'
+				M1='ATI'
+				OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$M1")
+				REV=$(echo $OX" " | grep -o "Revision: .\+ OK " | tr " " ",")
+				MODL=$(echo $REV | cut -d, -f2)
+				log "$REV $MODL"
+				EC25AF=$(echo $MODL | grep "EC25AFF")
+				if [ ! -z "$EC25AF" ]; then # EC25-AF
+					MX='40000000000000381A'
 				else
 					MX='81a'
 				fi
@@ -114,7 +119,7 @@ case $uVid in
 			;;
 			"0306" )
 				M1='AT+GMR'
-				OX=$($ROOTER/gcom/gcom-locked "$CPORT" "run-at.gcom" "$CURRMODEM" "$M1")
+				OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$M1")
 				EP06E=$(echo $OX | grep "EP06E")
 				if [ ! -z $EP06E ]; then # EP06E
 					M3='1a080800d5'
@@ -125,6 +130,10 @@ case $uVid in
 			;;
 			"030b" ) # EM060
 				M3="420000A7E23B0E38DF"
+				M4='AT+QCFG="band",0,'$M3',0'
+			;;
+			"6005" ) # EM060
+				M3="0x200000080080000df"
 				M4='AT+QCFG="band",0,'$M3',0'
 			;;
 			"0512" ) # EM12-G
@@ -168,8 +177,8 @@ case $uVid in
 			;;
 		esac
 		
-		OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$M4")
-		log "$OX"
+		#OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$M4")
+		#log "$OX"
 		if [ ! -z $M5 ]; then
 			OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$M5")
 			log "$OX"
@@ -370,8 +379,8 @@ case $uVid in
 			else
 				M4='AT+QCFG="band",0,'$L1',0'
 			fi
-			OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$M4")
-			log "$OX"
+			#OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$M4")
+			#log "$OX"
 		fi
 	;;
 	"1199" )

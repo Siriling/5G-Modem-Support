@@ -5,7 +5,7 @@ translate = I18N.translate
 
 function index()
 	local page
-	page = entry({"admin", "modem", "modlog"}, template("modlog/modlog"), _(translate("模块连接日志信息")), 61)
+	page = entry({"admin", "modem", "modlog"}, template("modlog/modlog"), _(translate("Modem Logging")), 61)
 	page.dependent = true
 
 	entry({"admin", "status", "modlog"}, call("action_modlog"))

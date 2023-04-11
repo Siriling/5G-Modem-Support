@@ -22,30 +22,30 @@
 			if ( ss == "0" )
 			{
 				clearListBox("smsList");
-				document.getElementById('message').innerHTML="";
+				document.getElementById('message').value="";
 				document.getElementById('total').innerHTML="";
 				document.getElementById('used').innerHTML="";
 				document.getElementById('mslots').innerHTML="";
 				document.getElementById('menb').checked=false;
-				document.getElementById('supported').innerHTML="<%:模块未适配短信支持/未连接到模块%>";
+				document.getElementById('supported').innerHTML="<%:SMS Not Supported/No Modem%>";
 			}
 			if ( ss == "1" )
 			{
 				clearListBox("smsList");
-				document.getElementById('message').innerHTML="";
+				document.getElementById('message').value="";
 				document.getElementById('total').innerHTML="";
 				document.getElementById('used').innerHTML="";
 				document.getElementById('mslots').innerHTML="";
 				document.getElementById('menb').checked=false;
-				document.getElementById('supported').innerHTML="<%:您有未读的短信，请前往查看%>";
+				document.getElementById('supported').innerHTML="<%:Waiting to Read Messages%>";
 			}
 			if ( ss == "3" )
 			{
-				document.getElementById('supported').innerHTML="<%:消息读取有问题%>";
+				document.getElementById('supported').innerHTML="<%:Message Read Problem%>";
 			}
 			if ( ss == "2" )
 			{
-				document.getElementById('supported').innerHTML="<%:存在的短信%>";
+				document.getElementById('supported').innerHTML="<%:Messages Present%>";
 				clearListBox("smsList");
 				document.getElementById('total').innerHTML=rv.max;
 				document.getElementById('used').innerHTML=rv.used;
@@ -75,7 +75,7 @@
 				}
 				if (rv.used == "0")
 				{
-					document.getElementById('supported').innerHTML="<%:SIM卡上没有短信%>";
+					document.getElementById('supported').innerHTML="<%:No Messages Present on SIM%>";
 				}
 				else
 				{
@@ -86,7 +86,7 @@
 					var i;
 					for(i=0;i<len;i++)
 					{
-						index[indx] = parseInt(arr[i]);
+						index[indx] = arr[i];
 						number[indx] = arr[i+1];
 						ttext[indx] = arr[i+2];
 						var txtline = arr[i+3];
@@ -102,7 +102,7 @@
 						if ( selectline == -1 )
 						{
 							select.value = 0;
-							document.getElementById('message').innerHTML=ttext[0];
+							document.getElementById('message').value=ttext[0];
 							selectline = 0;
 						}
 						else
@@ -112,7 +112,7 @@
 								selectline = indx -1 ;
 							}
 							select.value = selectline;
-							document.getElementById('message').innerHTML=ttext[selectline];
+							document.getElementById('message').value=ttext[selectline];
 						}
 					}
 				}
@@ -120,7 +120,7 @@
 		}
 	);
 
-	document.getElementById('message').innerHTML=" ";
+	document.getElementById('message').value=" ";
 	document.getElementById('total').innerHTML="0";
 	document.getElementById('used').innerHTML="0";
 	document.getElementById('mslots').innerHTML="0";
@@ -167,7 +167,7 @@
 	{
 		var s = document.getElementById("smsList").value;
 		selectline = s;
-		document.getElementById('message').innerHTML=ttext[s];
+		document.getElementById('message').value=ttext[s];
 	}
 
 	function sendsms()
@@ -180,13 +180,13 @@
 		//document.getElementById('rding').innerHTML=s.length;
 		if ( s.length == 0 )
 		{
-			alert("<%:请输入电话号码!!%>");
+			alert("<%:You must enter a phone number!!%>");
 			return false;
 		}
 		s = s.trim();
 		if ( isNaN(s) == true )
 		{
-			alert("<%:错误的电话号码!!%>");
+			alert("<%:Invalid phone number!!%>");
 			return false;
 		}
 		var num = s.concat("                    ");
@@ -203,7 +203,7 @@
 		}
 		num = num.concat(t);
 		alert("<%:SMS will be queued for processing.\nA status update will follow.%>");
-		document.getElementById("sstat").innerHTML="<%:状态 :消息正在发送%>";
+		document.getElementById("sstat").innerHTML="<%:Sending Message. Please Wait%>";
 		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "send_sms")%>',
 			{ set: num },
 			function(x, rv)
@@ -214,6 +214,92 @@
 			}
 		);
 	}
+	
+	function readcheck()
+	{
+		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "check_read")%>', null,
+		function(x, rv)
+		{
+			var ss = rv.ready;
+			document.getElementById('message').style.color = "initial";
+			document.getElementById('conntype').innerHTML=rv.conntype;
+			if ( ss == "1" )
+			{
+				clearListBox("smsList");
+				document.getElementById('message').value="";
+				document.getElementById('total').innerHTML="";
+				document.getElementById('used').innerHTML="";
+				document.getElementById('supported').innerHTML="<%:Waiting to Read Messages%>";
+			}
+			if ( ss == "3" )
+			{
+				document.getElementById('supported').innerHTML="<%:Message Read Problem%>";
+			}
+			if ( ss == "2" )
+			{
+				document.getElementById('supported').innerHTML="<%:Messages Present%>";
+				clearListBox("smsList");
+				document.getElementById('total').innerHTML=rv.max;
+				document.getElementById('used').innerHTML=rv.used;
+				var line=rv.line;
+				var arr=(line.split("\x1D"));
+				var len = arr.length;
+				indx = 0;
+				var i;
+				for(i=0;i<len;i++)
+				{
+					index[indx] = parseInt(arr[i]);
+					number[indx] = arr[i+1];
+					ttext[indx] = arr[i+2];
+					var txtline = arr[i+3];
+					txtline = txtline.replace(/ /g,"\240");
+
+					var select = document.getElementById("smsList");
+								select.options[select.options.length] = new Option(txtline, indx);
+					i = i + 3;
+					indx = indx + 1;
+				}
+				if ( indx != -1 )
+				{
+					if ( selectline == -1 )
+					{
+						select.value = 0;
+						document.getElementById('message').value=ttext[0];
+						selectline = 0;
+					}
+					else
+					{
+						if ( selectline > indx-1 )
+						{
+							selectline = indx -1 ;
+						}
+						select.value = selectline;
+						document.getElementById('message').value=ttext[selectline];
+					}
+				}
+			}
+		}
+		);
+	}
+	
+	function delallsms()
+	{
+		var r=confirm("<%:Do you really want to delete all SMS?%>");
+		if (r==false)
+  		{
+  			return false;
+  		}
+		clearListBox("smsList");
+		document.getElementById('message').style.color = "red";
+		document.getElementById('message').value="<%:All Messages will be deleted. It may take some time before the list is updated.%>";
+		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "delall_sms")%>',
+			null,
+			function()
+			{
+				readcheck();
+			}
+		);
+	}
 
 	function delsms()
 	{
@@ -221,84 +307,21 @@
 		{
 			return false;
 		}
-		var r=confirm("<%:确认删除选中消息 ？%>");
+		var r=confirm("<%:Delete the selected message?%>");
 		if (r==false)
   		{
   			return false;
   		}
 		var s = document.getElementById("smsList").value;
 		var dx = index[s];
-		dx = dx + 1;
 		clearListBox("smsList");
 		document.getElementById('message').style.color = "red";
-		document.getElementById('message').innerHTML="<%:短信将被删除，同步到列表可能会很久（反复提交删除申请一样很久）%>";
+		document.getElementById('message').value="<%:Message will be deleted. It may take some time before the list is updated.%>";
 		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "del_sms")%>',
 			{ set: dx },
 			function()
 			{
-				XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "check_read")%>', null,
-				function(x, rv)
-				{
-					var ss = rv.ready;
-					document.getElementById('message').style.color = "initial";
-					document.getElementById('conntype').innerHTML=rv.conntype;
-					if ( ss == "1" )
-					{
-						clearListBox("smsList");
-						document.getElementById('message').innerHTML="";
-						document.getElementById('total').innerHTML="";
-						document.getElementById('used').innerHTML="";
-						document.getElementById('supported').innerHTML="<%:您有未读的短信，请前往查看%>";
-					}
-					if ( ss == "3" )
-					{
-						document.getElementById('supported').innerHTML="<%:消息读取有问题%>";
-					}
-					if ( ss == "2" )
-					{
-						document.getElementById('supported').innerHTML="<%:存在短信%>";
-						clearListBox("smsList");
-						document.getElementById('total').innerHTML=rv.max;
-						document.getElementById('used').innerHTML=rv.used;
-						var line=rv.line;
-   						var arr=(line.split("\x1D"));
-						var len = arr.length;
-						indx = 0;
-						var i;
-						for(i=0;i<len;i++)
-						{
-							index[indx] = parseInt(arr[i]);
-							number[indx] = arr[i+1];
-							ttext[indx] = arr[i+2];
-							var txtline = arr[i+3];
-							txtline = txtline.replace(/ /g,"\240");
-
-							var select = document.getElementById("smsList");
-                    					select.options[select.options.length] = new Option(txtline, indx);
-							i = i + 3;
-							indx = indx + 1;
-						}
-						if ( indx != -1 )
-						{
-							if ( selectline == -1 )
-							{
-								select.value = 0;
-								document.getElementById('message').innerHTML=ttext[0];
-								selectline = 0;
-							}
-							else
-							{
-								if ( selectline > indx-1 )
-								{
-									selectline = indx -1 ;
-								}
-								select.value = selectline;
-								document.getElementById('message').innerHTML=ttext[selectline];
-							}
-						}
-					}
-				}
-				);
+				readcheck();
 			}
 		);
 	}
@@ -350,7 +373,7 @@
 			function(x, rv)
 			{
 				btn.disabled = false;
-				btn.value    = '<%:下一个模块%>';
+				btn.value    = '<%:Next Modem%>';
 			}
 		);
 
@@ -393,28 +416,28 @@
 
 <form method="post" action="<%=REQUEST_URI%>">
 <div class="cbi-map" id="cbi-sms">
-<h2><a id="content" name="content"><%:短信收发页面%></a></h2>
-<div class="cbi-map-descr"><%:通过模块发送和接收文本消息%></div>
+<h2><a id="content" name="content"><%:SMS Messaging%></a></h2>
+<div class="cbi-map-descr"><%:Send and Receive Text Messages Through Your Modem%></div>
 <fieldset class="cbi-section" id="cbi-read">
-	<legend><%:通信模块信息%></legend>
+	<legend><%:Modem Information%></legend>
 	<table width="550"  border="0">
   	<tr>
     		<td width="40%"><ul id="supported"></ul></td>
     		<td width="17%"><strong id="conntype"></strong></td>
 		<td width="12%">
-			<input type="button" class="cbi-button cbi-button-apply" value="<%:上一个模块%>" onclick="return modemtoggledn(this)" />
+			<input type="button" class="cbi-button cbi-button-apply" value="<%:Prev Modem%>" onclick="return modemtoggledn(this)" />
 		</td>
 		<td width="31%">
-			<input type="button" class="cbi-button cbi-button-apply" value="<%:下一个模块%>" onclick="return modemtoggle(this)" />
+			<input type="button" class="cbi-button cbi-button-apply" value="<%:Next Modem%>" onclick="return modemtoggle(this)" />
 		</td>
   	</tr>
 	</table>
-	<legend><%:收到的短信%></legend>
+	<legend><%:Received Messages%></legend>
 
 	<table width="550"  border="0">
   	<tr>
-    		<td width="18%"><div align="center"><strong><%:SIM可存放的短信空间 (条)%></strong></div></td>
-    		<td width="18%"><div align="center"><strong><%:已使用的SIM短信空间 (条)%></strong></div></td>
+    		<td width="18%"><div align="center"><strong><u><%:Total SIM Message Slots%></u></strong></div></td>
+    		<td width="18%"><div align="center"><strong><u><%:Used SIM Message Slots%></u></strong></div></td>
 		<td width="34%">&nbsp;</td>
   	</tr>
   	<tr>
@@ -427,11 +450,11 @@
 	<table width="550"  border="0">
   	<tr>
 		<td width="3%">&nbsp;</td>
-		<td width="20%"><div align="left"><%:启用模块到SIM卡的短信传输%></div></td>
+		<td width="20%"><div align="left"><%:Enable SMS transfer from modem to SIM%></div></td>
 		<td width="8%">
 			<input type="checkbox" id="menb" onclick="memenable(this)" />
 		</td>
-		<td width="16%"><div align="left"><strong><u><%:模块上的未读信息数量%></u></strong></div></td>
+		<td width="16%"><div align="left"><strong><u><%:Unread SMS count on modem%></u></strong></div></td>
 		<td width="34%">&nbsp;</td>
 	</tr>
   	<tr>
@@ -442,15 +465,22 @@
 		<td>&nbsp;</td>
 	</tr>
 	</table>
+	
+	<table width="700"  border="0">
+	<tr>
+		<td width="3%">&nbsp;</td>
+		<td width="17%"><input type="button" id="delallbtn" class="cbi-button cbi-button-remove" value="<%:Delete All Messages%>" onclick="return delallsms()" /></td>
+		<td width="80%">&nbsp;</td>
+	</tr>
+	</table>
 
 	<table width="700"  border="0">
 	<tr>
-		<td width="4%"><div align="center"><strong><u><%:已读状态%></u></strong></div></td>
-		<td width="18%"><div align="left"><strong><u><%:发件人%></u></strong></div></td>
+		<td width="4%"><div align="center"><strong><u><%:Read%></u></strong></div></td>
+		<td width="18%"><div align="left"><strong><u><%:Sender%></u></strong></div></td>
 		<td width="8%"><div align="left"><strong><u><%:Date%></u></strong></div></td>
-		<td width="11%"><div align="left"><strong><u><%:时间%></u></strong></div></td>
-		<td width="35%"><div align="left"><strong><u><%:短信%></u></strong></div></td>
-														   
+		<td width="11%"><div align="left"><strong><u><%:Time%></u></strong></div></td>
+		<td width="35%"><div align="left"><strong><u><%:Message%></u></strong></div></td>
 		<td width="24%"><div align="left"> </div></td>
 
 	</tr>
@@ -467,26 +497,29 @@
 
 	<table width="550"  border="0">
   	<tr>
-    		<td width="15%"><div align="left"><strong><%:短信内容 :%></strong></div></td>
-    		<td width="70%"><ul id="message"></ul></td>
-    		<td width="15%">&nbsp;</td>
+    		<td width="7%"><div align="left"><strong><%:Message :%></strong></div></td>
+    <!--		<td width="70%"><ul id="message"></ul></td> -->
+			<td width="80%">
+				<textarea readonly="readonly" name="message" id="message" rows="6" style="font-size : 20px;width: 600px;" maxlength="160"></textarea>
+			</td>
+    		<td width="13%">&nbsp;</td>
   	</tr>
 	</table>
 
 	<table width="550"  border="0">
 	<tr>
-    		<td width="17%"><input type="button" id="delbtn" class="cbi-button cbi-button-apply" value="<%:删除短信%>" onclick="return delsms()" /></td>
-		<td width="17%"><input type="button" id="replybtn" class="cbi-button cbi-button-apply" value="<%:回复短信%>" onclick="return replysms()" /></td>
-		<td width="17%"><input type="button" id="newbtn" class="cbi-button cbi-button-apply" value="<%:新建短信%>" onclick="return newsms()" /></td>
+    		<td width="17%"><input type="button" id="delbtn" class="cbi-button cbi-button-remove" value="<%:Delete Message%>" onclick="return delsms()" /></td>
+		<td width="17%"><input type="button" id="replybtn" class="cbi-button cbi-button-apply" value="<%:Reply to Message%>" onclick="return replysms()" /></td>
+		<td width="17%"><input type="button" id="newbtn" class="cbi-button cbi-button-apply" value="<%:New Message%>" onclick="return newsms()" /></td>
     		<td width="49%">&nbsp;</td>
   	</tr>
 	</table>
 
-	<legend id="sendtitle" style="display:block;"><%:短信会话%></legend>
+	<legend id="sendtitle" style="display:block;"><%:Send Messages%></legend>
 
 	<table id="sendmsg" width="600"  border="0" style="display:table;">
   	<tr>
-    		<td width="15%"><div align="left"><strong><%:收件人 :%></strong></div></td>
+    		<td width="15%"><div align="left"><strong><%:Send To :%></strong></div></td>
     		<td width="70%"><input name="sendto" id="sendto" maxlength="20"></input></td>
     		<td width="15%">&nbsp;</td>
   	</tr>
@@ -494,7 +527,6 @@
 
 	<table id="sendtxt" width="700"  border="0" style="display:table;">
   	<tr>
-																				   
     		<td width="100%">
 		<textarea name="txtmessage" id="txtmessage" rows="6" style="width: 600px;" maxlength="160"></textarea>
 		</td>
@@ -511,7 +543,7 @@
 
 	<table width="550"  border="0">
   	<tr>
-    		<td width="15%"><div align="left"><strong><%:短信发送状态 :%></strong></div></td>
+    		<td width="15%"><div align="left"><strong><%:Sending Status :%></strong></div></td>
     		<td width="70%"><ul style="color:red" id="sstat"></ul></td>
     		<td width="15%">&nbsp;</td>
   	</tr>
@@ -522,4 +554,3 @@
 </div>
 </form>
 <%+footer%>
-

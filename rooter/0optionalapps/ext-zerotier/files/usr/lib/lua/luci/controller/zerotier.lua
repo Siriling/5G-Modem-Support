@@ -6,6 +6,7 @@ translate = I18N.translate
 function index()
 	local fs = require "nixio.fs"
 	local lock = luci.model.uci.cursor():get("custom", "menu", "full")
+	local default = luci.model.uci.cursor():get("custom", "menu", "default")
 	local multilock = luci.model.uci.cursor():get("custom", "multiuser", "multi") or "0"
 	local rootlock = luci.model.uci.cursor():get("custom", "multiuser", "root") or "0"
 	if (multilock == "0") or (multilock == "1" and rootlock == "1") then
@@ -16,8 +17,13 @@ function index()
 					page = entry({"admin", "adminmenu", "zerotier"}, template("zerotier/zerotier"), translate("Zerotier"), 7)
 					page.dependent = true
 				else
-					page = entry({"admin", "adminmenu", "zerotier"}, template("zerotier/zerotier"), translate("---Router ID"), 7)
-					page.dependent = true
+					if default == "1" then
+						page = entry({"admin", "adminmenu", "zerotier"}, template("zerotier/zerotier"), translate("Zerotier"), 7)
+						page.dependent = true
+					else
+						page = entry({"admin", "adminmenu", "zerotier"}, template("zerotier/zerotier"), translate("---Router ID"), 7)
+						page.dependent = true
+					end
 				end
 			end
 		end

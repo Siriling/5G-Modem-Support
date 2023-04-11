@@ -119,6 +119,10 @@ idP=$(uci get modem.modem$CURRMODEM.idP)
 
 $ROOTER/connect/get_profile.sh $CURRMODEM
 
+if [ -e $ROOTER/modem-led.sh ]; then
+	$ROOTER/modem-led.sh $CURRMODEM 3
+fi
+		
 INTER=$(uci get modem.modeminfo$CURRMODEM.inter)
 if [ -z $INTER ]; then
 	INTER=$CURRMODEM
@@ -207,7 +211,8 @@ if [ -e $ROOTER/timezone.sh ]; then
 	fi
 fi
 
-CLB=$(uci -q get modem.modeminfo$CURRMODEM.lb)
+#CLB=$(uci -q get modem.modeminfo$CURRMODEM.lb)
+CLB=1
 if [ -e /etc/config/mwan3 ]; then
 	ENB=$(uci -q get mwan3.wan$INTER.enabled)
 	if [ ! -z $ENB ]; then

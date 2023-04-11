@@ -5,12 +5,12 @@ log() {
 	logger -t "Status Update" "$@"
 }
 
-levelsper="101,85,70,55,40,25,10,1,0"
+levelsper="101,85,70,55,40,25,0"
 namesper="Perfect,Excellent,Good,Medium,Low,Bad,Dead"
-levelsrssi="113,119,100,90,70,1,0"
-namesrssi="None,Bad,Poor,Medium,High,Perfect"
-levelsrscp="140,136,112,100,90,70,50,1,0"
-namesrscp='None,None (3G) : Poor (4G),Weak (3G) : Medium (4G),Poor (3G) : Good (4G),Medium (3G) : High (4G),High (3G) :High (4G)'
+levelsrssi="1,70,90,100,119,113,0"
+namesrssi="Perfect,High,Medium,Poor,Bad,None"
+levelsrscp="50,70,90,100,112,136,140,0"
+namesrscp='High (3G) :High (4G),Medium (3G) : High (4G),Poor (3G) : Good (4G),Weak (3G) : Medium (4G),None (3G) : Poor (4G)'
 
 level2txt() {
 	tmp="$1"
@@ -25,6 +25,29 @@ level2txt() {
 		tmp=$(echo "$tmp" | sed -e "s/%//g")
 		level=$levelsper
 		namev=$namesper
+		namez=$namev
+		cindex=1
+		nindex=0
+		namev="-"
+		while [ true ]
+		do
+			levelv=$(echo "$level" | cut -d, -f$cindex)
+			if [ $levelv = "0" ]; then
+				namev="-"
+				break
+			fi
+			if [ "$tmp" -ge "$levelv" ]; then
+				nind=$((${nindex}+1))
+				namev=$(echo "$namez" | cut -d, -f$nind)
+				break
+			fi
+			cindex=$((${cindex}+1))
+			nindex=$((${nindex}+1))
+		done
+		css="level_"$nindex
+		desc="<br><i class='msDesc'>"$namev"</i></br>"
+		namev="<b class='"$css"'>""$front$tmp1""</b>"$desc
+		return
 	fi
 	if [ $key = "rssi" ]; then
 		front="-"
@@ -33,6 +56,29 @@ level2txt() {
 		tmp1="$tmp"" "
 		level=$levelsrssi
 		namev=$namesrssi
+		namez=$namev
+		cindex=1
+		nindex=0
+		namev="-"
+		while [ true ]
+		do
+			levelv=$(echo "$level" | cut -d, -f$cindex)
+			if [ $levelv = "0" ]; then
+				namev="-"
+				break
+			fi
+			if [ "$tmp" -le "$levelv" ]; then
+				nindex=$((${nindex}+1))
+				namev=$(echo "$namez" | cut -d, -f$nindex)
+				break
+			fi
+			cindex=$((${cindex}+1))
+			nindex=$((${nindex}+1))
+		done
+		css="level_"$nindex
+		desc="<br><i class='msDesc'>"$namev"</i></br>"
+		namev="<b class='"$css"'>""$front$tmp1""</b>"$desc
+		return
 	fi
 	if [ $key = "rscp" ]; then
 		front=""
@@ -44,6 +90,29 @@ level2txt() {
 		tmp=$(printf %.0f "$tmp")
 		level=$levelsrscp
 		namev=$namesrscp
+		namez=$namev
+		cindex=1
+		nindex=0
+		namev="-"
+		while [ true ]
+		do
+			levelv=$(echo "$level" | cut -d, -f$cindex)
+			if [ $levelv = "0" ]; then
+				namev="-"
+				break
+			fi
+			if [ "$tmp" -le "$levelv" ]; then
+				namev=$(echo "$namez" | cut -d, -f$nindex)
+				nindex=$((${nindex}-1))
+				break
+			fi
+			cindex=$((${cindex}+1))
+			nindex=$((${nindex}+1))
+		done
+		css="level_"$nindex
+		desc="<br><i class='msDesc'>"$namev"</i></br>"
+		namev="<b class='"$css"'>""$front$tmp1""</b>"$desc
+		return
 	fi
 	
 	if [ $key = "single" ]; then
@@ -54,35 +123,11 @@ level2txt() {
 			tmp=$(echo "$tmp" | sed -e "s/-//g")
 		fi
 		if [ $3 = "1" -o $3 = "0" ];then
-			desc="<br><i class='msDesc'>"."</i></br>"
+			desc="<br><i class='msDot'>"."</i></br>"
 		fi
-		namev="<b class='level_2'>""$tmp""</b>"$desc
+		namev="<i class='msText'>""$tmp""</i>"$desc 
 		return
 	fi
-	
-	namez=$namev
-	cindex=1
-	nindex=6
-	namev="-"
-
-	while [ true ]
-	do
-		levelv=$(echo "$level" | cut -d, -f$cindex)
-		if [ $levelv = "0" ]; then
-			namev="-"
-			break
-		fi
-		if [ "$tmp" -lt "$levelv" ]; then
-			namev=$(echo "$namez" | cut -d, -f$nindex)
-			break
-		fi
-		cindex=$((${cindex}+1))
-		nindex=$((${nindex}-1))
-	done
-
-	css="level_"$nindex
-	desc="<br><i class='msDesc'>"$namev"</i></br>"
-	namev="<b class='"$css"'>""$front$tmp1""</b>"$desc
 }
 
 readstatus() {
@@ -192,7 +237,7 @@ if [ $splash = "1" ]; then
 	SPSTATUS="/tmp/www/splash.html"
 	rm -f $STEMP
 	cp $STATUS $STEMP
-	button="<div class='rooterPageContentBW'><div class="" id=\"rooterItems\"><a href='cgi-bin/luci'><div class=\"rooterItem\" id=\"rooterItem1\"><div class=\"rooterItemTitle\"><i class='icon icon-cog'></i> Router Login</div><div class=\"rooterItemTitle\"></div></div></a></div></div>"
+	button="<a href='cgi-bin/luci'><div class=\"rooterItem\"><div class=\"rooterItemTitle\"><i class='icon icon-cog'></i>Router Login</div></div></a>"
 	sed -i -e "s!#BUTTON#!$button!g" $STEMP
 	sed -i -e "s!#LUCIS#!luci-static/!g" $STEMP
 	titlebar="<div class='rooterPageHead'><a  href='http://#URL#'><div class=\"rooterHeadTitle\"> #TITLE#</div></a></div>"
@@ -239,6 +284,23 @@ if [ $splash = "1" ]; then
 	sed -i -e "s!#CHAN#!$namev!g" $STEMP
 	level2txt "$lband" "single"
 	sed -i -e "s!#BAND#!$namev!g" $STEMP
+	
+	if [ ! -e /tmp/simpin1 ]; then
+		sim="-"
+	else
+		simerr=$(cat /tmp/simpin1)
+		if [ "$simerr" = "0" -o "$simerr" = "1" -o "$simerr" = "2" ]; then
+			sim="Error"
+		else
+			if [ "$simerr" = "3" ]; then
+				sim="Okay"
+			else
+				sim="-"
+			fi
+		fi
+	fi
+	level2txt "$sim" "single"
+	sed -i -e "s!#SIM#!$namev!g" $STEMP
 
 	if [ -e /etc/custom ]; then
 		mod="/etc/custom"
@@ -255,13 +317,33 @@ if [ $splash = "1" ]; then
 	sed -i -e "s!#MODEM#!$namev!g" $STEMP
 	level2txt "$cops" "single"
 	namev=$(echo "$namev" | tr -d '&')
-	sed -i -e "s!#PROVIDER#!$namev!g" $STEMP
+	sed -i -e "s~#PROVIDER#~$namev~g" $STEMP
 	level2txt "$proto" "single"
 	sed -i -e "s!#PROTO#!$namev!g" $STEMP
 	level2txt "$port" "single"
 	sed -i -e "s!#PORT#!$namev!g" $STEMP
 	level2txt "$tempur" "single"
 	sed -i -e "s!#TEMP#!$namev!g" $STEMP
+	rm -f /tmp/spip; wget -O /tmp/spip http://ipecho.net/plain > /dev/null 2>&1
+	extr=$(cat /tmp/spip)
+	if [ -z "$extr" ]; then
+		extr="-"
+	fi
+	level2txt "$extr" "single"
+	sed -i -e "s!#EXTERNAL#!$namev!g" $STEMP
+		
+	routid=$(uci -q get zerotier.zerotier.secret)
+	if [ -z "$routid" ]; then
+		routid="xxxxxxxxxx"
+	else
+		routid=${routid:0:10}
+	fi
+
+	source /etc/codename
+	level2txt "$routid" "single"
+	sed -i -e "s!#ROUTID#!$namev!g" $STEMP
+	level2txt "$CODENAME" "single"
+	sed -i -e "s!#FIRMWARE#!$namev!g" $STEMP
 	
 	dual=$(uci -q get iframe.iframe.dual)
 	if [ $dual = "1" ]; then

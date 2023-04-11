@@ -203,9 +203,12 @@ if [ "$ACTION" = add ]; then
 	# Uncomment the next line to ignore USB-Serial adapters and similar single-port devices
 	# if [ $bNumConfs = 1 -a $bNumIfs = 1 ] && exit 0		
 
-	cat /sys/kernel/debug/usb/devices > /tmp/wdrv
-	lua $ROOTER/protofind.lua $uVid $uPid 0
-	retval=$?
+	$ROOTER/proto.sh $uVid $uPid $DEVICENAME 0
+	source /tmp/proto
+	rm -f /tmp/proto
+	#cat /sys/kernel/debug/usb/devices > /tmp/wdrv
+	#lua $ROOTER/protofind.lua $uVid $uPid 0
+	#retval=$?
 
 	if [ -e /etc/config/mjpg-streamer ]; then
 		if [ $retval -eq 99 ]; then
@@ -376,9 +379,12 @@ if [ "$ACTION" = add ]; then
 		sleep 10
 	fi
 
-	cat /sys/kernel/debug/usb/devices > /tmp/wdrv
-	lua $ROOTER/protofind.lua $idV $idP 1
-	retval=$?
+	#cat /sys/kernel/debug/usb/devices > /tmp/wdrv
+	#lua $ROOTER/protofind.lua $idV $idP 1
+	$ROOTER/proto.sh $uVid $uPid $DEVICENAME 1
+	source /tmp/proto
+	rm -f /tmp/proto
+	#retval=$?
 	if [ $idV = 8087 -a $idP = 095a ]; then
 		retval=28
 	fi
@@ -459,12 +465,6 @@ if [ "$ACTION" = add ]; then
 		ln -s $ROOTER/connect/create_connect.sh $ROOTER_LINK/create_proto$CURRMODEM
 		$ROOTER_LINK/create_proto$CURRMODEM $CURRMODEM &
 		;;
-	"88" )
-		log "Connecting a Quectel Rmnet Modem"
-		ln -s $ROOTER/connect/create_connect.sh $ROOTER_LINK/create_proto$CURRMODEM
-		$ROOTER_LINK/create_proto$CURRMODEM $CURRMODEM &
-		;;
-
 	"3" )
 		log "Connecting a MBIM Modem"
 		ln -s $ROOTER/connect/create_connect.sh $ROOTER_LINK/create_proto$CURRMODEM
@@ -572,6 +572,9 @@ if [ "$ACTION" = remove ]; then
 			if [ -e /usr/lib/gps/gpskill.sh ]; then
 				/usr/lib/gps/gpskill.sh $retresult
 			fi
+			if [ -e $ROOTER/connect/chkconn.sh ]; then
+				jkillall chkconn.sh
+			fi
 			$ROOTER/signal/status.sh $retresult "No Modem Present"
 			$ROOTER/log/logger "Disconnect (Removed) Modem #$retresult"
 			display_top; display "Remove : $DEVICENAME : Modem $retresult"; display_bottom
@@ -613,4 +616,3 @@ fi
 if [ "$ACTION" = "motion" ]; then
 	logger webcam motion event
 fi
-

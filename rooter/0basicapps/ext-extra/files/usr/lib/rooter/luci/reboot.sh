@@ -24,7 +24,7 @@ if [ $PARM = "1" ]; then
 		let "TH = $HOUR * 4"
 		let "TMP1 = $SDHOUR - $TH"
 		let "MIN = $TMP1 * 15"
-		echo "$MIN $HOUR * * * sleep 70 && touch /etc/banner && reboot -f" > /etc/cronbase
+		echo "$MIN $HOUR * * * sleep 70 && touch /etc/banner && /usr/lib/rooter/luci/rebootmodem.sh" > /etc/cronbase
 	else
 		rm -f /etc/cronbase
 	fi

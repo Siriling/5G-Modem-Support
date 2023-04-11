@@ -16,12 +16,12 @@ config texting 'texting'
 	option increment '50'
 	option used '0'
 	option tore '0'
-	
+
 config menu 'menu'
 	option password '1234'
-	option full '0'
-	option enabled '0'
-	option default '0'
+	option full '1'
+	option default '1'
+	option enabled '1'
 
 config atcmd 'atcmd'
 	option lock '0'
@@ -30,7 +30,7 @@ config atcmd 'atcmd'
 	option sierra '/etc/sierracmd'
 	option quectel '/etc/quectelcmd'
 	option generic '/etc/genericcmd'
-	
+
 config bandlock 'bandlock'
 	option enabled '1'
 	option cenable1 '0'
@@ -41,10 +41,10 @@ config zerotier 'zerotier'
 	option password '1234'
 	option lock '0'
 	option networkid 'xxxxxxxxxxxxxxxx'
-	
+
 config logo 'logo'
 	option size 'large'
-	
+
 config connect 'connect'
 	option ipv6 '1'
 
@@ -58,7 +58,7 @@ config multi 'multiuser'
 config bwday 'bwday'
 	option bwday '0'
 	option phone '0'
-	option delay '8'	
-	
+	option delay '8'
+
 config simpin 'simpin'
-	option pin ''
+

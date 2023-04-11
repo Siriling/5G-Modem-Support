@@ -152,7 +152,12 @@ case $RAT in
 				SINR=$((($(echo $SINRR) * 2) -20))" dB"
 			fi
 		fi
-
+		if [ -n "$(echo $QENG | cut -d, -f21)" ]; then
+			CQI=$(echo $QENG | cut -d, -f19 | grep "^[0-9]\+$")
+			if [ -n "$SINR" -a -n "$CQI" -a "$CQI" != "0" ]; then
+				SINR=$SINR" (CQI $CQI)"
+			fi
+		fi
 		if [ -n "$NR_NSA" ]; then
 			MODE="LTE/NR EN-DC"
 			echo "0" > /tmp/modnetwork
@@ -271,13 +276,13 @@ if [ -n "$QRSRP" ] && [ "$RAT" != "WCDMA" ]; then
 	if [ "$QRSRPtype" == "NR5G" ]; then
 		if [ -n "$NR_SA" ]; then
 			RSCP=$QRSRP1
-			if [ -n "$QRPRP2" -a "$QRSRP2" != "-32768" ]; then
+			if [ -n "$QRSRP2" -a "$QRSRP2" != "-32768" ]; then
 				RSCP1="RxD "$QRSRP2
 			fi
-			if [ -n "$QRSRP3" -a "$QRSRP3" != "-32768" ]; then
+			if [ -n "$QRSRP3" -a "$QRSRP3" != "-32768" -a "$QRSRP3" != "-44" ]; then
 				RSCP=$RSCP" dBm<br />"$QRSRP3
 			fi
-			if [ -n "$QRSRP4" -a "$QRSRP4" != "-32768" ]; then
+			if [ -n "$QRSRP4" -a "$QRSRP4" != "-32768" -a "$QRSRP4" != "-44" ]; then
 				RSCP1="RxD "$QRSRP4
 			fi
 		else

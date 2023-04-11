@@ -11,5 +11,5 @@ log() {
 start_service()
 {
 	log "WG1602 USB Hub switch to USB3.0 infterface"
-	echo 0 > /sys/class/gpio/ext-usb/value
+	echo 1 > /sys/class/gpio/ext-usb/value
 }

@@ -4,17 +4,22 @@ I18N = require "luci.i18n"
 translate = I18N.translate
 
 function index()
-	entry({"admin", "modem"}, firstchild(), translate("移动数据"), 25).dependent=false
-	entry({"admin", "modem", "prof"}, cbi("rooter/profiles"), translate("DNS / APN / 监控配置"), 2)
-	entry({"admin", "modem", "nets"}, template("rooter/net_status"), translate("信号状态 / 模块状态"), 30)
-	entry({"admin", "modem", "debug"}, template("rooter/debug"), translate("后台AT调试信息"), 50)
-	entry({"admin", "modem", "cust"}, cbi("rooter/customize"), translate("自定义模块端口配置"), 55)
-	entry({"admin", "modem", "log"}, template("rooter/log"), translate("连接日志"), 60)
-	entry({"admin", "modem", "misc"}, template("rooter/misc"), translate("锁频段 / 锁PCI / 切协议"), 40)
 	
-	entry({"admin", "modem", "block"},
-		template("rooter/bandlock"))
-
+	local multilock = uci:get("custom", "multiuser", "multi") or "0"
+	local rootlock = uci:get("custom", "multiuser", "root") or "0"
+	if (multilock == "0") or (multilock == "1" and rootlock == "1") then
+		entry({"admin", "modem"}, firstchild(), translate("Modem"), 25).dependent=false
+		entry({"admin", "modem", "prof"}, cbi("rooter/profiles"), translate("Connection Profile"), 2)
+		entry({"admin", "modem", "nets"}, template("rooter/net_status"), translate("Network Status"), 30)
+		entry({"admin", "modem", "debug"}, template("rooter/debug"), translate("Debug Information"), 50)
+		entry({"admin", "modem", "cust"}, cbi("rooter/customize"), translate("Custom Modem Ports"), 55)
+		entry({"admin", "modem", "log"}, template("rooter/log"), translate("Connection Log"), 60)
+		entry({"admin", "modem", "misc"}, template("rooter/misc"), translate("Miscellaneous"), 40)
+	end
+	if (multilock == "1" and rootlock == "0") then
+		entry({"admin", "system", "misc"}, template("rooter/bandlock"), translate("Band Lock and Scan"), 40)
+	end
+	
 	entry({"admin", "modem", "get_csq"}, call("action_get_csq"))
 	entry({"admin", "modem", "change_port"}, call("action_change_port"))
 	entry({"admin", "modem", "change_mode"}, call("action_change_mode"))
@@ -435,8 +440,8 @@ function action_get_csq()
 	rv["proto"] = file:read("*line")
 	rv["pci"] = file:read("*line")
 	rv["sinr"] = file:read("*line")
-	--rv["lat"] = file:read("*line")
-	--rv["long"] = file:read("*line")
+	rv["lat"] = file:read("*line")
+	rv["long"] = file:read("*line")
 
 	file:close()
 
@@ -478,9 +483,9 @@ function action_get_csq()
 	end
 
 	if not nixio.fs.access("/etc/netspeed") then
-		rv["crate"] = translate("快速(每10秒更新一次)")
+		rv["crate"] = translate("Fast (updated every 10 seconds)")
 	else
-		rv["crate"] = translate("缓慢(每60秒更新一次)")
+		rv["crate"] = translate("Slow (updated every 60 seconds)")
 	end
 
 	stat = "/tmp/msimdata" .. modnum
@@ -576,16 +581,26 @@ end
 function action_externalip()
 	local rv ={}
 
-	os.execute("rm -f /tmp/ipip; wget -O /tmp/ipip http://ipecho.net/plain > /dev/null 2>&1")
 	file = io.open("/tmp/ipip", "r")
 	if file == nil then
 		rv["extip"] = translate("Not Available")
 	else
-		rv["extip"] = file:read("*line")
-		if rv["extip"] == nil then
+		line = file:read("*line")
+		if line == nil then
 			rv["extip"] = translate("Not Available")
+		else
+			s, e = line:find("ip\":\"")
+			if s == nil then
+				rv["extip"] = translate("Not Available")
+			else
+				cs, ce = line:find("\"", e+1)
+				rv["extip"] = line:sub(e+1, cs-1)
+				file:close()
+				if rv["extip"] == nil then
+					rv["extip"] = translate("Not Available")
+				end
+			end
 		end
-		file:close()
 	end
 
 	luci.http.prepare_content("application/json")
@@ -661,4 +676,3 @@ function action_setpin()
 	local set = luci.http.formvalue("set")
 	os.execute("uci set modem.general.pin=" .. set .. "; uci commit modem")
 end
-

@@ -39,4 +39,16 @@ d1:value("100", "100 seconds")
 d1:value("120", "120 seconds")
 d1.default=40
 
+ipv41 = d:option(Value, "ipv41", translate("IPv4 Server :"), translate("First IPv4 server to ping")); 
+ipv41.rmempty = true;
+ipv41.optional=false;
+
+ipv42 = d:option(Value, "ipv42", translate("IPv4 Server :"), translate("Second IPv4 server to ping")); 
+ipv42.rmempty = true;
+ipv42.optional=false;
+
+ipv6 = d:option(Value, "ipv6", translate("IPv6 Server :"), translate("IPv6 server to ping")); 
+ipv6.rmempty = true;
+ipv6.optional=false;
+
 return m

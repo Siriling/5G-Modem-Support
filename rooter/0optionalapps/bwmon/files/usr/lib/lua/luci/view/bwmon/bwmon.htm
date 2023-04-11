@@ -60,25 +60,10 @@ var backflg = "0";
 					document.getElementById("allocatet").style.display="";
 					document.getElementById("bwenb").disabled=true;
 					document.getElementById("bwinter").disabled=true;
-					document.getElementById("apply2").disabled=true;
+					document.getElementById("bwflag").disabled=true;
 					bwe = true;
 					if ( backflg == "0" )
 					{
-					if ( rv.external == "0" )
-					{
-						bwe = false
-						document.getElementById("exflag").innerHTML="<%:Internal%>";
-						document.getElementById("exflag").style.fontWeight = "bold" ;
-						document.getElementById("exflag").style.fontSize = "large" ;
-					}
-					else
-					{
-						document.getElementById("exflag").innerHTML=rv.external;
-						document.getElementById("exflag").style.fontWeight = "bold" ;
-						document.getElementById("exflag").style.fontSize = "small" ;
-					}
-					//if ( backflg == "0" )
-					//{
 						document.getElementById("bwinter").value = rv.backup;
 						backflg = "1";
 					}
@@ -113,25 +98,10 @@ var backflg = "0";
 					document.getElementById("allocatet").style.display="none";
 					document.getElementById("bwenb").disabled=false;
 					document.getElementById("bwinter").disabled=false;
-					document.getElementById("apply2").disabled=false;
+					document.getElementById("bwflag").disabled=false;
 					bwe = true;
 					if ( backflg == "0" )
 					{
-					if ( rv.external == "0" )
-					{
-						bwe = false
-						document.getElementById("exflag").innerHTML="<%:Internal%>";
-						document.getElementById("exflag").style.fontWeight = "bold" ;
-						document.getElementById("exflag").style.fontSize = "large" ;
-					}
-					else
-					{
-						document.getElementById("exflag").innerHTML=rv.external;
-						document.getElementById("exflag").style.fontWeight = "bold" ;
-						document.getElementById("exflag").style.fontSize = "small" ;
-					}
-					//if ( backflg == "0" )
-					//{
 						document.getElementById("bwinter").value = rv.backup;
 						backflg = "1";
 					}
@@ -177,42 +147,6 @@ var backflg = "0";
 				
 				document.getElementById("password").value=rv.password;
 				
-				var tbl = document.getElementById('datar');
-				while (tbl.rows.length > 1)
-					tbl.deleteRow(1);
-
-				msize = rv.macsize;
-				maclist = rv.maclist;
-				if ( msize !== "0" )
-				{
-					size = parseFloat(msize);
-					for (i = 0; i < size; i++) 
-					{
-						partsArray = maclist[i].split('|');
-						tr = tbl.insertRow(-1);
-						row3 = tr.insertCell(-1);
-						row3.innerHTML = '<div align="center"><strong>' + partsArray[0] + '</strong></div>'
-						row3.style.width = '160px' ;
-						row3 = tr.insertCell(-1);
-						row3.innerHTML = '<div align="center"><strong>' + partsArray[5] + '</strong></div>'
-						row3.style.width = '200px' ;
-						row3 = tr.insertCell(-1);
-						row3.innerHTML = '<div align="center"><strong>' + partsArray[1] + '</strong></div>'
-						row3.style.width = '160px' ;
-						row3 = tr.insertCell(-1);
-						row3.innerHTML = '<div align="center"><strong>' + partsArray[2] + '</strong></div>'
-						row3.style.width = '150px' ;
-						row3 = tr.insertCell(-1);
-						row3.innerHTML = '<div align="center"><strong>' + partsArray[3] + '</strong></div>'
-						row3.style.width = '150px' ;
-						row3 = tr.insertCell(-1);
-						row3.innerHTML = '<div align="center"><strong>' + partsArray[4] + '</strong></div>'
-						row3.style.width = '150px' ;
-					}
-				} 
-				
-				document.getElementById("datar").style.display = "";
-				
 			}
 			else
 			{
@@ -225,6 +159,23 @@ var backflg = "0";
 				document.getElementById("nodatar").style.display="";
 				document.getElementById("report").style.visibility="hidden";
 				document.getElementById("report").style.display="none";
+			}
+			
+
+			gendays = rv.gendays;
+			if ( gendays != '0' )
+			{
+				genline = rv.genline;
+				gendwn = rv.gendwn;
+				genup = rv.genupn
+				gentotal = rv.gentotal
+				document.getElementById("datar2").innerHTML=genline;
+				document.getElementById("stdate").innerHTML="<strong>" + gendays + "</strong>";
+				document.getElementById("bdwn").innerHTML="<strong>" + gentotal + "</strong>";
+			}
+			else
+			{
+				document.getElementById("stdate").innerHTML="<strong>" + "No Data" + "</strong>";
 			}
 	}
 
@@ -244,52 +195,10 @@ var backflg = "0";
 		}
 				
 	);
-	
-	function done() { 
-		document.getElementById("popup").style.display = "none";
-		document.getElementById("apply2").disabled=true;
-		var r = document.getElementById("pass").value;
-		if ( r == "" )
-		{
-			document.getElementById("exflag").innerHTML="<%:Internal%>";
-			document.getElementById("exflag").style.fontWeight = "bold" ;
-			document.getElementById("exflag").style.fontSize = "large" ;
-			r = "0";
-		}
-		else
-		{
-			mnti = r.indexOf("/mnt/");
-			mntl = r.length;
-			if ( mnti == -1 || mntl < 6 )
-			{
-				alert("<%:Invalid External Path. Reverting to Internal.%>");
-				r = "0";
-				document.getElementById("exflag").innerHTML="<%:Internal%>";
-				document.getElementById("exflag").style.fontWeight = "bold" ;
-				document.getElementById("exflag").style.fontSize = "large" ;
-			}
-			else
-			{
-				document.getElementById("exflag").innerHTML=r;
-				document.getElementById("exflag").style.fontWeight = "bold" ;
-				document.getElementById("exflag").style.fontSize = "small" ;
-			}
-		}
-		XHR.get('<%=luci.dispatcher.build_url("admin", "nlbw", "change_external")%>',
-			{ set: r },
-			function()
-			{
-			}
-		);
-		document.getElementById("pass").value="";
-		document.getElementById("apply2").disabled=false;
-		return false;
-	};
 
 	function unlock(btn)
 	{
 		document.getElementById("popup").style.display = "block";
-		document.getElementById("apply2").disabled=true;
 
 		return false;
 	}
@@ -421,6 +330,8 @@ var backflg = "0";
 		display:none;
 	}
     </style>
+	<link rel="stylesheet" href="rooter/css/iconmoon_splash.css">
+	<link rel="stylesheet" href="rooter/css/splash.css">
 </head>
 <fieldset class="cbi-section" id="cbi-modw">
 	<legend><%:Extra Internet Sources%></legend>
@@ -483,11 +394,6 @@ var backflg = "0";
 			<td></td>
 		</tr>
 		
-		<tr>
-			<td><div align="right" style="font-size : 17px" id="externalbw"><strong><%:Backup Storage Location%></strong></div></td>
-			<td><div align="center" id="exflag" ></div></td>
-			<td><input type="button" id="apply2" class="cbi-button cbi-button-apply" value="<%:Change Location%>" onclick="return unlock(this)" /></td>
-		</tr>
 	</table>
 
 </fieldset>
@@ -588,18 +494,41 @@ var backflg = "0";
 
 </fieldset>
 
-<fieldset class="cbi-section" id="cbi-mod">
-	<table width="1400" border="1" id="datar1" >
+<fieldset>
+	<h2> Last 30 Day Bandwidth Usage <span class="msCell"><span></span></span></h2>
+	<style>
+		hr {
+		  border: 0;
+		  border-top: 2px solid brown;
+		}
+	</style>
+	<table width="1000" border="0" id="datar1" >
 		<tr>
-			<td width="160px"><div align="center"><strong><%:IP Address%></strong></div></td>
-			<td width="200px"><div align="center"><strong><%:Name%></strong></div></td>
-			<td width="160px"><div align="center"><strong><%:MAC Address%></strong></div></td>
-			<td width="150px"><div align="center"><strong><%:Bandwidth Down%></strong></div></td>
-			<td width="150px"><div align="center"><strong><%:Bandwidth Up%></strong></div></td>
-			<td width="150px"><div align="center"><strong><%:Bandwidth Total%></strong></div></td>
+			<td width="160px" style="font-size : 17px"><div align="center"><strong><%:Days in Period%></strong></div></td>
+			<td width="200px" style="font-size : 17px"><div align="center"><strong><%:Bandwidth Used%></strong></div></td>
+			<td width="150px" style="font-size : 17px"><div align="center"><strong><%:%></strong></div></td>
+			<td width="150px" style="font-size : 17px"><div align="center"><strong><%:%></strong></div></td>
+			<td width="340" ></td>
+		</tr>
+		<tr>
+			<td><div align="center" id="stdate"></div></td>
+			<td><div align="center" id="bdwn"></div></td>
+			<td></td>
+			<td></td>
+			<td></td>
 		</tr>
 	</table>
-	<table width="1400" border="0" id="datar" >
+	<br />
+	<table width="1000" border="0" id="datar" >
+		<tr>
+			<td width="160px" style="font-size : 17px"><div align="center"><strong><%:Date%></strong></div></td>
+			<td width="200px" style="font-size : 17px"><div align="center"><strong><%:Bandwidth Down%></strong></div></td>
+			<td width="150px" style="font-size : 17px"><div align="center"><strong><%:Bandwidth Up%></strong></div></td>
+			<td width="150px" style="font-size : 17px"><div align="center"><strong><%:Bandwidth Total%></strong></div></td>
+			<td width="340" ></td>
+		</tr>
+	</table>
+	<table width="1000" border="0" id="datar2" >
 		<tr>
 		</tr>
 	</table>

@@ -34,4 +34,8 @@ check_config () {
 
 start() {
 	check_config
+	if [ -s /etc/config/zerotier ]; then
+		gr_backup=`grep "^/etc/config/zerotier" /etc/sysupgrade.conf`
+		[ -z $gr_backup ] && echo "/etc/config/zerotier" >> /etc/sysupgrade.conf
+	fi
 }

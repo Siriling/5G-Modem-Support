@@ -3,10 +3,10 @@
 
 genline() {
 	MONLIST=$MONLIST"<tr>"
-		t1="<td><div align=/"center/"><strong> $START</strong></div></td>"
-		t2="<td><div align=/"center/"><strong> $updata</strong></div></td>"
-		t3="<td><div align=/"center/"><strong> $downdata</strong></div></td>"
-		t4="<td><div align=/"center/"><strong> $totaldata</strong></div></td>"
+		t1="<td><div align=\"center\"><strong> $START</strong></div></td>"
+		t2="<td><div align=\"center\"><strong> $updata</strong></div></td>"
+		t3="<td><div align=\"center\"><strong> $downdata</strong></div></td>"
+		t4="<td><div align=\"center\"><strong> $totaldata</strong></div></td>"
 	MONLIST=$MONLIST$t1$t2$t3$t4"</tr>"
 }
 
@@ -92,6 +92,8 @@ currdata() {
 	
 	currdata
 	
+	ROLL=$(uci -q get custom.bwallocate.rollover)
+	
 	sed -i -e "s!#START#!$START!g" $STEMP
 	sed -i -e "s!#END#!$END!g" $STEMP
 	sed -i -e "s!#TOTAL#!$TOTAL!g" $STEMP
@@ -101,6 +103,7 @@ currdata() {
 	
 	sed -i -e "s!#CDAYS#!$cdays!g" $STEMP
 	sed -i -e "s!#CTOTAL#!$ctused!g" $STEMP
+	sed -i -e "s!#ROLL#!$ROLL!g" $STEMP
 	sed -i -e "s!#CDOWN#!$ctdwn!g" $STEMP
 	sed -i -e "s!#CUP#!$ctup!g" $STEMP
 	sed -i -e "s!#PROJECT#!$cproject!g" $STEMP

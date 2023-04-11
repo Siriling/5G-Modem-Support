@@ -84,4 +84,9 @@ start() {
 	
 	config_load wireguard
 	config_foreach chk_start wireguard
+	if [ -e /etc/crontabs/root ]; then
+		sed -i '/wireguard_watchdog/d' /etc/crontabs/root
+	fi
+	echo '* * * * * /usr/bin/wireguard_watchdog' >> /etc/crontabs/root
+	/etc/init.d/cron restart
 }

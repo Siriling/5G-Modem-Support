@@ -19,15 +19,18 @@ if [ ! -z "$ERR" ]; then # No SIM
 fi
 RDY=$(echo "$OX" | grep "READY")
 if [ -z "$RDY" ]; then # SIM Locked
-	spin=$(uci -q get custom.simpin.pin) # SIM Pin
+	spin=$(uci -q get country.global.simpin)
 	if [ -z "$spin" ]; then
-		spin=$(uci -q get modem.modeminfo$CURRMODEM.pincode) # Profile Pin
+		spin=$(uci -q get custom.simpin.pin) # SIM Pin
 		if [ -z "$spin" ]; then
-			spin=$(uci -q get profile.simpin.pin) # Default profile Pin
+			spin=$(uci -q get modem.modeminfo$CURRMODEM.pincode) # Profile Pin
 			if [ -z "$spin" ]; then
-				echo "0" > /tmp/simpin$CURRMODEM # Locked/No Pin
-				log "Locked/No Pin"
-				exit 0
+				spin=$(uci -q get profile.simpin.pin) # Default profile Pin
+				if [ -z "$spin" ]; then
+					echo "0" > /tmp/simpin$CURRMODEM # Locked/No Pin
+					log "Locked/No Pin"
+					exit 0
+				fi
 			fi
 		fi
 	fi
@@ -43,6 +46,7 @@ if [ -z "$RDY" ]; then # SIM Locked
 		exit 0
 	fi
 	log "Correct Pin"
+	$ROOTER/common/gettype.sh $CURRMODEM
 else
 	log "Not Locked"
 	sblk=$(uci -q get custom.simpin.block)

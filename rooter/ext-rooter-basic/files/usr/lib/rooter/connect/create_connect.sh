@@ -157,7 +157,7 @@ check_apn() {
 	CGDCONT2=$(echo $OX | grep "+CGDCONT: 2,")
 	if [ -z "$CGDCONT2" ]; then
 		ATCMDD="AT+CGDCONT=2,\"$IPVAR\",\"ims\""
-		OXy=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
+		OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
 	fi
 	if `echo $OX | grep "+CGDCONT: $CID,\"$IPVAR\",\"$NAPN\"," 1>/dev/null 2>&1`
 	then
@@ -195,6 +195,8 @@ chcklog() {
 
 get_connect() {
 	NAPN=$(uci -q get modem.modeminfo$CURRMODEM.apn)
+	NAPN2=$(uci -q get modem.modeminfo$CURRMODEM.apn2)
+	NAPN3=$(uci -q get modem.modeminfo$CURRMODEM.apn3)
 	NUSER=$(uci -q get modem.modeminfo$CURRMODEM.user)
 	NPASS=$(uci -q get modem.modeminfo$CURRMODEM.passw)
 	NAUTH=$(uci -q get modem.modeminfo$CURRMODEM.auth)
@@ -213,7 +215,7 @@ get_connect() {
 # QMI and MBIM can't handle nil
 #
 	case $PROT in
-	"2"|"3"|"30"|"88" )
+	"2"|"3"|"30" )
 		if [ -z "$NUSER" ]; then
 			NUSER="NIL"
 		fi
@@ -224,6 +226,8 @@ get_connect() {
 	esac
 
 	uci set modem.modem$CURRMODEM.apn=$NAPN
+	uci set modem.modem$CURRMODEM.apn2=$NAPN2
+	uci set modem.modem$CURRMODEM.apn3=$NAPN3
 	uci set modem.modem$CURRMODEM.user=$NUSER
 	uci set modem.modem$CURRMODEM.passw=$NPASS
 	uci set modem.modem$CURRMODEM.auth=$NAUTH
@@ -302,6 +306,10 @@ chkraw() {
 	elif [ $idV = 2cb7 -a $idP = 0104 ]; then
 		RAW=1
 	elif [ $idV = 413c -a $idP = 81d7 ]; then
+		RAW=1
+	elif [ $idV = 413c -a $idP = 81e0 ]; then
+		RAW=1
+	elif [ $idV = 12d1 -a $idP = 1506 ]; then
 		RAW=1
 	fi
 }
@@ -470,6 +478,12 @@ case $PROT in
 	uci set modem.modem$CURRMODEM.interface=$ifname
 	uci commit modem
 	;;
+	"28" )
+	OX="$(for a in /sys/class/net/*; do readlink $a; done | grep "$MATCH" | grep ".6/net/")"
+	ifname=$(basename $OX)
+	uci set modem.modem$CURRMODEM.interface=$ifname
+	uci commit modem
+	;;
 esac
 
 OX=$(for a in /sys/class/tty/*; do readlink $a; done | grep "$MATCH" | tr '\n' ' ' | xargs -r -n1 basename)
@@ -508,8 +522,8 @@ uci commit modem.modem$CURRMODEM
 #
 # QMI modem comm port
 #
-	"2"|"88" )
-		log "Start QMI (RMNET) Connection"
+	"2" )
+		log "Start QMI Connection"
 		sleep $DELAY
 
 		chksierra
@@ -536,7 +550,7 @@ uci commit modem.modem$CURRMODEM
 		lua $ROOTER/common/modemchk.lua "$idV" "$idP" "$CPORT" "$CPORT"
 		source /tmp/parmpass
 
-		log "Modem $CURRMODEM QMI (RMNET) Comm Port : /dev/ttyUSB$CPORT"
+		log "Modem $CURRMODEM QMI Comm Port : /dev/ttyUSB$CPORT"
 		chkraw
 		;;
 	"3"|"30" )
@@ -607,6 +621,10 @@ uci commit modem.modem$CURRMODEM
 							fi
 							mbimcport
 						;;
+						"1e0e" )
+							get_tty 02
+							mbimcport
+						;; 
 						"2cb7" )
 							get_tty_fix 0
 							lua $ROOTER/common/modemchk.lua "$idV" "$idP" "$CPORT" "$CPORT"
@@ -634,7 +652,7 @@ uci commit modem.modem$CURRMODEM
 #
 	"4"|"6"|"7"|"24"|"26"|"27" )
 		if [ "$idV" = "2c7c" -a "$idP" = "0900" ]; then
-			ATCMDD='AT+QCFG="usbnet",2'
+			ATCMDD='AT+QCFG="usbnet",1'
 			OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB2" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
 			ATCMDD='AT+CFUN=1,1'
 			OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB2" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
@@ -683,13 +701,13 @@ elif [ "$idV" = "05c6" ]; then
 fi
 
 if [ -e $ROOTER/connect/preconnect.sh ]; then
-	if [ "$RECON" != "2"|"88" ]; then
+	if [ "$RECON" != "2" ]; then
 		$ROOTER/connect/preconnect.sh $CURRMODEM
 	fi
 fi
 
 if $QUECTEL; then
-	if [ "$RECON" != "2"|"88" ]; then
+	if [ "$RECON" != "2" ]; then
 		ATCMDD="AT+CNMI?"
 		OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
 		if `echo $OX | grep -o "+CNMI: [0-3],2," >/dev/null 2>&1`; then
@@ -784,8 +802,18 @@ if [ -n "$CHKPORT" ]; then
 
 	if [ -e /tmp/simpin$CURRMODEM ]; then
 		log " SIM Error"
+		if [ -e $ROOTER/simerr.sh ]; then
+			$ROOTER/simerr.sh $CURRMODEM
+		fi
 		exit 0
 	fi
+	
+	detect=$(uci -q get modem.modeminfo$CURRMODEM.detect)
+	if [ "$detect" = "1" ]; then
+		log "Stopped after detection"
+		exit 0
+	fi
+	
 	if [ -e /usr/lib/gps/gps.sh ]; then
 		/usr/lib/gps/gps.sh $CURRMODEM &
 	fi
@@ -857,7 +885,11 @@ if [ -n "$CHKPORT" ]; then
 	if [ -z "$ttl" ]; then
 		ttl="0"
 	fi
-	$ROOTER/connect/handlettl.sh $CURRMODEM "$ttl" &
+	ttloption=$(uci -q get modem.modeminfo$CURRMODEM.ttloption)
+	if [ -z "$ttloption" ]; then
+		ttloption="0"
+	fi
+	$ROOTER/connect/handlettl.sh $CURRMODEM "$ttl" "$ttloption" &
 
 	if [ -e $ROOTER/changedevice.sh ]; then
 		$ROOTER/changedevice.sh $ifname
@@ -877,10 +909,23 @@ if [ -n "$CHKPORT" ]; then
 			isplist=$(grep -F "$mcc5" '/usr/lib/autoapn/apn.data')
 			if [ -z "$isplist" ]; then
 				isplist="000000,$NAPN,Default,$NPASS,$CID,$NUSER,$NAUTH"
+				if [ ! -z "$NAPN2" ]; then
+					isplist=$isplist" 000000,$NAPN2,Default,$NPASS,$CID,$NUSER,$NAUTH"
+				fi
+				if [ ! -z "$NAPN3" ]; then
+					isplist=$isplist" 000000,$NAPN3,Default,$NPASS,$CID,$NUSER,$NAUTH"
+				fi
 			fi
 		fi
 	else
 		isplist="000000,$NAPN,Default,$NPASS,$CID,$NUSER,$NAUTH"
+		log "$isplist"
+		if [ ! -z "$NAPN2" ]; then
+			isplist=$isplist" 000000,$NAPN2,Default,$NPASS,$CID,$NUSER,$NAUTH"
+		fi
+		if [ ! -z "$NAPN3" ]; then
+			isplist=$isplist" 000000,$NAPN3,Default,$NPASS,$CID,$NUSER,$NAUTH"
+		fi
 	fi
 
 	uci set modem.modeminfo$CURRMODEM.isplist="$isplist"
@@ -981,7 +1026,7 @@ do
 	#
 	# Check provider Lock
 	#
-		"1"|"2"|"4"|"6"|"7"|"24"|"26"|"27"|"30"|"28"|"88" )
+		"1"|"2"|"4"|"6"|"7"|"24"|"26"|"27"|"30"|"28" )
 			$ROOTER/common/lockchk.sh $CURRMODEM
 			;;
 		* )
@@ -1015,6 +1060,11 @@ do
 
 		if [ -e $ROOTER/modem-led.sh ]; then
 			$ROOTER/modem-led.sh $CURRMODEM 2
+		fi
+		
+		if [ -e $ROOTER/connect/chkconn.sh ]; then
+			jkillall chkconn.sh
+			$ROOTER/connect/chkconn.sh $CURRMODEM &
 		fi
 
 		BRK=0
@@ -1052,14 +1102,21 @@ do
 	# QMI connect script
 	#
 		"2" )
-			check_apn
-			$ROOTER/qmi/connectqmi.sh $CURRMODEM cdc-wdm$WDMNX $NAUTH $NAPN $NUSER $NPASS $RAW $DHCP $PINC
-			if [ $? = 0 ]; then
-				ifup wan$INTER
-				[ -f /tmp/ipv6supp$INTER ] && addv6
-			else
-				exit 0
+			if [ -n "$CPORT" ]; then
+				check_apn
 			fi
+			log "Using Netifd Method"
+
+			uci delete network.wan$INTER
+			uci set network.wan$INTER=interface
+			uci set network.wan$INTER.proto=qmi
+			uci set network.wan$INTER.device=/dev/cdc-wdm$WDMNX
+			uci set network.wan$INTER.metric=$INTER"0"
+			uci set network.wan$INTER.currmodem=$CURRMODEM
+			uci -q commit network
+			rm -f /tmp/usbwait
+			ifup wan$INTER
+			exit 0
 			;;
 	#
 	# NCM connect script
@@ -1298,7 +1355,7 @@ case $PROT in
 #
 # Sierra, NCM and QMI use modemsignal.sh and reconnect.sh
 #
-	"1"|"2"|"4"|"6"|"7"|"24"|"26"|"27"|"28"|"88" )
+	"1"|"2"|"4"|"6"|"7"|"24"|"26"|"27"|"28" )
 		ln -fs $ROOTER/signal/modemsignal.sh $ROOTER_LINK/getsignal$CURRMODEM
 		ln -fs $ROOTER/connect/reconnect.sh $ROOTER_LINK/reconnect$CURRMODEM
 		# send custom AT startup command
@@ -1345,6 +1402,7 @@ esac
 	fi
 
 	CLB=$(uci -q get modem.modeminfo$CURRMODEM.lb)
+	CLB=1
 	if [ -e /etc/config/mwan3 ]; then
 		ENB=$(uci -q get mwan3.wan$INTER.enabled)
 		if [ ! -z "$ENB" ]; then
@@ -1357,4 +1415,3 @@ esac
 			/usr/sbin/mwan3 restart
 		fi
 	fi
-

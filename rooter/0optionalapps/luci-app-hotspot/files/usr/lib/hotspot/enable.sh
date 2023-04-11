@@ -22,6 +22,10 @@ if [ $SET = "1" ]; then
 		uci -q set wireless.wwan$wif.key=
 		uci set wireless.wwan$wif.ssid="Hotspot Manager Interface"
        	uci -q commit wireless
+		PID=$(ps |grep "travelmate.sh" | grep -v grep |head -n 1 | awk '{print $1}')
+		if [ ! -z "$PID" ]; then
+			kill -9 $PID
+		fi
 		/usr/lib/hotspot/travelmate.sh &
 	fi
 else

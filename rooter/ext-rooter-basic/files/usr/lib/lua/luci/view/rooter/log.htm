@@ -20,7 +20,7 @@
                         function()
                         {
                                 btn.disabled = false;
-                                btn.value = '<%:清空日志%>';
+                                btn.value = '<%:Clear Log%>';
                         }
                 );
         }
@@ -29,7 +29,7 @@
 
 <form method="post" action="<%=REQUEST_URI%>">
 <div class="cbi-map" id="cbi-modem">
-<h2><a id="content" name="content"><%:连接日志%></a></h2>
+<h2><a id="content" name="content"><%:Connection Log%></a></h2>
 <div class="cbi-map-descr"> </div>
 
 <fieldset class="cbi-section" id="cbi-mod">
@@ -41,7 +41,7 @@
 	</tr>
 	 <tr>
                 <td>
-                <input type="button" id="clearlog" class="cbi-button cbi-button-apply" value="<%:清空日志%>" onclick="return clear_log(this)"/>
+                <input type="button" id="clearlog" class="cbi-button cbi-button-apply" value="<%:Clear Log%>" onclick="return clear_log(this)"/>
                 </td>
         </tr>
 	</table>
@@ -51,4 +51,3 @@
 </div>
 </form>
 <%+footer%>
-

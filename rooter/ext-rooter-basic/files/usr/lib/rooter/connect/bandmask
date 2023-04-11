@@ -8,6 +8,8 @@ log() {
 
 CURRMODEM=$1
 MODTYPE=$2
+uci set modem.modem$CURRMODEM.modtype=$MODTYPE
+uci commit modem
 
 CPORT=$(uci get modem.modem$CURRMODEM.commport)
 

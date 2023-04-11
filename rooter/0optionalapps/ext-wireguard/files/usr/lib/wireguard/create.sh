@@ -33,6 +33,11 @@ do_create() {
 	if [ ! -z $mtu ]; then
 		echo "MTU = "$mtu >> ${PKI_DIR}/package/wg.conf
 	fi
+	config_get wginter $config wginter
+	if [ -z"$wginter"]; then
+		wginter=0
+	fi
+	echo "PrivateKey = "$wginter >> ${PKI_DIR}/package/wg.conf
 	echo " " >> ${PKI_DIR}/package/wg.conf
 	echo "[Peer]" >> ${PKI_DIR}/package/wg.conf
 	PUB=$(uci get wireguard."$WG".publickey)

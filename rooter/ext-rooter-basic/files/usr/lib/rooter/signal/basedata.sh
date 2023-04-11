@@ -42,6 +42,13 @@ if [ "x$MODEL" != "x" ]; then
 else
 	MODEL=$(uci get modem.modem$CURRMODEM.model)
 fi
+dell=$(echo "$MANUF" | grep "DELL")
+if [ ! -z "$dell" ]; then
+	if [ "$MODEL" = "4116" ]; then
+		MANUF="Dell"
+		MODEL="DW5821e/T77W968"
+	fi
+fi
 MODEM=$MANUF" "$MODEL
 
 pval=$(uci get modem.modem$CURRMODEM.proto)
@@ -51,9 +58,6 @@ case $pval in
 	;;
 "2" )
 	PROTO="QMI"
-	;;
-"88" )
-	PROTO="QUECTEL  RMNET"
 	;;
 "3"|"30" )
 	PROTO="MBIM"
@@ -76,4 +80,3 @@ echo 'MODEM="'"$MODEM"'"' >> /tmp/base$CURRMODEM.file
 echo 'DOWN="'"$DOWN"'"' >> /tmp/base$CURRMODEM.file
 echo 'UP="'"$UP"'"' >> /tmp/base$CURRMODEM.file
 echo 'PROTO="'"$PROTO"'"' >> /tmp/base$CURRMODEM.file
-

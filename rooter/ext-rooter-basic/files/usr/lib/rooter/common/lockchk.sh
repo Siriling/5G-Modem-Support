@@ -7,30 +7,22 @@ log() {
 }
 
 setautocops() {
-	if [ "$MODTYPE" = "2" -o "$MODTYPE" = "6" -o "$MODTYPE" = "8" -o "$MODTYPE" = "11" ]; then
-		NETMODE=$(uci get modem.modem$CURRMODEM.netmode)
-		case $NETMODE in
-			"3")
-				ATCMDD="AT+COPS=0,,,0" ;;
-			"5")
-				ATCMDD="AT+COPS=0,,,2" ;;
-			"7")
-				ATCMDD="AT+COPS=0,,,7" ;;
-			"8")
-				ATCMDD="AT+COPS=0,,,13" ;;
-			"9")
-				ATCMDD="AT+COPS=0,,,12" ;;
-			*)
-				ATCMDD="AT+COPS=0" ;;
-		esac
-	else
-		ATCMDD="AT+COPS=0"
-	fi
+	case $NETMODE in
+		"3")
+			ATCMDD="AT+COPS=0,,,0" ;;
+		"5")
+			ATCMDD="AT+COPS=0,,,2" ;;
+		"7")
+			ATCMDD="AT+COPS=0,,,7" ;;
+		"8")
+			ATCMDD="AT+COPS=0,,,13" ;;
+		"9")
+			ATCMDD="AT+COPS=0,,,12" ;;
+		*)
+			ATCMDD="AT+COPS=0" ;;
+	esac
 	OX=$($ROOTER/gcom/gcom-locked "$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
-	CLOG=$(uci get modem.modeminfo$CURRMODEM.log)
-	if [ $CLOG = "1" ]; then
-		log "$OX"
-	fi
+	log "$OX"
 	exit 0
 }
 
@@ -42,8 +34,8 @@ if [ -e /usr/lib/netroam/lock.sh ]; then
 	fi
 fi
 CPORT=/dev/ttyUSB$(uci get modem.modem$CURRMODEM.commport)
-MODTYPE=$(uci get modem.modem$CURRMODEM.modemtype)
-LOCK=$(uci get modem.modeminfo$CURRMODEM.lock)
+NETMODE=$(uci -q get modem.modem$CURRMODEM.netmode)
+LOCK=$(uci -q get modem.modeminfo$CURRMODEM.lock)
 if [ "$LOCK" = "2" ]; then
 	LOCK="4"
 fi
@@ -64,7 +56,7 @@ if [ $LMCC -ne 3 ]; then
 	setautocops
 fi
 MNC=$(uci -q get modem.modeminfo$CURRMODEM.mnc)
-if [ -z $MNC ]; then
+if [ -z "$MNC" ]; then
 	setautocops
 fi
 LMNC=${#MNC}
@@ -74,31 +66,27 @@ fi
 if [ "$COPSMODE$COPSPLMN" = "$LOCK$MCC$MNC" ]; then
 	exit 0
 fi
-if [ "$MODTYPE" = "2" -o "$MODTYPE" = "6" -o "$MODTYPE" = "8" -o "$MODTYPE" = "11" ]; then
-	NETMODE=$(uci get modem.modem$CURRMODEM.netmode)
-	case $NETMODE in
-		"3")
-			ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\",0" ;;
-		"5")
-			ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\",2" ;;
-		"7")
-			ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\",7" ;;
-		"8")
-			ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\",13" ;;
-		"9")
-			ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\",12" ;;
-		*)
-			ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\"" ;;
-	esac
-else
-	ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\""
-fi
+case $NETMODE in
+	"3")
+		ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\",0" ;;
+	"5")
+		ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\",2" ;;
+	"7")
+		ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\",7" ;;
+	"8")
+		ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\",13" ;;
+	"9")
+		ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\",12" ;;
+	*)
+		ATCMDD="AT+COPS=$LOCK,2,\"$MCC$MNC\"" ;;
+esac
 
 OX=$($ROOTER/gcom/gcom-locked "$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
-CLOG=$(uci get modem.modeminfo$CURRMODEM.log)
-if [ $CLOG = "1" ]; then
+
+ERROR="ERROR"
+if `echo ${OX} | grep "${ERROR}" 1>/dev/null 2>&1`
+then
 	log "Error While Locking to Provider"
-	log "$OX"
 else
 	log "Locked to Provider $MCC $MNC"
 fi

@@ -13,12 +13,9 @@ if [ "$ext" = "$external" ]; then
 else
 	uci set bwmon.general.external=$external
 	uci commit bwmon
-	PID=$(ps |grep "wrtbwmon.sh" | grep -v grep |head -n 1 | awk '{print $1}')
-	PID1=$(ps |grep "create.sh" | grep -v grep |head -n 1 | awk '{print $1}')
+	PID=$(ps |grep "bwmon.sh" | grep -v grep |head -n 1 | awk '{print $1}')
 	if [ ! -z "$PID" ]; then
 		kill -9 $PID
-		kill -9 $PID1
 	fi
-	/usr/lib/bwmon/wrtbwmon.sh &
-	/usr/lib/bwmon/create.sh &
+	/usr/lib/bwmon/bwmon.sh &
 fi

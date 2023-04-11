@@ -22,7 +22,7 @@ trm_iw=1
 trm_auto=$(uci -q get travelmate.global.trm_auto)
 
 check_wwan() {
-	uci set travelmate.global.ssid="0"
+	uci set travelmate.global.ssid="8"
 	wif=$(uci -q get travelmate.global.freq)
 	if [ -z "$wif" ]; then
 		uci set travelmate.global.freq="2"
@@ -309,6 +309,9 @@ f_main()
 									uci commit travelmate
 									uci -q set wireless.wwan$wif.ssid="$ssid"
 									uci -q set wireless.wwan$wif.encryption=$encrypt
+									if [ "$encrypt" = "none" ]; then
+										key=""
+									fi
 									uci -q set wireless.wwan$wif.key=$key
 									uci -q set wireless.wwan$wif.disabled=0
 									uci -q commit wireless
@@ -381,8 +384,10 @@ f_main()
 					# No connection to any in list
 					cnt=$((cnt+1))
 					if [ $reconn -gt 0 ]; then
-						f_log "info " "Sleep before retrying"
-						sleep 30
+						if [ ${cnt} -lt $reconn ]; then
+							f_log "info " "Sleep before retrying"
+							sleep 30
+						fi
 					fi
 					# repeat scan and connect
 				done

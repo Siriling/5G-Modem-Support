@@ -56,17 +56,4 @@ fi
 OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
 log "$OX"
 sleep 5		
-ATCMDD="AT+CFUN=1,1"
-OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
-log "Hard modem reset done on /dev/ttyUSB$CPORT to reload drivers"
-ifdown wan$CURRMODEM
-uci delete network.wan$CURRMODEM
-uci set network.wan$CURRMODEM=interface
-uci set network.wan$CURRMODEM.proto=dhcp
-uci set network.wan$CURRMODEM.${ifname1}="wan"$CURRMODEM
-uci set network.wan$CURRMODEM.metric=$CURRMODEM"0"
-uci commit network
-/etc/init.d/network reload
-ifdown wan$CURRMODEM
-echo "1" > /tmp/modgone
-log "Setting Modem Removal flag (1)"
+/usr/lib/rooter/luci/restart.sh $CURRMODEM "9"

@@ -9,7 +9,7 @@ NETMODE=$2
 	modlog "ModeChange $CURRMODEM" "$@"
 # }
 
-CURRMODEM=$(uci get modem.general.modemnum)
+CURRMODEM=$(uci get modem.general.miscnum)
 uci set modem.modem$CURRMODEM.cmode="0"
 uci set modem.modem$CURRMODEM.netmode="10"
 uci commit modem
@@ -250,7 +250,7 @@ if [ $MODEMTYPE -eq 10 ]; then
 		"9")
 			ATC="AT+CNMP=71" ;;
 		*)
-			ATC="AT+CNMP=1" ;;
+			ATC="AT+CNMP=2" ;;
 	esac
 fi
 
@@ -273,4 +273,4 @@ $ROOTER/luci/celltype.sh $CURRMODEM
 uci set modem.modem$CURRMODEM.cmode="1"
 uci commit modem
 
-$ROOTER/luci/restart.sh $CURRMODEM
+$ROOTER/luci/restart.sh $CURRMODEM 11

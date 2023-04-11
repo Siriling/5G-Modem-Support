@@ -28,6 +28,8 @@ fi
 
 echo "1" > /sys/class/gpio/gpio9/value
 sleep 1
+echo "1" > /sys/class/gpio/gpio10/value
+sleep 1
 echo "1" > /sys/class/gpio/gpio12/value
 
 # 1 Check USB Devices, Rev=0.00 is probably a boothold device, awk reverses the line order

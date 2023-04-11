@@ -9,11 +9,10 @@ delTTL() {
 	exst=$(cat /etc/ttl.user | grep "#startTTL$CURRMODEM")
 	if [ ! -z "$exst" ]; then
 		cp /etc/ttl.user /etc/ttl.user.bk
-		sed -i -e "s!iptables -t mangle -I POSTROUTING -o $IFACE!iptables -t mangle -D POSTROUTING -o $IFACE!g" /etc/ttl.user.bk
-		sed -i -e "s!iptables -t mangle -I PREROUTING -i $IFACE!iptables -t mangle -D PREROUTING -i $IFACE!g" /etc/ttl.user.bk
-		sed -i -e "s!ip6tables -t mangle -I POSTROUTING -o $IFACE!iptables -t mangle -D POSTROUTING -o $IFACE!g" /etc/ttl.user.bk
-		sed -i -e "s!ip6tables -t mangle -I PREROUTING -i $IFACE!iptables -t mangle -D PREROUTING -i $IFACE!g" /etc/ttl.user.bk
-		
+		sed -i -e "s|iptables -t mangle -I POSTROUTING -o |iptables -t mangle -D POSTROUTING -o |g" /etc/ttl.user.bk
+		sed -i -e "s|iptables -t mangle -I PREROUTING -i |iptables -t mangle -D PREROUTING -i |g" /etc/ttl.user.bk
+		sed -i -e "s|ip6tables -t mangle -I POSTROUTING -o |ip6tables -t mangle -D POSTROUTING -o |g" /etc/ttl.user.bk
+		sed -i -e "s|ip6tables -t mangle -I PREROUTING -i |ip6tables -t mangle -D PREROUTING -i $|g" /etc/ttl.user.bk
 		rm -f /tmp/ttl.user
 		run=0
 		while IFS= read -r line; do
@@ -43,6 +42,8 @@ delTTL() {
 
 CURRMODEM=$1
 TTL="$2"
+TTLOPTION="$3"
+
 if [ $CURRMODEM = "0" ]; then
 	IFACE="wan"
 else
@@ -78,29 +79,82 @@ if [ "$TTL" = "TTL-INC 1" ]; then
 fi
 
 if [ $VALUE = "0" ]; then
-	echo "iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-inc 1" >> /etc/ttl.user
-	echo "iptables -t mangle -I PREROUTING -i $IFACE -j TTL --ttl-inc 1" >> /etc/ttl.user
-	iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-inc 1
-	iptables -t mangle -I PREROUTING -i $IFACE -j TTL --ttl-inc 1
-	if [ -e /usr/sbin/ip6tables ]; then
-		echo "ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-inc 1" >> /etc/ttl.user
-		echo "ip6tables -t mangle -I PREROUTING -i $IFACE -j HL --hl-inc 1" >> /etc/ttl.user
-		ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-inc 1
-		ip6tables -t mangle -I PREROUTING -i $IFACE -j HL --hl-inc 1
+	if [ "$TTLOPTION" = "0" ]; then
+		echo "iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-inc 1" >> /etc/ttl.user
+		log "iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-inc 1"
+		echo "iptables -t mangle -I PREROUTING -i $IFACE -j TTL --ttl-inc 1" >> /etc/ttl.user
+		log "iptables -t mangle -I PREROUTING -i $IFACE -j TTL --ttl-inc 1"
+		iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-inc 1
+		iptables -t mangle -I PREROUTING -i $IFACE -j TTL --ttl-inc 1
+		if [ -e /usr/sbin/ip6tables ]; then
+			echo "ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-inc 1" >> /etc/ttl.user
+			log "ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-inc 1"
+			echo "ip6tables -t mangle -I PREROUTING -i $IFACE -j HL --hl-inc 1" >> /etc/ttl.user
+			log "ip6tables -t mangle -I PREROUTING -i $IFACE -j HL --hl-inc 1"
+			ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-inc 1
+			ip6tables -t mangle -I PREROUTING -i $IFACE -j HL --hl-inc 1
+		fi
+	else
+		if [ "$TTLOPTION" = "1" ]; then
+			echo "iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-inc 1" >> /etc/ttl.user
+			log "iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-inc 1"
+			iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-inc 1
+			if [ -e /usr/sbin/ip6tables ]; then
+				echo "ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-inc 1" >> /etc/ttl.user
+				log "ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-inc 1"
+				ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-inc 1
+			fi
+		else
+			echo "iptables -t mangle -I POSTROUTING -o $IFACE ! -p icmp -j TTL --ttl-inc 1" >> /etc/ttl.user
+			log "iptables -t mangle -I POSTROUTING -o $IFACE ! -p icmp -j TTL --ttl-inc 1"
+			iptables -t mangle -I POSTROUTING -o $IFACE ! -p icmp -j TTL --ttl-inc 1
+			if [ -e /usr/sbin/ip6tables ]; then
+				echo "ip6tables -t mangle -I POSTROUTING -o $IFACE ! -p icmp -j HL --hl-inc 1" >> /etc/ttl.user
+				log "ip6tables -t mangle -I POSTROUTING -o $IFACE ! -p icmp -j HL --hl-inc 1"
+				ip6tables -t mangle -I POSTROUTING -o $IFACE ! -p icmp -j HL --hl-inc 1
+			fi
+		fi
 	fi
 else
-	echo "iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-set $VALUE" >> /etc/ttl.user
-	echo "iptables -t mangle -I PREROUTING -i $IFACE -j TTL --ttl-set $VALUE" >> /etc/ttl.user
-	iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-set $VALUE
-	iptables -t mangle -I PREROUTING -i $IFACE -j TTL --ttl-set $VALUE
-	if [ -e /usr/sbin/ip6tables ]; then
-		echo "ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-set $VALUE" >> /etc/ttl.user
-		echo "ip6tables -t mangle -I PREROUTING -i $IFACE -j HL --hl-set $VALUE" >> /etc/ttl.user
-		ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-set $VALUE
-		ip6tables -t mangle -I PREROUTING -i $IFACE -j HL --hl-set $VALUE
+	if [ "$TTLOPTION" = "0" ]; then
+		echo "iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-set $VALUE" >> /etc/ttl.user
+		log "iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-set $VALUE"
+		echo "iptables -t mangle -I PREROUTING -i $IFACE -j TTL --ttl-set $VALUE" >> /etc/ttl.user
+		log "iptables -t mangle -I PREROUTING -i $IFACE -j TTL --ttl-set $VALUE"
+		iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-set $VALUE
+		iptables -t mangle -I PREROUTING -i $IFACE -j TTL --ttl-set $VALUE
+		if [ -e /usr/sbin/ip6tables ]; then
+			echo "ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-set $VALUE" >> /etc/ttl.user
+			log "ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-set $VALUE"
+			echo "ip6tables -t mangle -I PREROUTING -i $IFACE -j HL --hl-set $VALUE" >> /etc/ttl.user
+			log "ip6tables -t mangle -I PREROUTING -i $IFACE -j HL --hl-set $VALUE"
+			ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-set $VALUE
+			ip6tables -t mangle -I PREROUTING -i $IFACE -j HL --hl-set $VALUE
+		fi
+	else
+		if [ "$TTLOPTION" = "1" ]; then
+			echo "iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-set $VALUE" >> /etc/ttl.user
+			log "iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-set $VALUE"
+			iptables -t mangle -I POSTROUTING -o $IFACE -j TTL --ttl-set $VALUE
+			if [ -e /usr/sbin/ip6tables ]; then
+				echo "ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-set $VALUE" >> /etc/ttl.user
+				log "ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-set $VALUE"
+				ip6tables -t mangle -I POSTROUTING -o $IFACE -j HL --hl-set $VALUE
+			fi
+		else
+			echo "iptables -t mangle -I POSTROUTING -o $IFACE ! -p icmp -j TTL --ttl-set $VALUE" >> /etc/ttl.user
+			log "iptables -t mangle -I POSTROUTING -o $IFACE ! -p icmp -j TTL --ttl-set $VALUE"
+			iptables -t mangle -I POSTROUTING -o $IFACE ! -p icmp -j TTL --ttl-set $VALUE
+			if [ -e /usr/sbin/ip6tables ]; then
+				echo "ip6tables -t mangle -I POSTROUTING -o $IFACE ! -p icmp -j HL --hl-set $VALUE" >> /etc/ttl.user
+				log "ip6tables -t mangle -I POSTROUTING -o $IFACE ! -p icmp -j HL --hl-set $VALUE"
+				ip6tables -t mangle -I POSTROUTING -o $IFACE ! -p icmp -j HL --hl-set $VALUE
+			fi
+		fi
 	fi
 fi
 echo "#endTTL$CURRMODEM" >> /etc/ttl.user
+
 
 
 

@@ -44,15 +44,19 @@ if [ $SERVE = "0" ]; then
 	uci add_list network.wg1.addresses=""
 	uci commit network
 else
-	ifdown wg0
+	INTER=$(uci -q get wireguard."$WG".wginter)
+	if [ -z "$INTER" ]; then
+		INTER=0
+	fi
+	ifdown wg$INTER
 	uci set wireguard.settings.client="0"
-	uci delete network.wg0
-	uci set network.wg0=interface
-	uci set network.wg0.proto="wireguard"
-	uci set network.wg0.auto="0"
-	uci set network.wg0.private_key=""
-	uci set network.wg0.listen_port=""
-	uci add_list network.wg0.addresses=""
+	uci delete network.wg$INTER
+	uci set network.wg$INTER=interface
+	uci set network.wg$INTER.proto="wireguard"
+	uci set network.wg$INTER.auto="0"
+	uci set network.wg$INTER.private_key=""
+	uci set network.wg$INTER.listen_port=""
+	uci add_list network.wg$INTER.addresses=""
 	uci commit network
 fi
 UDP=$(uci get wireguard."$WG".udptunnel)

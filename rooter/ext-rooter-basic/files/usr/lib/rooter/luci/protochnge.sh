@@ -151,5 +151,5 @@ fi
  fi
 sleep 5
 
-/usr/lib/rooter/luci/restart.sh $CURRMODEM
+/usr/lib/rooter/luci/restart.sh $CURRMODEM "9"
 

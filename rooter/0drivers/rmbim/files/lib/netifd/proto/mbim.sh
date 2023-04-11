@@ -328,14 +328,22 @@ _proto_mbim_setup() {
 		log "Failed to connect to network"
 		return 1
 	fi
+	log "Save Connect Data"
+	uci set modem.modem$CURRMODEM.mdevice=$device
+	uci set modem.modem$CURRMODEM.mapn=$apn
+	uci set modem.modem$CURRMODEM.mipt=$itp
+	uci set modem.modem$CURRMODEM.mauth=$auth
+	uci set modem.modem$CURRMODEM.musername=$username
+	uci set modem.modem$CURRMODEM.mpassword=$password
+	uci commit modem
 	
 	tid=$((tid + 1))
 
-	log "Get IP config"
 	CONFIG=$(umbim $DBG -n -t $tid -d $device config) || {
 		log "config failed"
 		return 1
 	}
+	log "IP config $CONFIG"
 
 	IP=$(echo -e "$CONFIG"|grep "ipv4address"|grep -E -o "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)")
 	GATE=$(echo -e "$CONFIG"|grep "ipv4gateway"|grep -E -o "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)")
@@ -467,6 +475,10 @@ _proto_mbim_setup() {
 #	SIGNAL=$(umbim $DBG -n -t $tid -d $device signal)
 #	CSQ=$(echo "$SIGNAL" | awk '/rssi:/ {print $2}')
 
+	if [ -e $ROOTER/modem-led.sh ]; then
+		$ROOTER/modem-led.sh $CURRMODEM 3
+	fi
+
 	$ROOTER/log/logger "Modem #$CURRMODEM Connected"
 	log "Modem $CURRMODEM Connected"
 
@@ -540,7 +552,8 @@ _proto_mbim_setup() {
 			$ROOTER/timezone.sh &
 		fi
 	fi
-	CLB=$(uci -q get modem.modeminfo$CURRMODEM.lb)
+	#CLB=$(uci -q get modem.modeminfo$CURRMODEM.lb)
+	CLB=1
 	if [ -e /etc/config/mwan3 ]; then
 		INTER=$(uci get modem.modeminfo$CURRMODEM.inter)
 		if [ -z $INTER ]; then
@@ -577,6 +590,8 @@ proto_mbim_setup() {
 		CPORT=$(uci get modem.modem$CURRMODEM.commport)
 		ATCMDD="AT+COPS=0"
 		OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
+		#log "Restart Modem"
+		#/usr/lib/rooter/luci/restart.sh $CURRMODEM
 		sleep 5
 	}
 
