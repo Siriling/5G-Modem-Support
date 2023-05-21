@@ -74,10 +74,6 @@ static void pci_free_irq_vectors(struct pci_dev *dev)
 
 static int pci_irq_vector(struct pci_dev *dev, unsigned int nr)
 {
-#if 0//defined(CONFIG_PINCTRL_IPQ5018)
-	struct pcie_port *pp = dev->bus->sysdata;
-	pp->msi[nr]; //msi maybe not continuous
-#endif
     return dev->irq + nr;
 }
 #endif
@@ -175,23 +171,8 @@ static int mhi_init_pci_dev(struct mhi_controller *mhi_cntrl)
 
 	pci_set_master(pci_dev);
 
-#if 1 //some SOC like rpi_4b need next codes
-	ret = -EIO;
-	if (!pci_set_dma_mask(pci_dev, DMA_BIT_MASK(64))) {
-		ret = pci_set_consistent_dma_mask(pci_dev, DMA_BIT_MASK(64));
-	} else if (!pci_set_dma_mask(pci_dev, DMA_BIT_MASK(32))) {
-		ret = pci_set_consistent_dma_mask(pci_dev, DMA_BIT_MASK(32));
-	}
-	if (ret) {
-		MHI_ERR("Error dma mask\n");
-	}
-#endif
-
 	mhi_cntrl->base_addr = pci_resource_start(pci_dev, mhi_dev->resn);
 	len = pci_resource_len(pci_dev, mhi_dev->resn);
-#ifndef ioremap_nocache //4bdc0d676a643140bdf17dbf7eafedee3d496a3c
-#define ioremap_nocache ioremap
-#endif
 	mhi_cntrl->regs = ioremap_nocache(mhi_cntrl->base_addr, len);
 	if (!mhi_cntrl->regs) {
 		MHI_ERR("Error ioremap region\n");
@@ -299,7 +280,6 @@ error_enable_device:
 	return ret;
 }
 
-#ifdef CONFIG_PM
 static int mhi_runtime_suspend(struct device *dev)
 {
 	int ret = 0;
@@ -314,12 +294,6 @@ static int mhi_runtime_suspend(struct device *dev)
 		MHI_LOG("Not fully powered, return success\n");
 		mutex_unlock(&mhi_cntrl->pm_mutex);
 		return 0;
-	}
-
-	if (mhi_cntrl->ee != MHI_EE_AMSS) {
-		MHI_LOG("Not AMSS, return busy\n");
-		mutex_unlock(&mhi_cntrl->pm_mutex);
-		return -EBUSY;
 	}
 
 	ret = mhi_pm_suspend(mhi_cntrl);
@@ -341,14 +315,9 @@ exit_runtime_suspend:
 
 static int mhi_runtime_idle(struct device *dev)
 {
-	struct mhi_controller *mhi_cntrl = dev_get_drvdata(dev);
+	//struct mhi_controller *mhi_cntrl = dev_get_drvdata(dev);
 
-	if ((mhi_cntrl->dev_state == MHI_STATE_M0 || mhi_cntrl->dev_state == MHI_STATE_M3)
-		&& mhi_cntrl->ee == MHI_EE_AMSS) {
-		return 0;
-	}
-	MHI_LOG("Entered returning -EBUSY, mhi_state:%s exec_env:%s\n",
-		   TO_MHI_STATE_STR(mhi_get_mhi_state(mhi_cntrl)), TO_MHI_EXEC_STR(mhi_get_exec_env(mhi_cntrl)));
+	//MHI_LOG("Entered returning -EBUSY\n");
 
 	/*
 	 * RPM framework during runtime resume always calls
@@ -405,8 +374,8 @@ static int mhi_system_resume(struct device *dev)
 	if (ret) {
 		MHI_ERR("Failed to resume link\n");
 	} else {
-		//pm_runtime_set_active(dev);
-		//pm_runtime_enable(dev);
+		pm_runtime_set_active(dev);
+		pm_runtime_enable(dev);
 	}
 
 	return ret;
@@ -419,11 +388,6 @@ int mhi_system_suspend(struct device *dev)
 
 	MHI_LOG("Entered\n");
 
-	if (atomic_read(&mhi_cntrl->pending_pkts)) {
-		MHI_LOG("Abort due to pending_pkts:%d\n", atomic_read(&mhi_cntrl->pending_pkts));
-		return -EBUSY;
-	}
-
 	/* if rpm status still active then force suspend */
 	if (!pm_runtime_status_suspended(dev)) {
 		ret = mhi_runtime_suspend(dev);
@@ -433,13 +397,12 @@ int mhi_system_suspend(struct device *dev)
 		}
 	}
 
-	//pm_runtime_set_suspended(dev);
-	//pm_runtime_disable(dev);
+	pm_runtime_set_suspended(dev);
+	pm_runtime_disable(dev);
 
 	MHI_LOG("Exit\n");
 	return 0;
 }
-#endif
 
 /* checks if link is down */
 static int mhi_link_status(struct mhi_controller *mhi_cntrl, void *priv)
@@ -572,16 +535,7 @@ static void mhi_runtime_put(struct mhi_controller *mhi_cntrl, void *priv)
 	struct mhi_dev *mhi_dev = priv;
 	struct device *dev = &mhi_dev->pci_dev->dev;
 
-	pm_runtime_mark_last_busy(dev);
-	pm_runtime_put(dev);
-}
-
-static void mhi_runtime_mark_last_busy(struct mhi_controller *mhi_cntrl, void *priv)
-{
-	struct mhi_dev *mhi_dev = priv;
-	struct device *dev = &mhi_dev->pci_dev->dev;
-
-	pm_runtime_mark_last_busy(dev);
+	pm_runtime_put_noidle(dev);
 }
 
 static void mhi_status_cb(struct mhi_controller *mhi_cntrl,
@@ -591,16 +545,10 @@ static void mhi_status_cb(struct mhi_controller *mhi_cntrl,
 	struct mhi_dev *mhi_dev = priv;
 	struct device *dev = &mhi_dev->pci_dev->dev;
 
-	switch (reason) {
-	case MHI_CB_FATAL_ERROR:
-	case MHI_CB_SYS_ERROR:
-		pm_runtime_forbid(dev);
-		break;
-	case MHI_CB_EE_MISSION_MODE:
-		//pm_runtime_allow(dev);
-		break;
-	default:
-		break;
+	if (reason == MHI_CB_IDLE) {
+		MHI_LOG("Schedule runtime suspend 1\n");
+		pm_runtime_mark_last_busy(dev);
+		pm_request_autosuspend(dev);
 	}
 }
 
@@ -685,9 +633,7 @@ static struct mhi_controller *mhi_register_controller(struct pci_dev *pci_dev)
 
 	mhi_dev = mhi_controller_get_devdata(mhi_cntrl);
 
-	mhi_cntrl->dev = &pci_dev->dev;
 	mhi_cntrl->domain = pci_domain_nr(pci_dev->bus);
-	mhi_cntrl->vendor = pci_dev->vendor;
 	mhi_cntrl->dev_id = pci_dev->device;
 	mhi_cntrl->bus = pci_dev->bus->number;
 	mhi_cntrl->slot = PCI_SLOT(pci_dev->devfn);
@@ -745,7 +691,6 @@ static struct mhi_controller *mhi_register_controller(struct pci_dev *pci_dev)
 	mhi_cntrl->status_cb = mhi_status_cb;
 	mhi_cntrl->runtime_get = mhi_runtime_get;
 	mhi_cntrl->runtime_put = mhi_runtime_put;
-	mhi_cntrl->runtime_mark_last_busy = mhi_runtime_mark_last_busy;
 	mhi_cntrl->link_status = mhi_link_status;
 
 	mhi_cntrl->lpm_disable = mhi_lpm_disable;
@@ -780,66 +725,6 @@ error_register:
 	return ERR_PTR(-EINVAL);
 }
 
-static bool mhi_pci_is_alive(struct pci_dev *pdev)
-{
-	u16 vendor = 0;
-
-	if (pci_read_config_word(pdev, PCI_VENDOR_ID, &vendor))
-		return false;
-
-	if (vendor == (u16) ~0 || vendor == 0)
-		return false;
-
-	return true;
-}
-
-static void mhi_pci_show_link(struct mhi_controller *mhi_cntrl, struct pci_dev *pci_dev)
-{
-	int pcie_cap_reg;
-	u16 stat;
-	u32 caps;
-	const char *speed;
-
-	pcie_cap_reg = pci_find_capability(pci_dev, PCI_CAP_ID_EXP);
-
-	if (!pcie_cap_reg)
-		return;
-
-	pci_read_config_word(pci_dev,
-			     pcie_cap_reg + PCI_EXP_LNKSTA,
-			     &stat);
-	pci_read_config_dword(pci_dev,
-			      pcie_cap_reg + PCI_EXP_LNKCAP,
-			      &caps);
-
-	switch (caps & PCI_EXP_LNKCAP_SLS) {
-		case PCI_EXP_LNKCAP_SLS_2_5GB: speed = "2.5"; break;
-		case PCI_EXP_LNKCAP_SLS_5_0GB: speed = "5"; break;
-		case 3: speed = "8"; break;
-		case 4: speed = "16"; break;
-		case 5: speed = "32"; break;
-		case 6: speed = "64"; break;
-		default: speed = "0"; break;
-	}
-
-	MHI_LOG("LnkCap:	Speed %sGT/s, Width x%d\n", speed,
-		(caps & PCI_EXP_LNKCAP_MLW) >> 4);
-
-	switch (stat & PCI_EXP_LNKSTA_CLS) {
-		case PCI_EXP_LNKSTA_CLS_2_5GB: speed = "2.5"; break;
-		case PCI_EXP_LNKSTA_CLS_5_0GB: speed = "5"; break;
-		case 3: speed = "8"; break;
-		case 4: speed = "16"; break;
-		case 5: speed = "32"; break;
-		case 6: speed = "64"; break;
-		default: speed = "0"; break;
-	}
-
-	MHI_LOG("LnkSta:	Speed %sGT/s, Width x%d\n", speed,
-		(stat & PCI_EXP_LNKSTA_NLW) >> PCI_EXP_LNKSTA_NLW_SHIFT);
-
-}
-
 int mhi_pci_probe(struct pci_dev *pci_dev,
 		  const struct pci_device_id *device_id)
 {
@@ -853,18 +738,6 @@ int mhi_pci_probe(struct pci_dev *pci_dev,
 
 	pr_info("%s pci_dev->name = %s, domain=%d, bus=%d, slot=%d, vendor=%04X, device=%04X\n",
 		__func__, dev_name(&pci_dev->dev), domain, bus, slot, pci_dev->vendor, pci_dev->device);
-
-	if (!mhi_pci_is_alive(pci_dev)) {
-		/*
-		root@OpenWrt:~# hexdump /sys/bus/pci/devices/0000:01:00.0/config
-		0000000 ffff ffff ffff ffff ffff ffff ffff ffff
-		*
-		0001000
-		*/
-		pr_err("mhi_pci is not alive! pcie link is down\n");
-		pr_err("double check by 'hexdump /sys/bus/pci/devices/%s/config'\n", dev_name(&pci_dev->dev));
-		return -EIO;
-	}
 
 	/* see if we already registered */
 	mhi_cntrl = mhi_bdf_to_controller(domain, bus, slot, dev_id);
@@ -894,8 +767,7 @@ int mhi_pci_probe(struct pci_dev *pci_dev,
 	}
 
 	pm_runtime_mark_last_busy(&pci_dev->dev);
-
-	mhi_pci_show_link(mhi_cntrl, pci_dev);
+	pm_runtime_allow(&pci_dev->dev);
 
 	MHI_LOG("Return successful\n");
 
@@ -966,13 +838,9 @@ static const struct dev_pm_ops pm_ops = {
 
 static struct pci_device_id mhi_pcie_device_id[] = {
 	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x0303)},
-	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x0304)}, //SDX20
-	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x0305)}, //SDX24
-	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x0306)}, //SDX55
-	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x0308)}, //SDX62
-	{PCI_DEVICE(0x1eac, 0x1001)}, //EM120
-	{PCI_DEVICE(0x1eac, 0x1002)}, //EM160
-	{PCI_DEVICE(0x1eac, 0x1004)}, //RM520
+	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x0304)},
+	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x0305)},
+	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x0306)},
 	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, MHI_PCIE_DEBUG_ID)},
 	{0},
 };

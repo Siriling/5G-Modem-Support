@@ -53,13 +53,12 @@ struct uci_dev {
 	struct mhi_device *mhi_dev;
 	const char *chan;
 	struct mutex mutex; /* sync open and close */
-	struct mutex r_mutex;
-	struct mutex w_mutex;
 	struct uci_chan ul_chan;
 	struct uci_chan dl_chan;
 	size_t mtu;
 	int ref_count;
 	bool enabled;
+	void *ipc_log;
 	unsigned rx_error;
 	unsigned nr_trb;
 	unsigned nr_trbs;
@@ -76,22 +75,50 @@ struct mhi_uci_drv {
 	dev_t dev_t;
 };
 
-static int uci_msg_lvl = MHI_MSG_LVL_ERROR;
-module_param( uci_msg_lvl, uint, S_IRUGO | S_IWUSR);
+enum MHI_DEBUG_LEVEL msg_lvl = MHI_MSG_LVL_ERROR;
+
+#ifdef CONFIG_MHI_DEBUG
+
+#define IPC_LOG_LVL (MHI_MSG_LVL_VERBOSE)
+#define MHI_UCI_IPC_LOG_PAGES (25)
+
+#else
+
+#define IPC_LOG_LVL (MHI_MSG_LVL_ERROR)
+#define MHI_UCI_IPC_LOG_PAGES (1)
+
+#endif
+
+#ifdef CONFIG_MHI_DEBUG
 
 #define MSG_VERB(fmt, ...) do { \
-		if (uci_msg_lvl <= MHI_MSG_LVL_VERBOSE) \
+		if (msg_lvl <= MHI_MSG_LVL_VERBOSE) \
 			pr_err("[D][%s] " fmt, __func__, ##__VA_ARGS__); \
+		if (uci_dev->ipc_log && (IPC_LOG_LVL <= MHI_MSG_LVL_VERBOSE)) \
+			ipc_log_string(uci_dev->ipc_log, "[D][%s] " fmt, \
+				       __func__, ##__VA_ARGS__); \
 	} while (0)
 
+#else
+
+#define MSG_VERB(fmt, ...)
+
+#endif
+
 #define MSG_LOG(fmt, ...) do { \
-		if (uci_msg_lvl <= MHI_MSG_LVL_INFO) \
+		if (msg_lvl <= MHI_MSG_LVL_INFO) \
 			pr_err("[I][%s] " fmt, __func__, ##__VA_ARGS__); \
+		if (uci_dev->ipc_log && (IPC_LOG_LVL <= MHI_MSG_LVL_INFO)) \
+			ipc_log_string(uci_dev->ipc_log, "[I][%s] " fmt, \
+				       __func__, ##__VA_ARGS__); \
 	} while (0)
 
 #define MSG_ERR(fmt, ...) do { \
-		if (uci_msg_lvl <= MHI_MSG_LVL_ERROR) \
+		if (msg_lvl <= MHI_MSG_LVL_ERROR) \
 			pr_err("[E][%s] " fmt, __func__, ##__VA_ARGS__); \
+		if (uci_dev->ipc_log && (IPC_LOG_LVL <= MHI_MSG_LVL_ERROR)) \
+			ipc_log_string(uci_dev->ipc_log, "[E][%s] " fmt, \
+				       __func__, ##__VA_ARGS__); \
 	} while (0)
 
 #define MAX_UCI_DEVICES (64)
@@ -493,7 +520,7 @@ static ssize_t mhi_uci_read(struct file *file,
 			ret = -ERESTARTSYS;
 
 		if (ret) {
-			MSG_ERR("Failed to recycle element for chan:%d , ret=%d\n", mhi_dev->ul_chan_id, ret);
+			MSG_ERR("Failed to recycle element, ret=%d\n", ret);
 #if 0
 			kfree(uci_buf->data);
 #endif
@@ -509,42 +536,6 @@ static ssize_t mhi_uci_read(struct file *file,
 
 read_error:
 	spin_unlock_bh(&uci_chan->lock);
-
-	return ret;
-}
-
-static ssize_t mhi_uci_write_mutex(struct file *file,
-			     const char __user *buf,
-			     size_t count,
-			     loff_t *offp)
-{
-	struct uci_dev *uci_dev = file->private_data;
-	int ret;
-
-	ret = mutex_lock_interruptible(&uci_dev->w_mutex); /*concurrent writes */
-	if (ret < 0)
-		return -ERESTARTSYS;
-
-	ret = mhi_uci_write(file, buf, count, offp);
-	mutex_unlock(&uci_dev->w_mutex);
-
-	return ret;
-}
-
-static ssize_t mhi_uci_read_mutex(struct file *file,
-			    char __user *buf,
-			    size_t count,
-			    loff_t *ppos)
-{
-	struct uci_dev *uci_dev = file->private_data;
-	int ret;
-
-	ret = mutex_lock_interruptible(&uci_dev->r_mutex); /*concurrent reads */
-	if (ret < 0)
-		return -ERESTARTSYS;
-
-	ret = mhi_uci_read(file, buf, count, ppos);
-	mutex_unlock(&uci_dev->r_mutex);
 
 	return ret;
 }
@@ -626,8 +617,8 @@ error_exit:
 static const struct file_operations mhidev_fops = {
 	.open = mhi_uci_open,
 	.release = mhi_uci_release,
-	.read = mhi_uci_read_mutex,
-	.write = mhi_uci_write_mutex,
+	.read = mhi_uci_read,
+	.write = mhi_uci_write,
 	.poll = mhi_uci_poll,
 	.unlocked_ioctl = mhi_uci_ioctl,
 };
@@ -690,8 +681,6 @@ static int mhi_uci_probe(struct mhi_device *mhi_dev,
 		return -ENOMEM;
 
 	mutex_init(&uci_dev->mutex);
-	mutex_init(&uci_dev->r_mutex);
-	mutex_init(&uci_dev->w_mutex);
 	uci_dev->mhi_dev = mhi_dev;
 
 	minor = find_first_zero_bit(uci_minors, MAX_UCI_DEVICES);
@@ -705,16 +694,10 @@ static int mhi_uci_probe(struct mhi_device *mhi_dev,
 
 	uci_dev->devt = MKDEV(mhi_uci_drv.major, minor);
 #if 1
-	if (mhi_dev->mhi_cntrl->cntrl_idx)
-		uci_dev->dev = device_create(mhi_uci_drv.class, &mhi_dev->dev,
-					     uci_dev->devt, uci_dev,
-					     DEVICE_NAME "_%s%d",
-					     mhi_dev->chan_name, mhi_dev->mhi_cntrl->cntrl_idx);
-	else
-		uci_dev->dev = device_create(mhi_uci_drv.class, &mhi_dev->dev,
-					     uci_dev->devt, uci_dev,
-					     DEVICE_NAME "_%s",
-					     mhi_dev->chan_name);
+	uci_dev->dev = device_create(mhi_uci_drv.class, &mhi_dev->dev,
+				     uci_dev->devt, uci_dev,
+				     DEVICE_NAME "_%s",
+				     mhi_dev->chan_name);
 #else
 	uci_dev->dev = device_create(mhi_uci_drv.class, &mhi_dev->dev,
 				     uci_dev->devt, uci_dev,
@@ -723,13 +706,14 @@ static int mhi_uci_probe(struct mhi_device *mhi_dev,
 				     mhi_dev->bus, mhi_dev->slot, "_pipe_",
 				     mhi_dev->ul_chan_id);
 #endif
-
 	set_bit(minor, uci_minors);
 
 	/* create debugging buffer */
 	snprintf(node_name, sizeof(node_name), "mhi_uci_%04x_%02u.%02u.%02u_%d",
 		 mhi_dev->dev_id, mhi_dev->domain, mhi_dev->bus, mhi_dev->slot,
 		 mhi_dev->ul_chan_id);
+	uci_dev->ipc_log = ipc_log_context_create(MHI_UCI_IPC_LOG_PAGES,
+						  node_name, 0);
 
 	for (dir = 0; dir < 2; dir++) {
 		struct uci_chan *uci_chan = (dir) ?
@@ -816,20 +800,9 @@ static void mhi_dl_xfer_cb(struct mhi_device *mhi_dev,
 	buf->data = mhi_result->buf_addr;
 #endif
 	buf->len = mhi_result->bytes_xferd;
-	if (mhi_dev->dl_chan_id ==  MHI_CLIENT_DUN_IN
-		|| mhi_dev->dl_chan_id == MHI_CLIENT_QMI_IN
-		|| mhi_dev->dl_chan_id ==  MHI_CLIENT_MBIM_IN) 
+	if (mhi_dev->dl_chan_id ==  MHI_CLIENT_DUN_IN || mhi_dev->dl_chan_id == MHI_CLIENT_QMI_IN) 
 	{
-		struct uci_buf *tmp_buf = NULL;
-		int skip_buf = 0;
-
-#ifdef QUEC_MHI_UCI_ALWAYS_OPEN
-		if (uci_dev->ref_count == 1)
-			skip_buf++;
-#endif
-		if (!skip_buf)
-			tmp_buf = (struct uci_buf *)kmalloc(buf->len + sizeof(struct uci_buf), GFP_ATOMIC);;
-		
+		struct uci_buf *tmp_buf = (struct uci_buf *)kmalloc(buf->len + sizeof(struct uci_buf), GFP_ATOMIC);
 		if (tmp_buf) {
 			tmp_buf->page = NULL;
 			tmp_buf->data = ((void *)tmp_buf) + sizeof(struct uci_buf);
