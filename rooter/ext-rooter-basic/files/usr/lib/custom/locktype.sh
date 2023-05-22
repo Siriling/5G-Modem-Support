@@ -12,11 +12,11 @@ if [ $uVid == "2c7c" ]; then
 else
 	if [ $uVid == "1199" ]; then
 		qc=$(uci get custom.atcmd.sierra)
-		echo "$qc" > /tmp/modemlock
+	echo "$qc" > /tmp/modemlock
 		echo " " >> /tmp/modemlock
 	else
 		qc=$(uci get custom.atcmd.generic)
-		echo "$qc" > /tmp/modemlock
+	echo "$qc" > /tmp/modemlock
 		echo " " >> /tmp/modemlock
 	fi
 fi

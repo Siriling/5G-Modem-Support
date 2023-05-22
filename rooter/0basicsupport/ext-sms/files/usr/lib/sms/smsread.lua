@@ -507,9 +507,6 @@ function parseDeliver()
 	if timezone:sub(-2, -1) == '.0' then
 		timezone = timezone:sub(1, -3)
 	end
-	if #timezone == 2 then
-		timezone = ' ' .. timezone
-	end
 	m_time = str_buf .. ' ' .. timezone .. 'h'
 	m_pdu_ptr = m_pdu_ptr:sub(7)
 	if octet2bin_check(m_pdu_ptr) < 0 then

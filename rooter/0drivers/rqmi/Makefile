@@ -22,7 +22,7 @@ define Package/rqmi
   SECTION:=net
   CATEGORY:=ROOter
   SUBMENU:=Drivers
-  DEPENDS:=+libubox +libblobmsg-json +kmod-usb-net +kmod-usb-net-qmi-wwan +wwan +luci-proto-qmi
+  DEPENDS:=+libubox +libblobmsg-json +kmod-usb-net +kmod-usb-net-qmi-wwan +wwan
   TITLE:=Control utility for mobile broadband modems
 endef
 

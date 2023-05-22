@@ -45,12 +45,12 @@ do_zone() {
 firstboot() {
 	HO=$(uci get system.@system[-1].hostname)
 	if [ $HO = "OpenWrt" ]; then
-		uci set system.@system[-1].hostname="ROOter"
-		echo "ROOter" > /proc/sys/kernel/hostname
+		uci set system.@system[-1].hostname="OpenWrt"
+		echo "OpenWrt" > /proc/sys/kernel/hostname
 	fi
 	if [ $HO = "LEDE" ]; then
-		uci set system.@system[-1].hostname="ROOter"
-		echo "ROOter" > /proc/sys/kernel/hostname
+		uci set system.@system[-1].hostname="LEDE"
+		echo "LEDE" > /proc/sys/kernel/hostname
 	fi
 	uci set system.@system[-1].cronloglevel="9"
 	uci commit system
@@ -68,9 +68,9 @@ firstboot() {
 
 	source /etc/openwrt_release
 	if [ $DISTRIB_RELEASE = "SNAPSHOT" ]; then
-		DISTRIB_RELEASE="21.02.2"
+		DISTRIB_RELEASE="master"
 	fi
-	tone=$(echo "$DISTRIB_RELEASE" | grep "21.02")
+	tone=$(echo "$DISTRIB_RELEASE" | grep "master")
 }
 
 if [ -e /tmp/installing ]; then
@@ -96,7 +96,7 @@ uci commit modem
 source /etc/openwrt_release
 rm -f /etc/openwrt_release
 if [ $DISTRIB_RELEASE = "SNAPSHOT" ]; then
-	DISTRIB_RELEASE="21.02.2"
+	DISTRIB_RELEASE="master"
 fi
 if [ -e /etc/custom ]; then
 	lua $ROOTER/customname.lua
@@ -113,8 +113,6 @@ echo 'DISTRIB_REVISION="'"$DISTRIB_REVISION"'"' >> /etc/openwrt_release
 echo 'DISTRIB_CODENAME="'"$DISTRIB_CODENAME"'"' >> /etc/openwrt_release
 echo 'DISTRIB_TARGET="'"$DISTRIB_TARGET"'"' >> /etc/openwrt_release
 echo 'DISTRIB_DESCRIPTION="'"$DISTRIB_DESCRIPTION"'"' >> /etc/openwrt_release
-
-/usr/lib/rooter/luci/external.sh &
 
 MODSTART=1
 WWAN=0
@@ -255,7 +253,7 @@ lua $ROOTER/gpiomodel.lua
 
 HO=$(uci get system.@system[-1].hostname)
 if [ $HO = "OpenWrt" ]; then
-	uci set system.@system[-1].hostname="ROOter"
+	uci set system.@system[-1].hostname="OpenWrt"
 	uci commit system
 fi
 
@@ -295,4 +293,3 @@ if [ ! -z $tone ]; then
 	[ -e /etc/newstyle ] || touch /etc/newstyle
 	#reboot -f
 fi
-

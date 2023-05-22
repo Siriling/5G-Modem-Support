@@ -19,62 +19,6 @@ tping() {
 	fi
 }
 
-doping() {
-	TYPE=$(uci get ping.ping.type)
-	if [ $TYPE = "1" ]; then
-	log "Curl"
-		RETURN_CODE_1=$(curl -s -m 10 -s -o /dev/null -w "%{http_code}" $ipv41)
-		RETURN_CODE_2=$(curl -s --ipv6 -m 10 -s -o /dev/null -w "%{http_code}" $ipv6)
-		RETURN_CODE_3=$(curl -s -m 10 -s -o /dev/null -w "%{http_code}" $ipv42)
-	else
-	log "Ping"
-		tping "$ipv41"; RETURN_CODE_1=$tmp
-		tping "$ipv6" "-6"; RETURN_CODE_2=$tmp
-		tping "$ipv42"; RETURN_CODE_3=$tmp
-	fi
-}
-
-ptest() {
-	tries=0
-	status=0
-	while [ $tries -lt $1 ]
-	do
-		CONN=$(uci -q get modem.modem$CURRMODEM.connected)
-		if [ $CONN = "1" ]; then
-			uci set ping.ping.conn="4"
-			uci commit ping
-			doping
-			if [[ "$RETURN_CODE_1" != "200" &&  "$RETURN_CODE_2" != "200" &&  "$RETURN_CODE_3" != "200" ]]; then
-				uci set ping.ping.conn="1"
-				uci commit ping
-				status=1
-				return
-			fi
-			log "Second Ping Test Good"
-			uci set ping.ping.conn="2"
-			uci commit ping
-			status=0
-			return
-		else
-			sleep 20
-			tries=$((tries+1))
-		fi
-	done
-	status=1
-}
-
-ipv41=$(uci -q get ping.ping.ipv41)
-if [ -z "$ipv41" ]; then
-	ipv41="http://www.google.com/"
-fi
-ipv42=$(uci -q get ping.ping.ipv42)
-if [ -z "$ipv42" ]; then
-	ipv42="https://github.com"
-fi
-ipv6=$(uci -q get ping.ping.ipv6)
-if [ -z "$ipv6" ]; then
-	ipv6="http://ipv6.google.com"
-fi
 uci set ping.ping.conn="4"
 uci commit ping
 	
@@ -82,37 +26,70 @@ CURRMODEM=1
 CPORT=$(uci -q get modem.modem$CURRMODEM.commport)
 DELAY=$(uci get ping.ping.delay)
 
-doping
+TYPE=$(uci get ping.ping.type)
+if [ $TYPE = "1" ]; then
+log "Curl"
+	RETURN_CODE_1=$(curl -m 10 -s -o /dev/null -w "%{http_code}" http://www.google.com/)
+	RETURN_CODE_2=$(curl --ipv6 -m 10 -s -o /dev/null -w "%{http_code}" http://www.example.org/)
+	RETURN_CODE_3=$(curl -m 10 -s -o /dev/null -w "%{http_code}" https://github.com)
+else
+log "Ping"
+	tping "http://www.google.com/"; RETURN_CODE_1=$tmp
+	tping "http://www.example.org/" "-6"; RETURN_CODE_2=$tmp
+	tping "https://github.com"; RETURN_CODE_3=$tmp
+fi
 
 if [[ "$RETURN_CODE_1" != "200" &&  "$RETURN_CODE_2" != "200" &&  "$RETURN_CODE_3" != "200" ]]; then
 	log "Bad Ping Test"
-	doping
+	if [ $TYPE = "1" ]; then
+		tping "http://www.google.com/"; RETURN_CODE_1=$tmp
+		tping "http://www.example.org/" "-6"; RETURN_CODE_2=$tmp
+		tping "https://github.com"; RETURN_CODE_3=$tmp
+	else
+		RETURN_CODE_1=$(curl -m 10 -s -o /dev/null -w "%{http_code}" http://www.google.com/)
+		RETURN_CODE_2=$(curl --ipv6 -m 10 -s -o /dev/null -w "%{http_code}" http://www.example.org/)
+		RETURN_CODE_3=$(curl -m 10 -s -o /dev/null -w "%{http_code}" https://github.com)
+	fi
 	if [[ "$RETURN_CODE_1" != "200" &&  "$RETURN_CODE_2" != "200" &&  "$RETURN_CODE_3" != "200" ]]; then
 		log "Second Bad Ping Test"
 		uci set ping.ping.conn="3"
 		uci commit ping
-		log "Restart Network"
-		/usr/lib/rooter/luci/restart.sh $CURRMODEM 10
+		ATCMDD="AT+CFUN=1,1"
+		$ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD"
 		sleep $DELAY
-		ptest 3
-		if [ $status -eq 0 ]; then
-			log "Good Ping after Network Restart"
-			uci set ping.ping.conn="2"
-			uci commit ping
-			exit 0
-		else
-			log "Hard Restart"
-			/usr/lib/rooter/luci/restart.sh $CURRMODEM 11
-			ptest 9
-			if [ $status -eq 0 ]; then
-				log "Good Ping after Hard Restart"
+		tries=0
+		while [ $tries -lt 9 ]
+		do
+			CONN=$(uci -q get modem.modem$CURRMODEM.connected)
+			if [ $CONN = "1" ]; then
+				uci set ping.ping.conn="4"
+				uci commit ping
+				if [ $TYPE = "1" ]; then
+				log "Curl"
+					RETURN_CODE_1=$(curl -m 10 -s -o /dev/null -w "%{http_code}" http://www.google.com/)
+					RETURN_CODE_2=$(curl --ipv6 -m 10 -s -o /dev/null -w "%{http_code}" http://www.example.org/)
+					RETURN_CODE_3=$(curl -m 10 -s -o /dev/null -w "%{http_code}" https://github.com)
+				else
+				log "Ping"
+					tping "http://www.google.com/"; RETURN_CODE_1=$tmp
+					tping "http://www.example.org/" "-6"; RETURN_CODE_2=$tmp
+					tping "https://github.com"; RETURN_CODE_3=$tmp
+				fi
+				if [[ "$RETURN_CODE_1" != "200" &&  "$RETURN_CODE_2" != "200" &&  "$RETURN_CODE_3" != "200" ]]; then
+					uci set ping.ping.conn="1"
+					uci commit ping
+					reboot -f
+				fi
+				log "Second Ping Test Good"
 				uci set ping.ping.conn="2"
 				uci commit ping
 				exit 0
 			else
-				reboot -f
+				sleep 20
+				tries=$((tries+1))
 			fi
-		fi
+		done
+		reboot -f
 	fi
 else
 	log "Good Ping"

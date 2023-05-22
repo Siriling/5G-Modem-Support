@@ -465,6 +465,11 @@ if [ "$ACTION" = add ]; then
 		ln -s $ROOTER/connect/create_connect.sh $ROOTER_LINK/create_proto$CURRMODEM
 		$ROOTER_LINK/create_proto$CURRMODEM $CURRMODEM &
 		;;
+	"88" )
+		log "Connecting a RMNET Modem"
+		ln -s $ROOTER/connect/create_connect.sh $ROOTER_LINK/create_proto$CURRMODEM
+		$ROOTER_LINK/create_proto$CURRMODEM $CURRMODEM &
+		;;
 	"3" )
 		log "Connecting a MBIM Modem"
 		ln -s $ROOTER/connect/create_connect.sh $ROOTER_LINK/create_proto$CURRMODEM
@@ -571,9 +576,6 @@ if [ "$ACTION" = remove ]; then
 			rm -f $ROOTER_LINK/mbim_monitor$retresult
 			if [ -e /usr/lib/gps/gpskill.sh ]; then
 				/usr/lib/gps/gpskill.sh $retresult
-			fi
-			if [ -e $ROOTER/connect/chkconn.sh ]; then
-				jkillall chkconn.sh
 			fi
 			$ROOTER/signal/status.sh $retresult "No Modem Present"
 			$ROOTER/log/logger "Disconnect (Removed) Modem #$retresult"

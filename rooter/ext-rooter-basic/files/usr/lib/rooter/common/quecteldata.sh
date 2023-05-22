@@ -152,12 +152,7 @@ case $RAT in
 				SINR=$((($(echo $SINRR) * 2) -20))" dB"
 			fi
 		fi
-		if [ -n "$(echo $QENG | cut -d, -f21)" ]; then
-			CQI=$(echo $QENG | cut -d, -f19 | grep "^[0-9]\+$")
-			if [ -n "$SINR" -a -n "$CQI" -a "$CQI" != "0" ]; then
-				SINR=$SINR" (CQI $CQI)"
-			fi
-		fi
+
 		if [ -n "$NR_NSA" ]; then
 			MODE="LTE/NR EN-DC"
 			echo "0" > /tmp/modnetwork

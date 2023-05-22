@@ -12,10 +12,10 @@ if [ $amount != "0" ]; then
 else
 	sleep 3
 fi
-result=`ps | grep -i "createdata.lua" | grep -v "grep" | wc -l`
+result=`ps | grep -i "create_data.lua" | grep -v "grep" | wc -l`
 while [ $result -ge 1 ]; do
 	sleep 2
-	result=`ps | grep -i "createdata.lua" | grep -v "grep" | wc -l`
+	result=`ps | grep -i "create_data.lua" | grep -v "grep" | wc -l`
 done
 
-lua /usr/lib/bwmon/createdata.lua
+lua /usr/lib/bwmon/create_data.lua

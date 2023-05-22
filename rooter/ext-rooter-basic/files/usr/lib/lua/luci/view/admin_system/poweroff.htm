@@ -12,12 +12,12 @@
 	function sendcmd(btn)
 	{
 		var s = 1;
-		document.getElementById("sstat").innerHTML="<%:Stopping System ...%>";
+		document.getElementById("sstat").innerHTML="Stopping System ...";
 		XHR.get('<%=luci.dispatcher.build_url("admin", "system", "do_poweroff")%>',
 			null,
 			function()
 			{
-				document.getElementById("sstat").innerHTML="<%:Router is now shutdown%>";
+				document.getElementById("sstat").innerHTML="Router is now shutdown";
 			}
 		);
 

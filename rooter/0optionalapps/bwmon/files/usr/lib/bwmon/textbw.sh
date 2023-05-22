@@ -60,7 +60,7 @@ checktime() {
 }
 
 getbw() {
-	alloc=$(uci -q get custom.bwallocate.allocate)"000000000"
+	alloc=$(uci -q get custom.bwallocate.allocate)"000000"
 	if [ -e /tmp/bwdata ]; then
 		while IFS= read -r line; do
 			days=$line

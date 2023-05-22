@@ -81,7 +81,7 @@ function process_tabdata()
 	end
 end
 
-m = Map("modem", translate("Custom Modem Support"), translate("Change the Data and Communication Ports used by a Specific Modem"))
+m = Map("modem", translate("自定义4G/5G 模块支持"), translate("                    修改某个模块使用的通信端口"))
 
 m.on_after_commit = function(self)
     -- all written config names are in self.parsechain
@@ -114,15 +114,15 @@ end
 -- Vid Pid Dataport Commport
 --
 
-e = m:section(TypedSection, "new", translate("Modem Ports")) 
+e = m:section(TypedSection, "new", translate("模块端口 :")) 
 
-a1 = e:option(Value, "vid", translate("Switched Vendor ID :")); 
+a1 = e:option(Value, "vid", translate("模块 VID:")); 
 a1.optional=false;
 
-b1 = e:option(Value, "pid", translate("Switched Product ID :")); 
+b1 = e:option(Value, "pid", translate("模块 ID :")); 
 b1.optional=false; 
 
-p3 = e:option(ListValue, "port", translate("PPP Modem Data Port :"))
+p3 = e:option(ListValue, "port", translate("PPP 拨号端口 :"))
 p3:value("tty", "default")
 p3:value("tty0", "/dev/ttyUSB0")
 p3:value("tty1", "/dev/ttyUSB1")
@@ -132,7 +132,7 @@ p3:value("tty4", "/dev/ttyUSB4")
 p3:value("tty5", "/dev/ttyUSB5")
 p3.default = "tty"
 
-p4 = e:option(ListValue, "comm", translate("Communication Port :"))
+p4 = e:option(ListValue, "comm", translate("通讯端口 :"))
 p4:value("tty", "default")
 p4:value("tty0", "/dev/ttyUSB0")
 p4:value("tty1", "/dev/ttyUSB1")
@@ -145,7 +145,7 @@ p4.default = "tty"
 b3 = e:option(DummyValue, "blank", " ");
 
 btn = e:option(Button, "_btn", translate(" "))
-btn.inputtitle = translate("Delete Modem Port Database")
+btn.inputtitle = translate("删除模块端口配置")
 btn.inputstyle = "apply"
 function btn.write()
 	luci.sys.call("/usr/lib/rooter/luci/luaops.sh delete /etc/config/modem.data")

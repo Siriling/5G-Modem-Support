@@ -42,19 +42,15 @@ if [ "x$MODEL" != "x" ]; then
 else
 	MODEL=$(uci get modem.modem$CURRMODEM.model)
 fi
-dell=$(echo "$MANUF" | grep "DELL")
-if [ ! -z "$dell" ]; then
-	if [ "$MODEL" = "4116" ]; then
-		MANUF="Dell"
-		MODEL="DW5821e/T77W968"
-	fi
-fi
 MODEM=$MANUF" "$MODEL
 
 pval=$(uci get modem.modem$CURRMODEM.proto)
 case $pval in
 "1" )
 	PROTO="Direct-IP"
+	;;
+"88" )
+	PROTO="(QMI-RMNET)"
 	;;
 "2" )
 	PROTO="QMI"

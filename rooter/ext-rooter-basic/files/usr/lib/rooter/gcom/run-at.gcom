@@ -25,9 +25,7 @@ if x=0 let $s="^mTIMEOUT ERROR"
 else print $s
 if $s="^jOK" return
 if $mid($s,0,6)="^jERROR" return
-if $mid($s,0,8)="^jCONNECT" return
 if $mid($s,0,8)="^jCOMMAND" return
 if $mid($s,0,11)="^j+CME ERROR" return
-if $mid($s,0,11)="^j+CMS ERROR" return
 if time()>t return
 goto getresult

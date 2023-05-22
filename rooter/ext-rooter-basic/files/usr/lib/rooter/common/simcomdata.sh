@@ -5,7 +5,7 @@ ROOTER=/usr/lib/rooter
 CURRMODEM=$1
 COMMPORT=$2
 
-lte_bw() {
+decode_bw() {
 	BW=$(echo $BW | grep -o "[0-5]\{1\}")
 	case $BW in
 		"0")
@@ -22,19 +22,6 @@ lte_bw() {
 			BW="20" ;;
 	esac
 }
-nr_bw() {
-	BW=$(echo $BW | grep -o "[0-9]\{1,2\}")
-	case $BW in
-		"0"|"1"|"2"|"3"|"4"|"5")
-			BW=$((($(echo $BW) + 1) * 5)) ;;
-		"6"|"7"|"8"|"9"|"10"|"11"|"12")
-			BW=$((($(echo $BW) - 2) * 10)) ;;
-		"13")
-			BW="200" ;;
-		"14")
-			BW="400" ;;
-	esac
-}
 
 OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "simcominfo.gcom" "$CURRMODEM")
 
@@ -45,10 +32,6 @@ REGXa="+CPSI:[ ]*LTE,ONLINE,[0-9]\{3\}-[0-9]\{2,3\},0X[0-9A-F]\{1,5\},[0-9]\{3,9
 REGXb="+CPSI:[ ]*NR5G[_ANS]*,[0-9]\{1,3\},[0-9]\{6\},-[0-9]\{1,4\},-[0-9]\{1,4\},[-0-9]\{1,4\}"
 
 REGXc="+CPSI:[ ]*NR5G_SA,ONLINE,[0-9]\{3\}-[0-9]\{2,3\},0X[0-9A-F]\{1,6\},[0-9]\{3,13\},[0-9]\{1,3\},[^,]\+,[0-9]\{6,7\},-[0-9]\{1,4\},-[0-9]\{1,4\},[-0-9]\{1,4\}"
-
-REGXd="+CPSI:[ ]*NR5G_NSA,[0-9]\{1,3\},NR5G_BAND[0-9]\{1,3\},[0-9]\{6\},-[0-9]\{1,4\},-[0-9]\{1,4\},[-0-9]\{1,4\},[^,],[0-9]\{1,2\}"
-
-# +CPSI: NR5G_NSA,298,NR5G_BAND41,520110,-760,-110,18,0,12
 
 REGXz="+CMGRMI: CA_SCELL,[0-9]\{2,6\},[^,]\+,[0-9]\{1,3\},[0-5],[^,]\+,[0-9]\{1,3\},[^,]\+,[^,]\+,[^,]\+,[^,]\+,[^,]\+,1"
 
@@ -81,15 +64,14 @@ fi
 CPSIa=$(echo "$OX" | grep -o "$REGXa")
 if [ -n "$CPSIa" ]; then
 	CPSIb=$(echo "$OX" | grep -o "$REGXb")
-	CPSId=$(echo "$OX" | grep -o "$REGXd")
 	PCI=$(echo $CPSIa | cut -d, -f6)
 	LBAND=$(echo $CPSIa | cut -d, -f7 | grep -o "[0-9]\{1,3\}")
 	CHANNEL=$(echo $CPSIa | cut -d, -f8)
 	BW=$(echo $CPSIa | cut -d, -f9)
-	lte_bw
+	decode_bw
 	BWD=$BW
 	BW=$(echo $CPSIa | cut -d, -f10)
-	lte_bw
+	decode_bw
 	BWU=$BW
 	LBAND="B"$LBAND" (Bandwidth $BWD MHz Down | $BWU MHz Up)"
 	ECIO=$(($(echo $CPSIa | cut -d, -f11) / 10))
@@ -109,23 +91,8 @@ if [ -n "$CPSIa" ]; then
 		RSCP=$RSCP" dBm<br />"$(($(echo $CPSIb | cut -d, -f4) / 10))
 		ECIO=$ECIO" dB<br />"$(($(echo $CPSIb | cut -d, -f5) / 10))
 		SSINR=$(echo $CPSIb | cut -d, -f6)
-		if [ $SSINR -lt 400 ]; then
-			SINR=$SINR"<br />"$(($SSINR / 10))" dB"
-		fi
-	elif [ -n "$CPSId" ]; then
-		MODE="LTE/NR EN-DC"
-		PCI=$PCI", "$(echo $CPSId | cut -d, -f2)
-		NCHAN=$(echo $CPSId | cut -d, -f4)
-		CHANNEL="$CHANNEL, $NCHAN"
-		BW=$(echo $CPSId | cut -d, -f9)
-		nr_bw
-		NBAND=$(echo $CPSId | cut -d, -f3 | grep -o "BAND[0-9]\{1,3\}" | grep -o "[0-9]\{1,3\}")
-		LBAND=$LBAND"<br />n"$NBAND" (Bandwidth $BW MHz)"
-		RSCP=$RSCP" dBm<br />"$(($(echo $CPSId | cut -d, -f5) / 10))
-		ECIO=$ECIO" dB<br />"$(($(echo $CPSId | cut -d, -f6) / 10))
-		SSINR=$(echo $CPSId | cut -d, -f7)
-		if [ $SSINR -lt 400 ]; then
-			SINR=$SINR"<br />"$(($SSINR / 10))" dB"
+		if [ $SSINR -lt 255 ]; then
+			SINR=$SINR"<br />"$((($SSINR / 5) - 20))" dB"
 		fi
 	else
 		MODE="LTE"
@@ -153,7 +120,7 @@ if [ -n "$CAINFO" ]; then
 	for CASV in $(echo "$CAINFO"); do
 		LBAND=$LBAND"<br />B"$(echo "$CASV" | cut -d, -f4)
 		BW=$(echo "$CASV" | cut -d, -f5)
-		lte_bw
+		decode_bw
 		LBAND=$LBAND" (CA, Bandwidth $BW MHz)"
 		CHANNEL="$CHANNEL, "$(echo "$CASV" | cut -d, -f2)
 		PCI="$PCI, "$(echo "$CASV" | cut -d, -f7)

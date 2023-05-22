@@ -172,7 +172,7 @@ case $uVid in
 			RESTART="1"
 		fi
 		M5=""
-		M2='AT+QCFG="band",0,'$mask',0'
+		M2='AT+QCFG="band",0,'$mask',0,1'
 		if [ $uPid = 0620 ]; then
 			EM20=$(echo $model | grep "EM20")
 			if [ -z "$EM20" ]; then #EM160
@@ -216,9 +216,6 @@ case $uVid in
 				lst="0"
 			fi
 			M2='AT+QNWPREFCFG="lte_band",'$lst
-		fi
-		if [ $uPid = 6005 ]; then
-			M2='AT+QCFG="band",0,'$mask
 		fi
 		if [ $uPid = 0306 ]; then
 			RESTART="1"
@@ -264,7 +261,7 @@ case $uVid in
 		log " "
 		if [ $RESTART = "1" ]; then
 			OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
-			#sleep 10
+			sleep 10
 		fi
 	;;
 	"1199" )
@@ -393,11 +390,6 @@ if [ $RESTART = "0" ]; then
 	exit 0
 fi
 rm -f /tmp/bmask
-if [ $3 = "12" ]; then
-	/usr/lib/rooter/luci/restart.sh $CURRMODEM 11
-else
-	/usr/lib/rooter/luci/restart.sh $CURRMODEM 11
-fi
-sleep 10
-#/usr/lib/rooter/connect/bandmask $CURRMODEM $MODT
+/usr/lib/rooter/luci/restart.sh $CURRMODEM
+/usr/lib/rooter/connect/bandmask $CURRMODEM $MODT
 exit 0

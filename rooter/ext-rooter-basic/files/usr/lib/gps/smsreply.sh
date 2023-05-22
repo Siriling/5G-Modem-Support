@@ -38,8 +38,6 @@ if [ "$GPSon" != "1" -o $CURRMODEM == "2" ]; then
 			fi
 			ATCMDD="AT!ENTERCND=\"AWRONG\""
 			OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
-		else
-			GPSon="1"
 		fi
 		OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "AT!GPSTRACK=1,240,30,1000,5")
 		GPSendcmd="AT!GPSEND=0"
@@ -48,8 +46,6 @@ if [ "$GPSon" != "1" -o $CURRMODEM == "2" ]; then
 		err=$(echo "$OX" | grep "+QGPS: 1")
 		if [ -z "$err" ]; then
 			OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "AT+QGPS=1")
-		else
-			GPSon="1"
 		fi
 		ATCMDD="AT+QCFG=\"gpsdrx\""
 		OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")

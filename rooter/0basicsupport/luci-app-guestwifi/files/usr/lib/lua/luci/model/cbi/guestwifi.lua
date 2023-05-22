@@ -99,12 +99,12 @@ function auto.cfgvalue(self, section)
 		val = 0
 	end
 	if val == "1" then
-		return translate("WPA-PSK (Medium Security)")
+		return "WPA-PSK (Medium Security)"
 	else
 		if val == "2" then
-			return translate("WPA2-PSK (Strong Security)")
+			return "WPA2-PSK (Strong Security)"
 		else
-			return translate("None")
+			return "None"
 		end
 	end
 end
@@ -118,9 +118,9 @@ function qos.cfgvalue(self, section)
 	if val == "1" then
 		dl_cfg = self.map:get(section, "dl")
 		ul_cfg = self.map:get(section, "ul")
-		return translate("Download : ") .. dl_cfg .. translate(" Mbit/s / Upload : ") .. ul_cfg .. translate(" Mbit/s")
+		return "Download : " .. dl_cfg .. " Mbit/s / Upload : " .. ul_cfg .. " Mbit/s"
 	else
-		return translate("Disabled")
+		return "Disabled"
 	end
 end
 

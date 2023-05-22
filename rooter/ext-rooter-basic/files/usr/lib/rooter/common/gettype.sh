@@ -68,13 +68,6 @@ if [ -z "$MODEL" ]; then
 	MODEL=$(uci get modem.modem$CURRMODEM.model)
 fi
 
-dell=$(echo "$MANUF" | grep "DELL")
-if [ ! -z "$dell" ]; then
-	if [ "$MODEL" = "4116" ]; then
-		MANUF="Dell"
-		MODEL="DW5821e/T77W968"
-	fi
-fi
 uci set modem.modem$CURRMODEM.manuf="$MANUF"
 uci set modem.modem$CURRMODEM.model="$MODEL"
 uci commit modem
@@ -178,13 +171,6 @@ if [ "$IDV" == "2c7c" ]; then
 	IMSon=$(echo "$OX" | grep "1")
 	if [ -z "$IMSon" ]; then
 		ATCMDD="AT+QCFG=\"ims\",1"
-		OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
-	fi
-	ATCMDD="AT+QCFG=\"ims/ut\""
-	OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
-	IMSussd=$(echo "$OX" | grep "[01],[01],0")
-	if [ -n "$IMSussd" ]; then
-		ATCMDD="AT+QCFG=\"ims/ut\",1,1,1"
 		OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$CPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
 	fi
 fi

@@ -97,12 +97,12 @@ read_modem()
 %>
 
 <fieldset class="cbi-section" id="cbi-family">
-	<legend><%:Custom Modem Port Database%></legend>
+	<legend><%:自定义模块端口数据库%></legend>
 	<table width="100%"  border="0">
   	<tr>
-    		<td width="15%"><strong><%:Modem%></strong></td>
-    		<td width="10%"><strong><%:Data Port%></strong></td>
-    		<td width="75%"><strong><%:Communication Port%></strong></td>
+    		<td width="15%"><strong><%:模块名称%></strong></td>
+    		<td width="10%"><strong><%:数据端口%></strong></td>
+    		<td width="75%"><strong><%:通信端口%></strong></td>
   	</tr>
 	<% 
 	if count > 0 then
@@ -116,10 +116,11 @@ read_modem()
 	<% 
 		end
 	else %>
-    		<td><%:No Entries%></td>
+    		<td><%:暂无数据%></td>
     		<td>&nbsp;</td>
     		<td>&nbsp;</td>
 	<%
 	end %>
 	</table>
 </fieldset>
+

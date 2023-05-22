@@ -56,6 +56,10 @@ while [ true ]; do
 				retval=2
 				break
 			;;
+			"qmi_wwan_q" )
+				retval=88
+				break
+			;;
 			"cdc_mbim" )
 				retval=3
 				break
@@ -97,7 +101,7 @@ while [ true ]; do
 	let fcntr=$fcntr+1
 done
 if [ $serialcnt -gt 0 -a $retval -eq 0 ]; then
-	retval=11
+	retval=88
 fi
 echo 'retval="'"$retval"'"' > /tmp/proto
 

@@ -94,10 +94,6 @@ STARTIMEX=$(date +%s)
 MONSTAT="Unknown"
 rm -f /tmp/monstat$CURRMODEM
 
-if [ -e $ROOTER/modem-led.sh ]; then
-	$ROOTER/modem-led.sh $CURRMODEM 4
-fi
-		
 while [ 1 = 1 ]; do
 	if [ $idV = 1546 -a $idP = 1146 ]; then
 # ublox
@@ -108,7 +104,7 @@ while [ 1 = 1 ]; do
 		echo "-" >> /tmp/status$CURRMODEM.file
 		echo "-" >> /tmp/status$CURRMODEM.file
 		echo "$MODEM" >> /tmp/status$CURRMODEM.file
-		echo "Hostless/Phone" >> /tmp/status$CURRMODEM.file
+		echo "-" >> /tmp/status$CURRMODEM.file
 		echo "-" >> /tmp/status$CURRMODEM.file
 		echo "-" >> /tmp/status$CURRMODEM.file
 		echo "-" >> /tmp/status$CURRMODEM.file
@@ -131,15 +127,13 @@ while [ 1 = 1 ]; do
 		echo "-" >> /tmp/status$CURRMODEM.file
 		echo "-" >> /tmp/status$CURRMODEM.file
 		echo "-" >> /tmp/status$CURRMODEM.file
-		echo "$IP" >> /tmp/status$CURRMODEM.file
+		echo "-" >> /tmp/status$CURRMODEM.file
 		echo "-" >> /tmp/status$CURRMODEM.file
 		echo "Hostless/Phone" >> /tmp/status$CURRMODEM.file
 		echo "-" >> /tmp/status$CURRMODEM.file
 		echo "-" >> /tmp/status$CURRMODEM.file
 		echo "-" >> /tmp/status$CURRMODEM.file
 	fi
-	uci set modem.modem$CURRMODEM.cmode="1"
-	uci commit modem
 	if [ -e /tmp/monstat$CURRMODEM ]; then
 		source /tmp/monstat$CURRMODEM
 	fi

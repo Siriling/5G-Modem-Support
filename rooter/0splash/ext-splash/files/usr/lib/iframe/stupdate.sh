@@ -123,9 +123,9 @@ level2txt() {
 			tmp=$(echo "$tmp" | sed -e "s/-//g")
 		fi
 		if [ $3 = "1" -o $3 = "0" ];then
-			desc="<br><i class='msDot'>"."</i></br>"
+			desc="<br><i class='msDesc'>"."</i></br>"
 		fi
-		namev="<i class='msText'>""$tmp""</i>"$desc 
+		namev="<b class='level_2'>""$tmp""</b>"$desc
 		return
 	fi
 }
@@ -237,7 +237,7 @@ if [ $splash = "1" ]; then
 	SPSTATUS="/tmp/www/splash.html"
 	rm -f $STEMP
 	cp $STATUS $STEMP
-	button="<a href='cgi-bin/luci'><div class=\"rooterItem\"><div class=\"rooterItemTitle\"><i class='icon icon-cog'></i>Router Login</div></div></a>"
+	button="<div class='rooterPageContentBW'><div class="" id=\"rooterItems\"><a href='cgi-bin/luci'><div class=\"rooterItem\" id=\"rooterItem1\"><div class=\"rooterItemTitle\"><i class='icon icon-cog'></i> Router Login</div><div class=\"rooterItemTitle\"></div></div></a></div></div>"
 	sed -i -e "s!#BUTTON#!$button!g" $STEMP
 	sed -i -e "s!#LUCIS#!luci-static/!g" $STEMP
 	titlebar="<div class='rooterPageHead'><a  href='http://#URL#'><div class=\"rooterHeadTitle\"> #TITLE#</div></a></div>"
@@ -284,23 +284,6 @@ if [ $splash = "1" ]; then
 	sed -i -e "s!#CHAN#!$namev!g" $STEMP
 	level2txt "$lband" "single"
 	sed -i -e "s!#BAND#!$namev!g" $STEMP
-	
-	if [ ! -e /tmp/simpin1 ]; then
-		sim="-"
-	else
-		simerr=$(cat /tmp/simpin1)
-		if [ "$simerr" = "0" -o "$simerr" = "1" -o "$simerr" = "2" ]; then
-			sim="Error"
-		else
-			if [ "$simerr" = "3" ]; then
-				sim="Okay"
-			else
-				sim="-"
-			fi
-		fi
-	fi
-	level2txt "$sim" "single"
-	sed -i -e "s!#SIM#!$namev!g" $STEMP
 
 	if [ -e /etc/custom ]; then
 		mod="/etc/custom"
@@ -331,19 +314,6 @@ if [ $splash = "1" ]; then
 	fi
 	level2txt "$extr" "single"
 	sed -i -e "s!#EXTERNAL#!$namev!g" $STEMP
-		
-	routid=$(uci -q get zerotier.zerotier.secret)
-	if [ -z "$routid" ]; then
-		routid="xxxxxxxxxx"
-	else
-		routid=${routid:0:10}
-	fi
-
-	source /etc/codename
-	level2txt "$routid" "single"
-	sed -i -e "s!#ROUTID#!$namev!g" $STEMP
-	level2txt "$CODENAME" "single"
-	sed -i -e "s!#FIRMWARE#!$namev!g" $STEMP
 	
 	dual=$(uci -q get iframe.iframe.dual)
 	if [ $dual = "1" ]; then
