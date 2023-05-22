@@ -4,7 +4,9 @@
 #ifndef _MHI_H_
 #define _MHI_H_
 
-#define PCIE_MHI_DRIVER_VERSION "V1.3.0.13"
+#define PCIE_MHI_DRIVER_VERSION "V1.3.4"
+#define ENABLE_MHI_MON
+//#define ENABLE_IP_SW0
 
 #include <linux/miscdevice.h>
 typedef enum
@@ -90,11 +92,13 @@ typedef enum
 {
 	SW_EVT_RING       = 0,
 	PRIMARY_EVENT_RING = SW_EVT_RING,
-	HW_0_OUT_EVT_RING = 1,
-	IPA_OUT_EVENT_RING = HW_0_OUT_EVT_RING,
-	HW_0_IN_EVT_RING  = 2,
-	IPA_IN_EVENT_RING = HW_0_IN_EVT_RING,
-	ADPL_EVT_RING     = 3,
+#ifdef ENABLE_IP_SW0
+	SW_0_OUT_EVT_RING,
+	SW_0_IN_EVT_RING,
+#endif
+	IPA_OUT_EVENT_RING,
+	IPA_IN_EVENT_RING,
+	ADPL_EVT_RING,
 
 	MAX_EVT_RING_IDX
 }MHI_EVT_RING_IDX;
@@ -111,7 +115,15 @@ typedef enum
 #define NUM_MHI_IPA_IN_RING_ELEMENTS    512
 #define NUM_MHI_IPA_OUT_RING_ELEMENTS    512 //donot use ul agg, so increase
 #define NUM_MHI_DIAG_IN_RING_ELEMENTS    128
-#define NUM_MHI_CHAN_RING_ELEMENTS    8
+#define NUM_MHI_SW_IP_RING_ELEMENTS    512
+
+/*
+* for if set Interrupt moderation time as 1ms,
+and transfer more than NUM_MHI_CHAN_RING_ELEMENTS data are sent to the modem in 1ms.
+e.g. firehose upgrade.
+modem will not trigger irq for these transfer.
+*/
+#define NUM_MHI_CHAN_RING_ELEMENTS    32 //8
 #define MHI_EVT_CMD_QUEUE_SIZE       160
 #define MHI_EVT_STATE_QUEUE_SIZE     128
 #define MHI_EVT_XFER_QUEUE_SIZE      1024
@@ -141,6 +153,7 @@ struct mhi_buf_info;
  * @MHI_CB_LPM_ENTER: MHI host entered low power mode
  * @MHI_CB_LPM_EXIT: MHI host about to exit low power mode
  * @MHI_CB_EE_RDDM: MHI device entered RDDM execution enviornment
+ * @MHI_CB_EE_MISSION_MODE: MHI device entered Mission Mode exec env
  * @MHI_CB_SYS_ERROR: MHI device enter error state (may recover)
  * @MHI_CB_FATAL_ERROR: MHI device entered fatal error
  */
@@ -150,6 +163,7 @@ enum MHI_CB {
 	MHI_CB_LPM_ENTER,
 	MHI_CB_LPM_EXIT,
 	MHI_CB_EE_RDDM,
+	MHI_CB_EE_MISSION_MODE,
 	MHI_CB_SYS_ERROR,
 	MHI_CB_FATAL_ERROR,
 };
@@ -322,10 +336,13 @@ struct mhi_controller {
 	void __iomem *wake_db;
 
 	/* device topology */
+	u32 vendor;
 	u32 dev_id;
 	u32 domain;
 	u32 bus;
 	u32 slot;
+	u32 cntrl_idx;  
+	struct device *cntrl_dev;
 
 	/* addressing window */
 	dma_addr_t iova_start;
@@ -356,6 +373,7 @@ struct mhi_controller {
 	u32 sw_ev_rings;
 	u32 msi_required;
 	u32 msi_allocated;
+	u32 msi_irq_base;
 	int *irq; /* interrupt table */
 	struct mhi_event *mhi_event;
 
@@ -377,6 +395,7 @@ struct mhi_controller {
 	bool wake_set;
 	atomic_t dev_wake;
 	atomic_t alloc_size;
+	atomic_t pending_pkts;
 	struct list_head transition_list;
 	spinlock_t transition_lock;
 	spinlock_t wlock;
@@ -388,6 +407,7 @@ struct mhi_controller {
 	struct work_struct st_worker;
 	struct work_struct fw_worker;
 	struct work_struct syserr_worker;
+	struct delayed_work ready_worker;
 	wait_queue_head_t state_event;
 
 	/* shadow functions */
@@ -398,6 +418,7 @@ struct mhi_controller {
 	void (*wake_put)(struct mhi_controller *mhi_cntrl, bool override);
 	int (*runtime_get)(struct mhi_controller *mhi_cntrl, void *priv);
 	void (*runtime_put)(struct mhi_controller *mhi_cntrl, void *priv);
+	void (*runtime_mark_last_busy)(struct mhi_controller *mhi_cntrl, void *priv);
 	u64 (*time_get)(struct mhi_controller *mhi_cntrl, void *priv);
 	int (*lpm_disable)(struct mhi_controller *mhi_cntrl, void *priv);
 	int (*lpm_enable)(struct mhi_controller *mhi_cntrl, void *priv);
@@ -431,7 +452,33 @@ struct mhi_controller {
 	struct dentry *parent;
 
 	struct miscdevice miscdev;
+
+#ifdef ENABLE_MHI_MON
+	spinlock_t lock;
+
+	/* Ref */
+	int nreaders;			/* Under mon_lock AND mbus->lock */
+	struct list_head r_list;	/* Chain of readers (usually one) */
+	struct kref ref;		/* Under mon_lock */
+
+	/* Stats */
+	unsigned int cnt_events;
+	unsigned int cnt_text_lost;
+#endif
 };
+
+#ifdef ENABLE_MHI_MON
+struct mhi_tre;
+struct mon_reader {
+	struct list_head r_link;
+	struct mhi_controller *m_bus;
+	void *r_data;		/* Use container_of instead? */
+
+	void (*rnf_submit)(void *data, u32 chan, dma_addr_t wp, struct mhi_tre *mhi_tre, void *buf, size_t len);
+	void (*rnf_receive)(void *data, u32 chan, dma_addr_t wp, struct mhi_tre *mhi_tre, void *buf, size_t len);
+	void (*rnf_complete)(void *data, u32 chan, dma_addr_t wp, struct mhi_tre *mhi_tre);
+};
+#endif
 
 /**
  * struct mhi_device - mhi device structure associated bind to channel
@@ -444,6 +491,7 @@ struct mhi_controller {
  */
 struct mhi_device {
 	struct device dev;
+	u32 vendor;
 	u32 dev_id;
 	u32 domain;
 	u32 bus;
@@ -797,7 +845,7 @@ void mhi_debug_reg_dump(struct mhi_controller *mhi_cntrl);
 
 #define MHI_VERB(fmt, ...) do { \
 		if (mhi_cntrl->klog_lvl <= MHI_MSG_LVL_VERBOSE) \
-			pr_debug("[D][%s] " fmt, __func__, ##__VA_ARGS__);\
+			pr_debug("[D][mhi%d][%s] " fmt, mhi_cntrl->cntrl_idx, __func__, ##__VA_ARGS__);\
 } while (0)
 
 #else
@@ -808,25 +856,23 @@ void mhi_debug_reg_dump(struct mhi_controller *mhi_cntrl);
 
 #define MHI_LOG(fmt, ...) do {	\
 		if (mhi_cntrl->klog_lvl <= MHI_MSG_LVL_INFO) \
-			pr_info("[I][%s] " fmt, __func__, ##__VA_ARGS__);\
+			pr_info("[I][mhi%d][%s] " fmt, mhi_cntrl->cntrl_idx, __func__, ##__VA_ARGS__);\
 		else if (!mhi_cntrl->klog_slient) \
-			printk(KERN_DEBUG "[I][%s] " fmt, __func__, ##__VA_ARGS__);\
+			printk(KERN_DEBUG "[I][mhi%d][%s] " fmt, mhi_cntrl->cntrl_idx, __func__, ##__VA_ARGS__);\
 } while (0)
 
 #define MHI_ERR(fmt, ...) do {	\
 		if (mhi_cntrl->klog_lvl <= MHI_MSG_LVL_ERROR) \
-			pr_err("[E][%s] " fmt, __func__, ##__VA_ARGS__); \
+			pr_err("[E][mhi%d][%s] " fmt, mhi_cntrl->cntrl_idx, __func__, ##__VA_ARGS__); \
 } while (0)
 
 #define MHI_CRITICAL(fmt, ...) do { \
 		if (mhi_cntrl->klog_lvl <= MHI_MSG_LVL_CRITICAL) \
-			pr_alert("[C][%s] " fmt, __func__, ##__VA_ARGS__); \
+			pr_alert("[C][mhi%d][%s] " fmt, mhi_cntrl->cntrl_idx, __func__, ##__VA_ARGS__); \
 } while (0)
 
 int mhi_register_mhi_controller(struct mhi_controller *mhi_cntrl);
 void mhi_unregister_mhi_controller(struct mhi_controller *mhi_cntrl);
-int mhi_cntrl_register_miscdev(struct mhi_controller *mhi_cntrl);
-void mhi_cntrl_deregister_miscdev(struct mhi_controller *mhi_cntrl);
 
 #ifndef MHI_NAME_SIZE
 #define MHI_NAME_SIZE 32

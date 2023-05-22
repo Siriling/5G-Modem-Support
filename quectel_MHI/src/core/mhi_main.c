@@ -68,6 +68,8 @@ int mhi_get_capability_offset(struct mhi_controller *mhi_cntrl,
 				 MISC_CAP_MASK, MISC_CAP_SHIFT, offset);
 	if (ret)
 		return ret;
+	if (*offset >= 0x1000)
+		return -ENXIO;
 	do {
 		ret = mhi_read_reg_field(mhi_cntrl, mhi_cntrl->regs, *offset,
 					 CAP_CAPID_MASK, CAP_CAPID_SHIFT,
@@ -173,6 +175,13 @@ void mhi_ring_cmd_db(struct mhi_controller *mhi_cntrl, struct mhi_cmd *mhi_cmd)
 	mhi_write_db(mhi_cntrl, ring->db_addr, db);
 }
 
+//#define DEBUG_CHAN100_DB
+#ifdef DEBUG_CHAN100_DB
+static atomic_t chan100_seq = ATOMIC_INIT(0);
+#define CHAN100_SIZE 0x1000
+static unsigned int chan100_t[CHAN100_SIZE];
+#endif
+
 void mhi_ring_chan_db(struct mhi_controller *mhi_cntrl,
 		      struct mhi_chan *mhi_chan)
 {
@@ -180,6 +189,11 @@ void mhi_ring_chan_db(struct mhi_controller *mhi_cntrl,
 	dma_addr_t db;
 
 	db = ring->iommu_base + (ring->wp - ring->base);
+	/*
+	 * Writes to the new ring element must be visible to the hardware
+	 * before letting h/w know there is new element to fetch.
+	 */
+	dma_wmb();
 	*ring->ctxt_wp = db;
 	mhi_chan->db_cfg.process_db(mhi_cntrl, &mhi_chan->db_cfg, ring->db_addr,
 				    db);
@@ -223,9 +237,11 @@ int mhi_queue_nop(struct mhi_device *mhi_dev,
 static void mhi_add_ring_element(struct mhi_controller *mhi_cntrl,
 				 struct mhi_ring *ring)
 {
-	ring->wp += ring->el_size;
-	if (ring->wp >= (ring->base + ring->len))
-		ring->wp = ring->base;
+	void *wp = ring->wp;
+	wp += ring->el_size;
+	if (wp >= (ring->base + ring->len))
+		wp = ring->base;
+	ring->wp = wp;
 	/* smp update */
 	smp_wmb();
 }
@@ -233,9 +249,11 @@ static void mhi_add_ring_element(struct mhi_controller *mhi_cntrl,
 static void mhi_del_ring_element(struct mhi_controller *mhi_cntrl,
 				 struct mhi_ring *ring)
 {
-	ring->rp += ring->el_size;
-	if (ring->rp >= (ring->base + ring->len))
-		ring->rp = ring->base;
+	void *rp = ring->rp;
+	rp += ring->el_size;
+	if (rp >= (ring->base + ring->len))
+		rp = ring->base;
+	ring->rp = rp;
 	/* smp update */
 	smp_wmb();
 }
@@ -281,23 +299,24 @@ dma_addr_t mhi_to_physical(struct mhi_ring *ring, void *addr)
 static void mhi_recycle_ev_ring_element(struct mhi_controller *mhi_cntrl,
 					struct mhi_ring *ring)
 {
-	dma_addr_t ctxt_wp;
+	void *rp, *wp;
 
 	/* update the WP */
-	ring->wp += ring->el_size;
-	ctxt_wp = *ring->ctxt_wp + ring->el_size;
-
-	if (ring->wp >= (ring->base + ring->len)) {
-		ring->wp = ring->base;
-		ctxt_wp = ring->iommu_base;
+	wp = ring->wp;
+	wp += ring->el_size;
+	if (wp >= (ring->base + ring->len)) {
+		wp = ring->base;
 	}
+	ring->wp = wp;
 
-	*ring->ctxt_wp = ctxt_wp;
+	*ring->ctxt_wp = ring->iommu_base + (ring->wp - ring->base);
 
 	/* update the RP */
-	ring->rp += ring->el_size;
-	if (ring->rp >= (ring->base + ring->len))
-		ring->rp = ring->base;
+	rp = ring->rp;
+	rp += ring->el_size;
+	if (rp >= (ring->base + ring->len))
+		rp = ring->base;
+	ring->rp = rp;
 
 	/* visible to other cores */
 	smp_wmb();
@@ -358,6 +377,53 @@ void mhi_unmap_single_use_bb(struct mhi_controller *mhi_cntrl,
 	mhi_free_coherent(mhi_cntrl, buf_info->len, buf_info->bb_addr,
 			  buf_info->p_addr);
 }
+
+#ifdef ENABLE_MHI_MON
+static void mon_bus_submit(struct mhi_controller *mbus, u32 chan, dma_addr_t wp, struct mhi_tre *mhi_tre, void *buf, size_t len)
+{
+	unsigned long flags;
+	struct list_head *pos;
+	struct mon_reader *r;
+
+	spin_lock_irqsave(&mbus->lock, flags);
+	mbus->cnt_events++;
+	list_for_each (pos, &mbus->r_list) {
+		r = list_entry(pos, struct mon_reader, r_link);
+		r->rnf_submit(r->r_data, chan, wp, mhi_tre, buf, len);
+	}
+	spin_unlock_irqrestore(&mbus->lock, flags);
+}
+
+static void mon_bus_receive(struct mhi_controller *mbus, u32 chan, dma_addr_t wp, struct mhi_tre *mhi_tre, void *buf, size_t len)
+{
+	unsigned long flags;
+	struct list_head *pos;
+	struct mon_reader *r;
+
+	spin_lock_irqsave(&mbus->lock, flags);
+	mbus->cnt_events++;
+	list_for_each (pos, &mbus->r_list) {
+		r = list_entry(pos, struct mon_reader, r_link);
+		r->rnf_receive(r->r_data, chan, wp, mhi_tre, buf, len);
+	}
+	spin_unlock_irqrestore(&mbus->lock, flags);
+}
+
+static void mon_bus_complete(struct mhi_controller *mbus, u32 chan, dma_addr_t wp, struct mhi_tre *mhi_tre)
+{
+	unsigned long flags;
+	struct list_head *pos;
+	struct mon_reader *r;
+
+	spin_lock_irqsave(&mbus->lock, flags);
+	mbus->cnt_events++;
+	list_for_each (pos, &mbus->r_list) {
+		r = list_entry(pos, struct mon_reader, r_link);
+		r->rnf_complete(r->r_data, chan, wp, mhi_tre);
+	}
+	spin_unlock_irqrestore(&mbus->lock, flags);
+}
+#endif
 
 int mhi_queue_skb(struct mhi_device *mhi_dev,
 		  struct mhi_chan *mhi_chan,
@@ -420,28 +486,39 @@ int mhi_queue_skb(struct mhi_device *mhi_dev,
 	mhi_tre->dword[0] = MHI_TRE_DATA_DWORD0(buf_info->len);
 	mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(1, 1, 0, 0);
 
+#ifdef ENABLE_MHI_MON
+	if (mhi_cntrl->nreaders) {
+		mon_bus_submit(mhi_cntrl, mhi_chan->chan,
+			mhi_to_physical(tre_ring, mhi_tre), mhi_tre, buf_info->v_addr, mhi_chan->chan&0x1 ? 0 : buf_info->len);
+	}
+#endif
+
 	MHI_VERB("chan:%d WP:0x%llx TRE:0x%llx 0x%08x 0x%08x\n", mhi_chan->chan,
 		 (u64)mhi_to_physical(tre_ring, mhi_tre), mhi_tre->ptr,
 		 mhi_tre->dword[0], mhi_tre->dword[1]);
 
+	if (mhi_chan->dir == DMA_TO_DEVICE) {
+		if (atomic_inc_return(&mhi_cntrl->pending_pkts) == 1)
+			mhi_cntrl->runtime_get(mhi_cntrl, mhi_cntrl->priv_data);
+	}
+
+	read_lock_bh(&mhi_chan->lock);
 	/* increment WP */
 	mhi_add_ring_element(mhi_cntrl, tre_ring);
 	mhi_add_ring_element(mhi_cntrl, buf_ring);
 
-	if (likely(MHI_DB_ACCESS_VALID(mhi_cntrl->pm_state))) {
-		read_lock_bh(&mhi_chan->lock);
-		mhi_ring_chan_db(mhi_cntrl, mhi_chan);
-		read_unlock_bh(&mhi_chan->lock);
+#ifdef DEBUG_CHAN100_DB
+	if (mhi_chan->chan == 100) {
+		chan100_t[atomic_inc_return(&chan100_seq)&(CHAN100_SIZE-1)] = (((unsigned long)tre_ring->wp)&0xffff) | (mhi_chan->db_cfg.db_mode<<31) | (0<<30);
 	}
+#endif
+	if (likely(MHI_DB_ACCESS_VALID(mhi_cntrl->pm_state))) {
+		mhi_ring_chan_db(mhi_cntrl, mhi_chan);
+	}
+		read_unlock_bh(&mhi_chan->lock);
 
 	if (mhi_chan->dir == DMA_FROM_DEVICE && assert_wake)
 		mhi_cntrl->wake_put(mhi_cntrl, true);
-
-	if (mhi_chan->dir == DMA_TO_DEVICE) {
-		unsigned used_elements = get_used_ring_elements(tre_ring->rp, tre_ring->wp, tre_ring->elements);
-		if (used_elements > mhi_chan->used_elements)
-			mhi_chan->used_elements = used_elements;
-	}
 
 	read_unlock_bh(&mhi_cntrl->pm_lock);
 
@@ -524,19 +601,31 @@ int mhi_queue_dma(struct mhi_device *mhi_dev,
 		mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(1, 1, 0, 0);
 	}
 
+#ifdef ENABLE_MHI_MON
+	if (mhi_cntrl->nreaders) {
+		mon_bus_submit(mhi_cntrl, mhi_chan->chan,
+			mhi_to_physical(tre_ring, mhi_tre), mhi_tre, buf_info->v_addr, mhi_chan->chan&0x1 ? 0: buf_info->len);
+	}
+#endif
+
 	MHI_VERB("chan:%d WP:0x%llx TRE:0x%llx 0x%08x 0x%08x\n", mhi_chan->chan,
 		 (u64)mhi_to_physical(tre_ring, mhi_tre), mhi_tre->ptr,
 		 mhi_tre->dword[0], mhi_tre->dword[1]);
 
+	if (mhi_chan->dir == DMA_TO_DEVICE) {
+		if (atomic_inc_return(&mhi_cntrl->pending_pkts) == 1)
+			mhi_cntrl->runtime_get(mhi_cntrl, mhi_cntrl->priv_data);
+	}
+
+	read_lock_bh(&mhi_chan->lock);
 	/* increment WP */
 	mhi_add_ring_element(mhi_cntrl, tre_ring);
 	mhi_add_ring_element(mhi_cntrl, buf_ring);
 
 	if (likely(MHI_DB_ACCESS_VALID(mhi_cntrl->pm_state))) {
-		read_lock_bh(&mhi_chan->lock);
 		mhi_ring_chan_db(mhi_cntrl, mhi_chan);
-		read_unlock_bh(&mhi_chan->lock);
 	}
+		read_unlock_bh(&mhi_chan->lock);
 
 	if (mhi_chan->dir == DMA_FROM_DEVICE && assert_wake)
 		mhi_cntrl->wake_put(mhi_cntrl, true);
@@ -583,6 +672,12 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl,
 	mhi_tre->dword[0] = MHI_TRE_DATA_DWORD0(buf_len);
 	mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(bei, eot, eob, chain);
 
+#ifdef ENABLE_MHI_MON
+	if (mhi_cntrl->nreaders) {
+		mon_bus_submit(mhi_cntrl, mhi_chan->chan,
+			mhi_to_physical(tre_ring, mhi_tre), mhi_tre, buf_info->v_addr, mhi_chan->chan&0x1 ? 0 : buf_info->len);
+	}
+#endif
 	MHI_VERB("chan:%d WP:0x%llx TRE:0x%llx 0x%08x 0x%08x\n", mhi_chan->chan,
 		 (u64)mhi_to_physical(tre_ring, mhi_tre), mhi_tre->ptr,
 		 mhi_tre->dword[0], mhi_tre->dword[1]);
@@ -643,6 +738,11 @@ int mhi_queue_buf(struct mhi_device *mhi_dev,
 	     mhi_cntrl->pm_state != MHI_PM_M0)) {
 		assert_wake = true;
 		mhi_cntrl->wake_get(mhi_cntrl, false);
+	}
+
+	if (mhi_chan->dir == DMA_TO_DEVICE) {
+		if (atomic_inc_return(&mhi_cntrl->pending_pkts) == 1)
+			mhi_cntrl->runtime_get(mhi_cntrl, mhi_cntrl->priv_data);
 	}
 
 	if (likely(MHI_DB_ACCESS_VALID(mhi_cntrl->pm_state))) {
@@ -929,7 +1029,7 @@ void mhi_create_devices(struct mhi_controller *mhi_cntrl)
 				mhi_dev->chan_name);
 			mhi_dealloc_device(mhi_cntrl, mhi_dev);
 		}
-		sysfs_create_group(&mhi_dev->dev.kobj, &mhi_dev_attr_group);
+		ret = sysfs_create_group(&mhi_dev->dev.kobj, &mhi_dev_attr_group);
 	}
 }
 
@@ -1036,11 +1136,6 @@ static int parse_xfer_event(struct mhi_controller *mhi_cntrl,
 		if (dev_rp >= (tre_ring->base + tre_ring->len))
 			dev_rp = tre_ring->base;
 
-		if (mhi_chan->dir == DMA_FROM_DEVICE) {
-			u32 used_elements = get_used_ring_elements(tre_ring->rp, dev_rp, tre_ring->elements);
-			if (used_elements > mhi_chan->used_elements)
-				mhi_chan->used_elements = used_elements;
-		}
 		mhi_chan->used_events[ev_code]++;
 
 		result.dir = mhi_chan->dir;
@@ -1058,12 +1153,35 @@ static int parse_xfer_event(struct mhi_controller *mhi_cntrl,
 
 			result.buf_addr = buf_info->cb_buf;
 			result.bytes_xferd = xfer_len;
+#ifdef ENABLE_MHI_MON
+			if (mhi_cntrl->nreaders) {
+				void *buf = NULL;
+				size_t len = 0;
+
+				if (mhi_chan->queue_xfer == mhi_queue_skb) {
+					struct sk_buff *skb = result.buf_addr;
+					buf = skb->data;
+					len = result.bytes_xferd;
+				}
+				else if (CHAN_INBOUND(mhi_chan->chan)) {
+					buf = result.buf_addr;
+					len = result.bytes_xferd;
+				}
+				mon_bus_receive(mhi_cntrl, mhi_chan->chan,
+					mhi_to_physical(tre_ring, local_rp), local_rp, buf, len);
+			}
+#endif
 			mhi_del_ring_element(mhi_cntrl, buf_ring);
 			mhi_del_ring_element(mhi_cntrl, tre_ring);
 			local_rp = tre_ring->rp;
 
 			/* notify client */
 			mhi_chan->xfer_cb(mhi_chan->mhi_dev, &result);
+
+			if (mhi_chan->dir == DMA_TO_DEVICE) {
+				if (atomic_dec_return(&mhi_cntrl->pending_pkts) == 0) 
+					mhi_cntrl->runtime_put(mhi_cntrl, mhi_cntrl->priv_data);
+			}
 
 			if (mhi_chan->dir == DMA_TO_DEVICE) {
 				read_lock_bh(&mhi_cntrl->pm_lock);
@@ -1098,6 +1216,12 @@ static int parse_xfer_event(struct mhi_controller *mhi_cntrl,
 		MHI_VERB("DB_MODE/OOB Detected chan %d.\n", mhi_chan->chan);
 		mhi_chan->db_cfg.db_mode = true;
 		read_lock_irqsave(&mhi_cntrl->pm_lock, flags);
+#ifdef DEBUG_CHAN100_DB
+		if (mhi_chan->chan == 100) {
+			chan100_t[atomic_inc_return(&chan100_seq)&(CHAN100_SIZE-1)] = (((unsigned long)tre_ring->rp)&0xffff) | (0xf0000);
+			chan100_t[atomic_inc_return(&chan100_seq)&(CHAN100_SIZE-1)] = (((unsigned long)tre_ring->wp)&0xffff) | (mhi_chan->db_cfg.db_mode<<31) | (1<<30);
+		}
+#endif
 		if (tre_ring->wp != tre_ring->rp &&
 		    MHI_DB_ACCESS_VALID(mhi_cntrl->pm_state)) {
 			mhi_ring_chan_db(mhi_cntrl, mhi_chan);
@@ -1247,9 +1371,25 @@ int mhi_process_ctrl_ev_ring(struct mhi_controller *mhi_cntrl,
 	while (dev_rp != local_rp) {
 		enum MHI_PKT_TYPE type = MHI_TRE_GET_EV_TYPE(local_rp);
 
+//#define QL_READ_EVENT_WA //from Quectel Windows driver
+#ifdef QL_READ_EVENT_WA
+		if (mhi_event->er_index == 0) {
+			if (local_rp->ptr == 0 && local_rp->dword[0] == 0 && local_rp->dword[1] == 0) {
+				// event content no sync to memory, just break and wait next event.
+				MHI_ERR("Zero Event!\n");
+				break;
+			}
+		}
+#endif
+
 		mhi_dump_tre(mhi_cntrl, local_rp);
 		MHI_VERB("Processing Event:0x%llx 0x%08x 0x%08x\n",
 			local_rp->ptr, local_rp->dword[0], local_rp->dword[1]);
+#ifdef ENABLE_MHI_MON
+		if (mhi_cntrl->nreaders) {
+			mon_bus_complete(mhi_cntrl, mhi_event->er_index, mhi_to_physical(ev_ring, local_rp), local_rp);
+		}
+#endif
 
 		switch (type) {
 		case MHI_PKT_TYPE_STATE_CHANGE_EVENT:
@@ -1350,10 +1490,21 @@ int mhi_process_ctrl_ev_ring(struct mhi_controller *mhi_cntrl,
 			break;
 		}
 
+#ifdef QL_READ_EVENT_WA
+		if (mhi_event->er_index == 0) {
+			local_rp->ptr = 0;
+			local_rp->dword[0] = local_rp->dword[1] = 0;
+		}
+#endif
+
 		mhi_recycle_ev_ring_element(mhi_cntrl, ev_ring);
 		local_rp = ev_ring->rp;
 		dev_rp = mhi_to_virtual(ev_ring, er_ctxt->rp);
 		count++;
+	}
+
+	if (count > mhi_event->used_elements) {
+		mhi_event->used_elements = count;
 	}
 
 	read_lock_bh(&mhi_cntrl->pm_lock);
@@ -1376,11 +1527,9 @@ int mhi_process_data_event_ring(struct mhi_controller *mhi_cntrl,
 		&mhi_cntrl->mhi_ctxt->er_ctxt[mhi_event->er_index];
 	int count = 0;
 	u32 chan;
-	struct mhi_chan *mhi_chan;
-	int used_elements = 0;
-	void *chan_local_rp = NULL, *evt_local_rp = NULL;
-	if (mhi_event->mhi_chan)
-		chan_local_rp = mhi_event->mhi_chan->tre_ring.rp;
+	struct mhi_chan *mhi_chan = NULL;
+	u32 chan_count = 0;
+	void *chan_local_rp = NULL;
 
 	if (unlikely(MHI_EVENT_ACCESS_INVALID(mhi_cntrl->pm_state))) {
 		MHI_ERR("No EV access, PM_STATE:%s\n",
@@ -1390,7 +1539,6 @@ int mhi_process_data_event_ring(struct mhi_controller *mhi_cntrl,
 
 	dev_rp = mhi_to_virtual(ev_ring, er_ctxt->rp);
 	local_rp = ev_ring->rp;
-	evt_local_rp = local_rp;
 
 	while (dev_rp != local_rp && event_quota > 0) {
 		enum MHI_PKT_TYPE type = MHI_TRE_GET_EV_TYPE(local_rp);
@@ -1401,7 +1549,13 @@ int mhi_process_data_event_ring(struct mhi_controller *mhi_cntrl,
 
 		chan = MHI_TRE_GET_EV_CHID(local_rp);
 		mhi_chan = &mhi_cntrl->mhi_chan[chan];
+		chan_local_rp = mhi_chan->tre_ring.rp;
 
+#ifdef ENABLE_MHI_MON
+		if (mhi_cntrl->nreaders) {
+			mon_bus_complete(mhi_cntrl, mhi_event->er_index, mhi_to_physical(ev_ring, local_rp), local_rp);
+		}
+#endif
 		if (likely(type == MHI_PKT_TYPE_TX_EVENT)) {
 			parse_xfer_event(mhi_cntrl, local_rp, mhi_chan);
 			event_quota--;
@@ -1410,21 +1564,20 @@ int mhi_process_data_event_ring(struct mhi_controller *mhi_cntrl,
 			event_quota--;
 		}
 
+		chan_count += get_used_ring_elements(chan_local_rp, mhi_chan->tre_ring.rp, mhi_chan->tre_ring.elements);
 		mhi_recycle_ev_ring_element(mhi_cntrl, ev_ring);
 		local_rp = ev_ring->rp;
-		dev_rp = mhi_to_virtual(ev_ring, er_ctxt->rp);
+		if (local_rp == dev_rp || event_quota == 0) {
+			if (chan_count > mhi_chan->used_elements)
+				mhi_chan->used_elements = chan_count;
+			chan_count = 0;
+			dev_rp = mhi_to_virtual(ev_ring, er_ctxt->rp);
+		}
 		count++;
 	}
 
-	used_elements = get_used_ring_elements(evt_local_rp, dev_rp, ev_ring->elements);
-	if (used_elements > mhi_event->used_elements)
-		mhi_event->used_elements = used_elements;
-
-	mhi_chan = mhi_event->mhi_chan;
-	if (chan_local_rp && mhi_chan && mhi_chan->dir == DMA_FROM_DEVICE) {
-		used_elements = get_used_ring_elements(chan_local_rp, mhi_chan->tre_ring.rp, mhi_chan->tre_ring.elements);
-		if (used_elements > mhi_chan->used_elements)
-			mhi_chan->used_elements = used_elements;
+	if (count > mhi_event->used_elements) {
+		mhi_event->used_elements = count;
 	}
 
 	read_lock_bh(&mhi_cntrl->pm_lock);
@@ -1522,6 +1675,7 @@ void mhi_ev_task(unsigned long data)
 
 	MHI_VERB("Enter for ev_index:%d\n", mhi_event->er_index);
 
+	mhi_cntrl->runtime_mark_last_busy(mhi_cntrl, mhi_cntrl->priv_data);
 	/* process all pending events */
 	spin_lock_bh(&mhi_event->lock);
 	mhi_event->process_event(mhi_cntrl, mhi_event, U32_MAX);
@@ -1546,6 +1700,7 @@ void mhi_ctrl_ev_task(unsigned long data)
 	if (!MHI_REG_ACCESS_VALID(mhi_cntrl->pm_state))
 		return;
 
+	mhi_cntrl->runtime_mark_last_busy(mhi_cntrl, mhi_cntrl->priv_data);
 	/* process ctrl events events */
 	ret = mhi_event->process_event(mhi_cntrl, mhi_event, U32_MAX);
 
@@ -1608,8 +1763,9 @@ irqreturn_t mhi_intvec_threaded_handlr(int irq_number, void *dev)
 	if (MHI_REG_ACCESS_VALID(mhi_cntrl->pm_state)) {
 		state = mhi_get_mhi_state(mhi_cntrl);
 		ee = mhi_get_exec_env(mhi_cntrl);
-		MHI_LOG("device ee:%s dev_state:%s, pm_state:%s\n", TO_MHI_EXEC_STR(ee),
-			TO_MHI_STATE_STR(state), to_mhi_pm_state_str(mhi_cntrl->pm_state));
+	 	if (mhi_cntrl->msi_allocated >= 5 ||(mhi_cntrl->msi_allocated == 1 && (mhi_cntrl->dev_state != state || mhi_cntrl->ee != ee)))
+			MHI_LOG("device ee:%s dev_state:%s, pm_state:%s\n", TO_MHI_EXEC_STR(ee),
+				TO_MHI_STATE_STR(state), to_mhi_pm_state_str(mhi_cntrl->pm_state));
 	}
 
 	if (state == MHI_STATE_SYS_ERR) {
@@ -1633,14 +1789,11 @@ irqreturn_t mhi_intvec_threaded_handlr(int irq_number, void *dev)
 		else
 			schedule_work(&mhi_cntrl->syserr_worker);
 	}
+	if (mhi_cntrl->msi_allocated >= 5||(mhi_cntrl->msi_allocated == 1 && (mhi_cntrl->dev_state != state || mhi_cntrl->ee != ee)))
+		MHI_LOG("device ee:%s dev_state:%s, %s\n", TO_MHI_EXEC_STR(ee),
+				TO_MHI_STATE_STR(state), TO_MHI_EXEC_STR(mhi_cntrl->ee));
 
-	MHI_LOG("device ee:%s dev_state:%s, %s\n", TO_MHI_EXEC_STR(ee),
-			TO_MHI_STATE_STR(state), TO_MHI_EXEC_STR(mhi_cntrl->ee));
-
-	if (state == MHI_STATE_READY && ee == MHI_EE_AMSS && mhi_cntrl->ee == MHI_EE_PTHRU) {
-		mhi_queue_state_transition(mhi_cntrl, MHI_ST_TRANSITION_READY);
-	}
-	else if (pm_state == MHI_PM_POR) {
+	if (pm_state == MHI_PM_POR) {
 		wake_up_all(&mhi_cntrl->state_event);
 	}
 
@@ -1730,7 +1883,11 @@ int mhi_send_cmd(struct mhi_controller *mhi_cntrl,
 		break;
 	}
 
-
+#ifdef ENABLE_MHI_MON
+	if (mhi_cntrl->nreaders) {
+		mon_bus_submit(mhi_cntrl, 128, mhi_to_physical(ring, cmd_tre), cmd_tre, NULL, 0);
+	}
+#endif	
 	MHI_VERB("WP:0x%llx TRE: 0x%llx 0x%08x 0x%08x\n",
 		 (u64)mhi_to_physical(ring, cmd_tre), cmd_tre->ptr,
 		 cmd_tre->dword[0], cmd_tre->dword[1]);
@@ -1791,7 +1948,6 @@ static int __mhi_prepare_channel(struct mhi_controller *mhi_cntrl,
 	mhi_cntrl->wake_get(mhi_cntrl, false);
 	read_unlock_bh(&mhi_cntrl->pm_lock);
 	mhi_cntrl->runtime_get(mhi_cntrl, mhi_cntrl->priv_data);
-	mhi_cntrl->runtime_put(mhi_cntrl, mhi_cntrl->priv_data);
 
 	ret = mhi_send_cmd(mhi_cntrl, mhi_chan, MHI_CMD_START_CHAN);
 	if (ret) {
@@ -1807,6 +1963,8 @@ static int __mhi_prepare_channel(struct mhi_controller *mhi_cntrl,
 		ret = -EIO;
 		goto error_send_cmd;
 	}
+
+	mhi_cntrl->runtime_put(mhi_cntrl, mhi_cntrl->priv_data);
 
 	write_lock_irq(&mhi_chan->lock);
 	mhi_chan->ch_state = MHI_CH_STATE_ENABLED;
@@ -1858,6 +2016,7 @@ static int __mhi_prepare_channel(struct mhi_controller *mhi_cntrl,
 	return 0;
 
 error_send_cmd:
+	mhi_cntrl->runtime_put(mhi_cntrl, mhi_cntrl->priv_data);
 	read_lock_bh(&mhi_cntrl->pm_lock);
 	mhi_cntrl->wake_put(mhi_cntrl, false);
 	read_unlock_bh(&mhi_cntrl->pm_lock);
@@ -1930,6 +2089,11 @@ static void mhi_reset_data_chan(struct mhi_controller *mhi_cntrl,
 	result.bytes_xferd = 0;
 	while (tre_ring->rp != tre_ring->wp) {
 		struct mhi_buf_info *buf_info = buf_ring->rp;
+
+		if (mhi_chan->dir == DMA_TO_DEVICE) {
+			if (atomic_dec_return(&mhi_cntrl->pending_pkts) == 0) 
+				mhi_cntrl->runtime_put(mhi_cntrl, mhi_cntrl->priv_data);
+		}
 
 		if (mhi_chan->dir == DMA_TO_DEVICE)
 			mhi_cntrl->wake_put(mhi_cntrl, false);
@@ -2028,7 +2192,6 @@ static void __mhi_unprepare_channel(struct mhi_controller *mhi_cntrl,
 	read_unlock_bh(&mhi_cntrl->pm_lock);
 
 	mhi_cntrl->runtime_get(mhi_cntrl, mhi_cntrl->priv_data);
-	mhi_cntrl->runtime_put(mhi_cntrl, mhi_cntrl->priv_data);
 	ret = mhi_send_cmd(mhi_cntrl, mhi_chan, MHI_CMD_RESET_CHAN);
 	if (ret) {
 		MHI_ERR("Failed to send reset chan cmd\n");
@@ -2042,6 +2205,7 @@ static void __mhi_unprepare_channel(struct mhi_controller *mhi_cntrl,
 		MHI_ERR("Failed to receive cmd completion, still resetting\n");
 
 error_completion:
+	mhi_cntrl->runtime_put(mhi_cntrl, mhi_cntrl->priv_data);
 	read_lock_bh(&mhi_cntrl->pm_lock);
 	mhi_cntrl->wake_put(mhi_cntrl, false);
 	read_unlock_bh(&mhi_cntrl->pm_lock);
@@ -2059,6 +2223,7 @@ int mhi_debugfs_mhi_states_show(struct seq_file *m, void *d)
 {
 	struct mhi_controller *mhi_cntrl = m->private;
 	int reg = 0;
+	int ret;
 	u32 val[4];
 
 	seq_printf(m,
@@ -2078,20 +2243,20 @@ int mhi_debugfs_mhi_states_show(struct seq_file *m, void *d)
 	seq_printf(m, "dump mhi reg addr:%p\n", mhi_cntrl->regs);
 	for (reg = 0; reg < 0x100; reg+=16) {
 		val[0] = val[1] = val[2] = val[3] = 0xFFFFFFFF;
-		mhi_read_reg(mhi_cntrl, mhi_cntrl->regs, reg+0, &val[0]);
-		mhi_read_reg(mhi_cntrl, mhi_cntrl->regs, reg+4, &val[1]);
-		mhi_read_reg(mhi_cntrl, mhi_cntrl->regs, reg+8, &val[2]);
-		mhi_read_reg(mhi_cntrl, mhi_cntrl->regs, reg+12, &val[3]);
+		ret = mhi_read_reg(mhi_cntrl, mhi_cntrl->regs, reg+0, &val[0]);
+		ret = mhi_read_reg(mhi_cntrl, mhi_cntrl->regs, reg+4, &val[1]);
+		ret = mhi_read_reg(mhi_cntrl, mhi_cntrl->regs, reg+8, &val[2]);
+		ret = mhi_read_reg(mhi_cntrl, mhi_cntrl->regs, reg+12, &val[3]);
 		seq_printf(m, "%02x: %08x %08x %08x %08x\n", reg, val[0], val[1], val[2], val[3]);
 	}
 
 	seq_printf(m, "dump bhi reg addr:%p\n", mhi_cntrl->bhi);
 	for (reg = 0; reg < 0x100; reg+=16) {
 		val[0] = val[1] = val[2] = val[3] = 0xFFFFFFFF;
-		mhi_read_reg(mhi_cntrl, mhi_cntrl->bhi, reg+0, &val[0]);
-		mhi_read_reg(mhi_cntrl, mhi_cntrl->bhi, reg+4, &val[1]);
-		mhi_read_reg(mhi_cntrl, mhi_cntrl->bhi, reg+8, &val[2]);
-		mhi_read_reg(mhi_cntrl, mhi_cntrl->bhi, reg+12, &val[3]);
+		ret = mhi_read_reg(mhi_cntrl, mhi_cntrl->bhi, reg+0, &val[0]);
+		ret = mhi_read_reg(mhi_cntrl, mhi_cntrl->bhi, reg+4, &val[1]);
+		ret = mhi_read_reg(mhi_cntrl, mhi_cntrl->bhi, reg+8, &val[2]);
+		ret = mhi_read_reg(mhi_cntrl, mhi_cntrl->bhi, reg+12, &val[3]);
 		seq_printf(m, "%02x: %08x %08x %08x %08x\n", reg, val[0], val[1], val[2], val[3]);
 	}
 
@@ -2120,28 +2285,28 @@ int mhi_debugfs_mhi_event_show(struct seq_file *m, void *d)
 				   i, er_ctxt->intmodc, er_ctxt->intmodt,
 				   er_ctxt->rbase, er_ctxt->rlen);
 			seq_printf(m,
-				   " rp:0x%llx wp:0x%llx local_rp:0x%llx db:0x%llx\n",
+				   " rp:0x%llx wp:0x%llx local_rp:0x%llx local_wp:0x%llx db:0x%llx\n",
 				   er_ctxt->rp, er_ctxt->wp,
 				   (unsigned long long)mhi_to_physical(ring, ring->rp),
+				   (unsigned long long)mhi_to_physical(ring, ring->wp),
 				   (unsigned long long)mhi_event->db_cfg.db_val);
 			seq_printf(m, "used:%u\n", mhi_event->used_elements);
 
-		}
-	}
+#ifdef DEBUG_CHAN100_DB
+			if (mhi_event->mhi_chan && mhi_event->chan == 100) {
+				struct mhi_tre *tre = (struct mhi_tre *)ring->base;
+				size_t j;
 
-#if 0
-	{
-		struct mhi_event *mhi_event = &mhi_cntrl->mhi_event[PRIMARY_EVENT_RING];
-		struct mhi_ring *ring = &mhi_event->ring;
-		struct mhi_tre *tre = (struct mhi_tre *)ring->base;
-		size_t i;
-		for (i = 0; i < ring->elements; i++, tre++) {
-			seq_printf(m,
-				"%llx, %08x, %08x\n",
-				tre->ptr, tre->dword[0], tre->dword[1]);
+				for (j = 0; j < ring->elements; j++, tre++) {
+					seq_printf(m,
+						"%08x: %llx, %08x, %08x\n",
+						(unsigned int)(j*sizeof(struct mhi_tre)),
+					tre->ptr, tre->dword[0], tre->dword[1]);
+				}
+			}
+#endif
 		}
 	}
-#endif
 
 	return 0;
 }
@@ -2172,15 +2337,25 @@ int mhi_debugfs_mhi_chan_show(struct seq_file *m, void *d)
 				   chan_ctxt->pollcfg, chan_ctxt->chtype,
 				   chan_ctxt->erindex);
 			seq_printf(m,
-				   " base:0x%llx len:0x%llx wp:0x%llx local_rp:0x%llx local_wp:0x%llx db:0x%llx\n",
+				   " base:0x%llx len:0x%llx rp:%llx wp:0x%llx local_rp:0x%llx local_wp:0x%llx db:0x%llx\n",
 				   chan_ctxt->rbase, chan_ctxt->rlen,
-				   chan_ctxt->wp,
+				   chan_ctxt->rp, chan_ctxt->wp,
 				   (unsigned long long)mhi_to_physical(ring, ring->rp),
 				   (unsigned long long)mhi_to_physical(ring, ring->wp),
 				   (unsigned long long)mhi_chan->db_cfg.db_val);
 			seq_printf(m, "used:%u, EOB:%u, EOT:%u, OOB:%u, DB_MODE:%u\n", mhi_chan->used_elements,
 				mhi_chan->used_events[MHI_EV_CC_EOB], mhi_chan->used_events[MHI_EV_CC_EOT],
 				mhi_chan->used_events[MHI_EV_CC_OOB],mhi_chan->used_events[MHI_EV_CC_DB_MODE]);
+
+#ifdef DEBUG_CHAN100_DB
+			if (mhi_chan->chan == 100) {
+				unsigned int n = 0;
+				seq_printf(m, "chan100_seq = %04x\n", atomic_read(&chan100_seq)%CHAN100_SIZE);
+				for (n = 0; n < CHAN100_SIZE; n++) {
+					seq_printf(m, "%04x: %08x\n", n, chan100_t[n]);
+				}
+			}
+#endif
 
 #if 0
 			if (ring->base && /*(i&1) &&*/ (i < MHI_CLIENT_IP_HW_0_OUT)) {

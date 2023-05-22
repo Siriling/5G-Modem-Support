@@ -19,9 +19,6 @@
 #include "mhi.h"
 #include "mhi_internal.h"
 
-#define IOCTL_BHI_GETDEVINFO 0x8BE0 + 1
-#define IOCTL_BHI_WRITEIMAGE 0x8BE0 + 2
-
 /* Software defines */
 /* BHI Version */
 #define BHI_MAJOR_VERSION 0x1
@@ -60,31 +57,30 @@ typedef struct _bhi_info_type
    ULONG bhi_rsvd5;
 }BHI_INFO_TYPE, *PBHI_INFO_TYPE;
 
-static void PrintBhiInfo(BHI_INFO_TYPE *bhi_info)
+static void PrintBhiInfo(struct mhi_controller *mhi_cntrl, BHI_INFO_TYPE *bhi_info)
 {
    ULONG index;
+   char str[128];
 
-   printk("BHI Device Info...\n");
-   printk("BHI Version               = { Major = 0x%X Minor = 0x%X}\n", bhi_info->bhi_ver_major, bhi_info->bhi_ver_minor);
-   printk("BHI Execution Environment = 0x%X\n", bhi_info->bhi_ee);
-   printk("BHI Status                = 0x%X\n", bhi_info->bhi_status);
-   printk("BHI Error code            = 0x%X { Dbg1 = 0x%X Dbg2 = 0x%X Dbg3 = 0x%X }\n", bhi_info->bhi_errorcode, bhi_info->bhi_errdbg1, bhi_info->bhi_errdbg2, bhi_info->bhi_errdbg3);
-   printk("BHI Serial Number         = 0x%X\n", bhi_info->bhi_sernum);
-   printk("BHI SBL Anti-Rollback Ver = 0x%X\n", bhi_info->bhi_sblantirollbackver);
-   printk("BHI Number of Segments    = 0x%X\n", bhi_info->bhi_numsegs);
-   printk("BHI MSM HW-Id             = ");
+   MHI_LOG("BHI Device Info...\n");
+   MHI_LOG("BHI Version               = { Major = 0x%X Minor = 0x%X}\n", bhi_info->bhi_ver_major, bhi_info->bhi_ver_minor);
+   MHI_LOG("BHI Execution Environment = 0x%X\n", bhi_info->bhi_ee);
+   MHI_LOG("BHI Status                = 0x%X\n", bhi_info->bhi_status);
+   MHI_LOG("BHI Error code            = 0x%X { Dbg1 = 0x%X Dbg2 = 0x%X Dbg3 = 0x%X }\n", bhi_info->bhi_errorcode, bhi_info->bhi_errdbg1, bhi_info->bhi_errdbg2, bhi_info->bhi_errdbg3);
+   MHI_LOG("BHI Serial Number         = 0x%X\n", bhi_info->bhi_sernum);
+   MHI_LOG("BHI SBL Anti-Rollback Ver = 0x%X\n", bhi_info->bhi_sblantirollbackver);
+   MHI_LOG("BHI Number of Segments    = 0x%X\n", bhi_info->bhi_numsegs);
    for (index = 0; index < 6; index++)
    {
-      printk("0x%X ", bhi_info->bhi_msmhwid[index]);
+      snprintf(str+3*index, sizeof(str)-3*index, "%02x ", bhi_info->bhi_msmhwid[index]);
    }
-   printk("\n");
+   MHI_LOG("BHI MSM HW-Id             = %s\n", str);
 
-   printk("BHI OEM PK Hash           =  \n");
    for (index = 0; index < 24; index++)
    {
-      printk("0x%X ", bhi_info->bhi_oempkhash[index]);
+      snprintf(str+3*index, sizeof(str)-3*index, "%02x ", bhi_info->bhi_oempkhash[index]);
    }
-   printk("\n");
+   MHI_LOG("BHI OEM PK Hash           =  %s\n", str);
 }
 
 static u32 bhi_read_reg(struct mhi_controller *mhi_cntrl, u32 offset)
@@ -130,11 +126,11 @@ static int BhiRead(struct mhi_controller *mhi_cntrl, BHI_INFO_TYPE *bhi_info)
 		bhi_info->bhi_oempkhash[index] = bhi_read_reg(mhi_cntrl, BHI_OEMPKHASH(index));
 	}
 	bhi_info->bhi_rsvd5 = bhi_read_reg(mhi_cntrl, BHI_RSVD5);
-	PrintBhiInfo(bhi_info);
+	PrintBhiInfo(mhi_cntrl, bhi_info);
 	/* Check the Execution Environment */
 	if (!IsPBLExecEnv(bhi_info->bhi_ee))
 	{
-		printk("E - EE: 0x%X Expected PBL/EDL\n", bhi_info->bhi_ee);
+		MHI_LOG("E - EE: 0x%X Expected PBL/EDL\n", bhi_info->bhi_ee);
 	}
 
 	/* Return the number of bytes read */
@@ -204,8 +200,11 @@ static int __mhi_download_rddm_in_panic(struct mhi_controller *mhi_cntrl)
 		      lower_32_bits(mhi_buf->dma_addr));
 
 	mhi_write_reg(mhi_cntrl, base, BHIE_RXVECSIZE_OFFS, mhi_buf->len);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+	sequence_id = get_random_u32() & BHIE_RXVECSTATUS_SEQNUM_BMSK;
+#else
 	sequence_id = prandom_u32() & BHIE_RXVECSTATUS_SEQNUM_BMSK;
-
+#endif
 	if (unlikely(!sequence_id))
 		sequence_id = 1;
 
@@ -316,8 +315,11 @@ int mhi_download_rddm_img(struct mhi_controller *mhi_cntrl, bool in_panic)
 		      lower_32_bits(mhi_buf->dma_addr));
 
 	mhi_write_reg(mhi_cntrl, base, BHIE_RXVECSIZE_OFFS, mhi_buf->len);
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+	sequence_id = get_random_u32() & BHIE_RXVECSTATUS_SEQNUM_BMSK;
+#else
 	sequence_id = prandom_u32() & BHIE_RXVECSTATUS_SEQNUM_BMSK;
+#endif
 	mhi_write_reg_field(mhi_cntrl, base, BHIE_RXVECDB_OFFS,
 			    BHIE_RXVECDB_SEQNUM_BMSK, BHIE_RXVECDB_SEQNUM_SHFT,
 			    sequence_id);
@@ -368,8 +370,12 @@ static int mhi_fw_load_amss(struct mhi_controller *mhi_cntrl,
 		      lower_32_bits(mhi_buf->dma_addr));
 
 	mhi_write_reg(mhi_cntrl, base, BHIE_TXVECSIZE_OFFS, mhi_buf->len);
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+	mhi_cntrl->sequence_id = get_random_u32() & BHIE_TXVECSTATUS_SEQNUM_BMSK;
+#else
 	mhi_cntrl->sequence_id = prandom_u32() & BHIE_TXVECSTATUS_SEQNUM_BMSK;
+#endif
+
 	mhi_write_reg_field(mhi_cntrl, base, BHIE_TXVECDB_OFFS,
 			    BHIE_TXVECDB_SEQNUM_BMSK, BHIE_TXVECDB_SEQNUM_SHFT,
 			    mhi_cntrl->sequence_id);
@@ -433,7 +439,8 @@ static int mhi_fw_load_sbl(struct mhi_controller *mhi_cntrl,
 		      lower_32_bits(dma_addr));
 	mhi_write_reg(mhi_cntrl, base, BHI_IMGSIZE, size);
 	mhi_write_reg_field(mhi_cntrl, mhi_cntrl->regs, MHICFG, MHICFG_NER_MASK, MHICFG_NER_SHIFT, NUM_MHI_EVT_RINGS);
-	mhi_write_reg(mhi_cntrl, mhi_cntrl->bhi, BHI_INTVEC, 0);
+	mhi_write_reg_field(mhi_cntrl, mhi_cntrl->regs, MHICFG, MHICFG_NHWER_MASK, MHICFG_NHWER_SHIFT, NUM_MHI_HW_EVT_RINGS);
+	mhi_write_reg(mhi_cntrl, mhi_cntrl->bhi, BHI_INTVEC, mhi_cntrl->msi_irq_base);
 	mhi_write_reg(mhi_cntrl, base, BHI_IMGTXDB, ImgTxDb);
 	read_unlock_bh(pm_lock);
 
@@ -720,7 +727,7 @@ error_alloc_fw_table:
 	release_firmware(firmware);
 }
 
-int BhiWrite(struct mhi_controller *mhi_cntrl, void *buf, size_t size)
+int BhiWrite(struct mhi_controller *mhi_cntrl, void __user *ubuf, size_t size)
 {
 	int ret;
 	dma_addr_t dma_addr;
@@ -753,12 +760,18 @@ int BhiWrite(struct mhi_controller *mhi_cntrl, void *buf, size_t size)
 	}
 
 	dma_buf = mhi_alloc_coherent(mhi_cntrl, size, &dma_addr, GFP_KERNEL);
-	if (!buf) {
+	if (!dma_buf) {
 		MHI_ERR("Could not allocate memory for image\n");
 		return -ENOMEM;
 	}
 
-	memcpy(dma_buf, buf, size);
+	ret = copy_from_user(dma_buf, ubuf, size);
+	if (ret) {
+		MHI_ERR("IOCTL_BHI_WRITEIMAGE copy buf error, ret = %d\n", ret);
+		mhi_free_coherent(mhi_cntrl, size, dma_buf, dma_addr);;
+		return ret;
+	}
+
 	ret = mhi_fw_load_sbl(mhi_cntrl, dma_addr, size);
 	mhi_free_coherent(mhi_cntrl, size, dma_buf, dma_addr);
 
@@ -804,94 +817,40 @@ error_state:
 	return ret;
 }
 
-static int mhi_cntrl_open(struct inode *inode, struct file *f)
-{
-	return 0;
-}
-
-static int mhi_cntrl_release(struct inode *inode, struct file *f)
-{
-	return 0;
-}
-
-static long mhi_cntrl_ioctl(struct file *f, unsigned int cmd, unsigned long __arg)
+long bhi_get_dev_info(struct mhi_controller *mhi_cntrl, void __user *ubuf)
 {
 	long ret = -EINVAL;
-	void *ubuf = (void *)__arg;
-	struct miscdevice *c = (struct miscdevice *)f->private_data;
-	struct mhi_controller *mhi_cntrl = container_of(c, struct mhi_controller, miscdev);
+	BHI_INFO_TYPE bhi_info;
 
-	switch (cmd) {
-		case IOCTL_BHI_GETDEVINFO:
-		{
-			BHI_INFO_TYPE bhi_info;
-			ret = BhiRead(mhi_cntrl, &bhi_info);
-			if (ret) {
-				MHI_ERR("IOCTL_BHI_GETDEVINFO BhiRead error, ret = %ld\n", ret);
-				return ret;
-			}
+	ret = BhiRead(mhi_cntrl, &bhi_info);
+	if (ret) {
+		MHI_ERR("IOCTL_BHI_GETDEVINFO BhiRead error, ret = %ld\n", ret);
+		return ret;
+	}
 
-			ret = copy_to_user(ubuf, &bhi_info, sizeof(bhi_info));
-			if (ret) {
-				MHI_ERR("IOCTL_BHI_GETDEVINFO copy error, ret = %ld\n", ret);
-			}
-		}
-		break;
-
-		case IOCTL_BHI_WRITEIMAGE:
-		{
-			void *buf;
-			size_t size;
-
-			ret = copy_from_user(&size, ubuf, sizeof(size));
-			if (ret) {
-				MHI_ERR("IOCTL_BHI_WRITEIMAGE copy size error, ret = %ld\n", ret);
-				return ret;
-			}
-
-			buf = kmalloc(size, GFP_KERNEL);
-			if (buf == NULL) {
-				return -ENOMEM;
-			}
-
-			ret = copy_from_user(buf, ubuf+sizeof(size), size);
-			if (ret) {
-				MHI_ERR("IOCTL_BHI_WRITEIMAGE copy buf error, ret = %ld\n", ret);
-				kfree(buf);
-				return ret;
-			}
-
-			ret = BhiWrite(mhi_cntrl, buf, size);
-			if (ret) {
-				MHI_ERR("IOCTL_BHI_WRITEIMAGE BhiWrite error, ret = %ld\n", ret);
-			}
-			kfree(buf);
-		}
-		break;
-
-		default:
-		break;
+	ret = copy_to_user(ubuf, &bhi_info, sizeof(bhi_info));
+	if (ret) {
+		MHI_ERR("IOCTL_BHI_GETDEVINFO copy error, ret = %ld\n", ret);
 	}
 
 	return ret;
 }
 
-static const struct file_operations mhi_cntrl_fops = {
-	.unlocked_ioctl =	mhi_cntrl_ioctl,
-	.open =			mhi_cntrl_open,
-	.release =		mhi_cntrl_release,
-};
-
-int mhi_cntrl_register_miscdev(struct mhi_controller *mhi_cntrl)
+long bhi_write_image(struct mhi_controller *mhi_cntrl, void __user *ubuf)
 {
-	mhi_cntrl->miscdev.minor = MISC_DYNAMIC_MINOR;
-	mhi_cntrl->miscdev.name = "mhi_BHI";
-	mhi_cntrl->miscdev.fops = &mhi_cntrl_fops;
+	long ret = -EINVAL;
+	size_t size;
 
-	return misc_register(&mhi_cntrl->miscdev);
-}
+	ret = copy_from_user(&size, ubuf, sizeof(size));
+	if (ret) {
+		MHI_ERR("IOCTL_BHI_WRITEIMAGE copy size error, ret = %ld\n", ret);
+		return ret;
+	}
 
-void mhi_cntrl_deregister_miscdev(struct mhi_controller *mhi_cntrl)
-{
-	misc_deregister(&mhi_cntrl->miscdev);
+	ret = BhiWrite(mhi_cntrl, ubuf+sizeof(size), size);
+	if (ret) {
+		MHI_ERR("IOCTL_BHI_WRITEIMAGE BhiWrite error, ret = %ld\n", ret);
+	}
+
+	return ret;
 }

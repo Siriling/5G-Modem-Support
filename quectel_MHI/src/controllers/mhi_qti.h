@@ -15,7 +15,7 @@
 #define MHI_PCIE_DEBUG_ID (0xffff)
 
 /* runtime suspend timer */
-#define MHI_RPM_SUSPEND_TMR_MS (250)
+#define MHI_RPM_SUSPEND_TMR_MS (2000)
 #define MHI_PCI_BAR_NUM (0)
 
 struct mhi_dev {

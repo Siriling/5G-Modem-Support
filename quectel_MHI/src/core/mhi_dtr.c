@@ -68,6 +68,16 @@ static int mhi_dtr_tiocmset(struct mhi_controller *mhi_cntrl,
 	if (tiocm & TIOCM_RTS)
 		dtr_msg->msg |= CTRL_MSG_RTS;
 
+/*
+* 'minicom -D /dev/mhi_DUN' will send RTS:1 when open, and RTS:0 when exit.
+* RTS:0 will prevent modem output AT response.
+* But 'busybox microcom' do not send any RTS to modem.
+* [75094.969783] mhi_uci_q 0306_00.03.00_DUN: mhi_dtr_tiocmset DTR:0 RTS:1
+* [75100.210994] mhi_uci_q 0306_00.03.00_DUN: mhi_dtr_tiocmset DTR:0 RTS:0
+*/
+	dev_dbg(&mhi_dev->dev, "%s DTR:%d RTS:%d\n", __func__,
+				!!(tiocm & TIOCM_DTR), !!(tiocm & TIOCM_RTS));
+
 	reinit_completion(&dtr_chan->completion);
 	ret = mhi_queue_transfer(mhi_cntrl->dtr_dev, DMA_TO_DEVICE, dtr_msg,
 				 sizeof(*dtr_msg), MHI_EOT);
