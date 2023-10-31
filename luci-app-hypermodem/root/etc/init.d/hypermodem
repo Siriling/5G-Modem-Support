@@ -8,33 +8,33 @@ USE_PROCD=1
 pre_set()
 {
 	[ "$(uci get network.wan.ifname)" != "$1" ] && {
-		uci set network.wwan='interface'
-		uci set network.wwan.ifname="$1"
-		uci set network.wwan.proto='dhcp'
+		uci set network.wwan_5g='interface'
+		uci set network.wwan_5g.ifname="$1"
+		uci set network.wwan_5g.proto='dhcp'
 		if [ "$ipv6" = 1 ]; then
-			uci set network.wwan6='interface'
-			uci set network.wwan6.ifname="$1"
-			uci set network.wwan6.proto='dhcpv6'
-			uci set network.wwan6.extendprefix='1'
+			uci set network.wwan6_5g='interface'
+			uci set network.wwan6_5g.ifname="$1"
+			uci set network.wwan6_5g.proto='dhcpv6'
+			uci set network.wwan6_5g.extendprefix='1'
 		fi
 		uci commit network
 
 		num=`uci show firewall |grep "name='wan'" |wc -l`
-		wwan_num=`uci get firewall.@zone[$num].network |grep -w wwan |wc -l`
-		wwan6_num=`uci get firewall.@zone[$num].network |grep -w wwan6 |wc -l`
-		if [ "$wwan_num" = "0" ]; then
+		wwan_5g_num=`uci get firewall.@zone[$num].network |grep -w wwan_5g |wc -l`
+		wwan6_5g_num=`uci get firewall.@zone[$num].network |grep -w wwan6_5g |wc -l`
+		if [ "$wwan_5g_num" = "0" ]; then
 			uci add_list firewall.@zone[$num].network='wan'
 		fi
 		if [ "$ipv6" = 1 ]; then
-			if [ "$wwan6_num" = "0" ]; then
-				uci add_list firewall.@zone[$num].network='wwan6'
+			if [ "$wwan6_5g_num" = "0" ]; then
+				uci add_list firewall.@zone[$num].network='wwan6_5g'
 			fi
 		fi
 		uci commit firewall
 
-		ifup wwan
+		ifup wwan_5g
 		if [ "$ipv6" = 1 ]; then
-			ifup wwan6
+			ifup wwan6_5g
 		fi
 	}
 
