@@ -14,6 +14,7 @@ LUCI_DEPENDS:=+luci-compat +kmod-usb-net  +kmod-usb-net-cdc-ether +kmod-usb-acm 
 		+kmod-usb-serial-option +kmod-usb-wdm \
 		+kmod-usb2 +kmod-usb3 \
 		+kmod-usb-net-cdc-mbim \
+		+usbutils \
 		+kmod-qmi_wwan_q \
 		+kmod-pcie_mhi +pciutils \
 		+quectel-CM-5G \
