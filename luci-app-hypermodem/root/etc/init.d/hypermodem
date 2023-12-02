@@ -7,7 +7,7 @@ USE_PROCD=1
 
 pre_set()
 {
-	[ "$(uci get network.wan.ifname)" != "$1" ] && {
+	[ "$(uci get network.wwan_5g.ifname)" != "$1" ] && {
 		uci set network.wwan_5g='interface'
 		uci set network.wwan_5g.ifname="$1"
 		uci set network.wwan_5g.proto='dhcp'
@@ -38,8 +38,8 @@ pre_set()
 		fi
 	}
 
-	[ "$(uci get network.wan6.ifname)" == "$1" ] && {
-		uci set network.wan6.extendprefix='1'
+	[ "$(uci get network.wwan6_5g.ifname)" == "$1" ] && {
+		uci set network.wwan6_5g.extendprefix='1'
 		uci commit network
 	}
 }
