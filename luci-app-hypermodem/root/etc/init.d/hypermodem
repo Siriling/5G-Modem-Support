@@ -38,7 +38,7 @@ pre_set()
 		fi
 	}
 
-	[ "$(uci get network.wwan6_5g.ifname)" == "$1" ] && {
+	[ "$(uci get network.wwan6_5g.ifname)" = "$1" ] && {
 		uci set network.wwan6_5g.extendprefix='1'
 		uci commit network
 	}
