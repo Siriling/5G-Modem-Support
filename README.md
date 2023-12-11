@@ -28,6 +28,8 @@
 
 ### 拨号
 
+- luci-app-modem（暂未完成）
+
 - luci-app-hypermodem（新）
 - luci-app-usbmodem
 - luci-app-pcimodem
@@ -40,8 +42,12 @@
 
 ### 简化版信息插件
 
-- sendat
 - luci-app-cpe
+
+### AT命令工具
+
+- sendat
+- sms-tool
 
 # 二、源代码地址
 
@@ -49,4 +55,5 @@
 
 - sendat：https://github.com/ouyangzq/sendat
 - luci-app-cpe：https://github.com/ouyangzq/luci-app-cpe
+- sms-tool：https://github.com/obsy/sms_tool
 
