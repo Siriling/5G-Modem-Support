@@ -4,19 +4,19 @@
 START=16
 STOP=16
 USE_PROCD=1
-#Ê¹ÓÃprocdÆô¶¯
+#ä½¿ç”¨procdå¯åŠ¨
 
 
-# startÆô¶¯·şÎñ
-# stopÍ£Ö¹·şÎñ
-# restartÖØĞÂÆô¶¯·şÎñ
-# reloadÖØĞÂ¼ÓÔØÅäÖÃÎÄ¼ş£¨Èç¹û·şÎñÎ´ÊµÏÖÖØĞÂ¼ÓÔØ£¬ÔòÖØĞÂÆô¶¯£©
-# enableÆôÓÃ·şÎñ×Ô¶¯Æô¶¯
-# disable½ûÓÃ·şÎñ×Ô¶¯Æô¶¯
-# enabled¼ì²é·şÎñÊÇ·ñÔÚÆô¶¯Ê±Æô¶¯
-# ÕıÔÚÔËĞĞ¼ì²é·şÎñÊÇ·ñÕıÔÚÔËĞĞ
-# status·şÎñ×´Ì¬
-# trace´ÓÏµÍ³µ÷ÓÃ¸ú×Ù¿ªÊ¼
+# startå¯åŠ¨æœåŠ¡
+# stopåœæ­¢æœåŠ¡
+# restarté‡æ–°å¯åŠ¨æœåŠ¡
+# reloadé‡æ–°åŠ è½½é…ç½®æ–‡ä»¶ï¼ˆå¦‚æœæœåŠ¡æœªå®ç°é‡æ–°åŠ è½½ï¼Œåˆ™é‡æ–°å¯åŠ¨ï¼‰
+# enableå¯ç”¨æœåŠ¡è‡ªåŠ¨å¯åŠ¨
+# disableç¦ç”¨æœåŠ¡è‡ªåŠ¨å¯åŠ¨
+# enabledæ£€æŸ¥æœåŠ¡æ˜¯å¦åœ¨å¯åŠ¨æ—¶å¯åŠ¨
+# æ­£åœ¨è¿è¡Œæ£€æŸ¥æœåŠ¡æ˜¯å¦æ­£åœ¨è¿è¡Œ
+# statusæœåŠ¡çŠ¶æ€
+# traceä»ç³»ç»Ÿè°ƒç”¨è·Ÿè¸ªå¼€å§‹
 
 runModem()
 {
@@ -61,8 +61,8 @@ runModem()
 
 
         procd_open_instance
-        #´´½¨Ò»¸öÊµÀı£¬ ÔÚprocd¿´À´Ò»¸öÓ¦ÓÃ³ÌĞò¿ÉÒÔ¶à¸öÊµ\E4\BE?
-        #ubus call service list ¿ÉÒÔ²é¿´ÊµÀı
+        #åˆ›å»ºä¸€ä¸ªå®ä¾‹ï¼Œ åœ¨procdçœ‹æ¥ä¸€ä¸ªåº”ç”¨ç¨‹åºå¯ä»¥å¤šä¸ªå®\E4\BE?
+        #ubus call service list å¯ä»¥æŸ¥çœ‹å®ä¾‹
         procd_set_param command $tool -i $ifname -s $apn $pdptype
         if [ "$password" != "" ];then
             procd_append_param command $user $password $auth
@@ -74,7 +74,7 @@ runModem()
         procd_set_param respawn
         echo "quectel-CM has started."
         procd_close_instance
-        #¹Ø±ÕÊµÀı
+        #å…³é—­å®ä¾‹
     fi
 
 
