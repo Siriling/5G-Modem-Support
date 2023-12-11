@@ -1,0 +1,8 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+start() {
+  # /bin/sh /usr/share/cpe/rssi &
+  /bin/sh /usr/share/modem/modem_data &
+}

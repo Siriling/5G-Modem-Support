@@ -1,0 +1,163 @@
+<%+header%>
+
+<!--
+-- Copyright 2020-2021 Rafał Wabik (IceG) - From eko.one.pl forum
+-- Licensed to the GNU General Public License v3.0.
+-->
+
+<h2 name="content"><%:AT Commands%></h2>
+	<div class="cbi-map-descr"><%:Web UI for handling AT commands via sms_tool.%></div>
+	<p></p>
+	<h4><br/></h4>
+	<div class="table" width="100%">
+
+		<div class="tr">
+			<div class="td left" width="25%"><%:Modem Select%>:</div>
+
+			<div class="td left" style="width:50%;">
+				<select name="at_port" id="at_port" onclick="copyFunction()"></select>
+			</div>
+			<div class="td left" style="width:50%;"></div>
+		</div>
+
+		<div class="tr">
+			<div class="td left" width="25%"><%:User AT Commands%>:</div>
+
+			<div class="td left" style="width:50%;">
+				<select name="ussd" id="pl" onclick="copyFunction()"></select>
+			</div>
+			<div class="td left" style="width:50%;"></div>
+		</div>
+
+		<div class="tr">
+			<div class="td left" style="width:25%;"><%:Command to send%>:</div>
+
+			<div class="td left" ><input type="text" id="code" required size="20" ></div>
+		</div>
+
+	</div>
+
+	<div class="table" width="100%">
+		<div class="td left" style="width:25%;"><%:Reply%>:
+		<p>
+		<pre id="odp" style="visibility: hidden; width:75%;"></pre></div>
+
+		<div class="tr cbi-rowstyle-2">
+		<div class="td right"><input type="button" style="margin-right: 26%"; id="sendcmd" class="btn cbi-button cbi-button-neutral" value="<%:Send Command%>" /></div>
+		</div>
+
+	</div>
+
+<script type="text/javascript">
+
+// 读取AT串口
+window.onload = function readATPort()
+{
+	XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "at_port_select")%>', null,
+		function(x, json)
+		{
+			select = document.getElementById('at_port');
+			var count = Object.keys(json).length;
+			for(var d=0;d<=count;d++)
+			{
+				var opt = document.createElement('option');
+				console.log("hello")
+				console.log(json)
+				var s = json[d].at_ports;
+				// var fields = s.split(/;/);
+				// var name = fields[0];
+				// var port = fields[1];
+				var name = s;
+				var port = s;
+				opt.text = name;
+				opt.value = port.trim();
+				opt.innerHTML = name;
+				select.appendChild(opt);
+			}
+		}
+	);
+}
+
+window.onload = function readUSER()
+{
+	XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "user_atc")%>', null,
+		function(x, json)
+		{
+			select = document.getElementById('pl');
+			var count = Object.keys(json).length;
+			for(var d=0;d<=count;d++)
+			{
+				var opt = document.createElement('option');
+
+				var s = json[d].atu;
+				var fields = s.split(/;/);
+				var name = fields[0];
+				var code = fields[1];
+				opt.text = name;
+				opt.value = code.trim();
+				opt.innerHTML = name;
+				select.appendChild(opt);
+			}
+		}
+	);
+}
+
+function copyFunction() {
+
+  var node = document.getElementById('odp');
+  node.style.visibility = 'hidden';
+
+  var x = document.getElementById("pl").value;
+  document.getElementById("code").value = x;
+  document.getElementById("odp").innerHTML = "";
+}
+
+
+function postcmd(cmd) {
+    (new XHR()).post("<%=luci.dispatcher.build_url("admin", "network", "modem", "run_at")%>", {"code":cmd}, function(x) {
+        console.log(x.response)
+        console.log(x)
+
+        var aStr = x.response;
+		var myre = /^[\s\t]*(\r\n|\n|\r)/gm;
+		var bStr = aStr.replace(myre,"");
+			document.getElementById("odp").innerHTML = bStr;
+		var el = document.getElementsByName("odp")[0];
+		el.value.replace(/(\r\n|\n|\r)/gm, "");
+    });
+    return false;
+}
+
+
+document.addEventListener('DOMContentLoaded', function (ev) {var button = document.getElementById("sendcmd");
+        button.addEventListener("click", function () {
+
+
+		var s = document.getElementById("code").value;
+		if ( s.length == 0 )
+		{
+  			document.getElementById("odp").innerHTML = "";
+			alert("<%:Please enter a AT Command%>");
+			return false;
+		}
+
+        var cmd = document.getElementById("code");
+        postcmd(cmd.value);
+        cmd.value = "";
+
+	    var node = document.getElementById('odp');
+    	if (node.style.visibility=='visible') {
+        node.style.visibility = 'hidden';
+    	}
+    	else
+        node.style.visibility = 'visible'
+
+        return true;
+        });
+    }, true);
+
+
+</script>
+
+<%+footer%>
+

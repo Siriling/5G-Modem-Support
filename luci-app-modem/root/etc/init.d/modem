@@ -1,0 +1,369 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006-2014 OpenWrt.org
+
+START=94
+STOP=13
+USE_PROCD=1
+
+#设置拨号模式
+# $1:拨号模式
+set_mode()
+{
+	#获取AT串口、制造商、模块名
+	local at_port=$(uci -q get modem.modem$modem_no.at_port)
+	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
+	local name=$(uci -q get modem.modem$modem_no.name)
+
+	#分制造商设置不同的AT命令
+	local command
+	if [ "$manufacturer" = "quectel" ]; then
+		local mode_num
+		case $1 in
+			"qmi") mode_num='0' ;;
+			"gobinet") mode_num='0' ;;
+			"ecm") mode_num='1' ;;
+			"mbim") mode_num='2' ;;
+			"rndis") mode_num='3' ;;
+			"ncm") mode_num='5' ;;
+			"*") mode_num='0' ;;
+		esac
+
+		#查询当前拨号模式
+		command='AT+QCFG="usbnet"'
+		local at_result=$(sh /usr/share/modem/modem_at.sh $at_port $command)
+		if [[ "$at_result" != *"$mode_num"* ]]; then
+			#切换到指定的拨号模式
+			case $1 in
+				"qmi") command='AT+QCFG="usbnet",0' ;;
+				"gobinet") command='AT+QCFG="usbnet",0' ;;
+				"ecm") command='AT+QCFG="usbnet",1' ;;
+				"mbim") command='AT+QCFG="usbnet",2' ;;
+				"rndis") command='AT+QCFG="usbnet",3' ;;
+				"ncm") command='AT+QCFG="usbnet",5' ;;
+				"*") command='AT+QCFG="usbnet",0' ;;
+			esac
+			sh /usr/share/modem/modem_at.sh $at_port $command
+			#移远切换模式后，还需要重启模块，待测试
+        fi
+	elif [ "$manufacturer" = "fibocom" ]; then
+		if [ "$name" = "fm150-ae" ]; then
+			local mode_num
+			case $1 in
+				"qmi") mode_num='32' ;;
+				"gobinet") mode_num='32' ;;
+				"ecm") mode_num='23' ;;
+				"mbim") mode_num='29' ;;
+				"rndis") mode_num='24' ;;
+				"ncm") mode_num='23' ;;
+				"*") mode_num='32' ;;
+			esac
+
+			#查询当前拨号模式
+			command='AT+GTUSBMODE?'
+			local at_result=$(sh /usr/share/modem/modem_at.sh $at_port $command)
+			if [[ "$at_result" != *"$mode_num"* ]]; then
+				#切换到指定的拨号模式
+				case $1 in
+					"qmi") command='AT+GTUSBMODE=32' ;;
+					"gobinet") command='AT+GTUSBMODE=32' ;;
+					"ecm") command='AT+GTUSBMODE=23' ;;
+					"mbim") command='AT+GTUSBMODE=29' ;;
+					"rndis") command='AT+GTUSBMODE=24' ;;
+					"ncm") command='AT+GTUSBMODE=23' ;;
+					"*") command='AT+GTUSBMODE=32' ;;
+				esac
+				sh /usr/share/modem/modem_at.sh $at_port $command
+			fi
+		elif [ "$name" = "fm650" ]; then
+			#待处理
+			echo "fm650"
+		fi
+	else
+		#没有匹配到制造商，需要手动切换模块的拨号模式
+		echo "请手动切换模块的拨号模式"
+	fi
+}
+
+#设置防火墙
+set_firewall()
+{
+	local num=`uci show firewall | grep "name='wan'" | wc -l`
+	local wwan_num=`uci -q get firewall.@zone[$num].network | grep -w "$1" | wc -l`
+	if [ "$wwan_num" = "0" ]; then
+		uci add_list firewall.@zone[$num].network="$1"
+	fi
+	uci commit firewall
+}
+
+#设置IPv4网络接口
+# $1:网络接口名称
+# $2:网络接口
+set_ipv4_interface()
+{
+	[ "$(uci -q get network.$1.ifname)" != "$2" ] && {
+		uci set network.$1='interface'
+		uci set network.$1.ifname="$2"
+		uci set network.$1.proto='dhcp'
+		uci commit network
+
+		#加入WAN防火墙
+		set_firewall $1
+
+		#启动网络接口
+		ifup $1
+	}
+}
+
+#设置IPv6网络接口
+# $1:网络接口名称
+# $2:网络接口
+set_ipv6_interface()
+{
+	if [ "$(uci -q get network.$1.ifname)" != "$2" ]; then
+		uci set network.$1='interface'
+		uci set network.$1.ifname="$2"
+		uci set network.$1.proto='dhcpv6'
+		uci set network.$1.extendprefix='1'
+		uci commit network
+
+		#加入WAN防火墙
+		set_firewall $1
+
+		#启动网络接口
+		ifup $1
+	else
+		uci set network.$1.extendprefix='1'
+		uci commit network
+	fi
+}
+
+#设置网络接口
+# $1:模块序号
+# $2:网络接口
+set_interface()
+{
+	case $pdp_type in
+		"ipv4") set_ipv4_interface wwan_5g_$1 $2 ;;
+		"ipv6") set_ipv6_interface wwan6_5g_$1 $2 ;;
+		"ipv4_ipv6") 
+			set_ipv4_interface wwan_5g_$1 $2
+			set_ipv6_interface wwan6_5g_$1 $2
+			;;
+		"*") 
+			set_ipv4_interface wwan_5g_$1 $2
+			set_ipv6_interface wwan6_5g_$1 $2
+			;;
+	esac
+}
+
+qmi()
+{
+	#设置拨号模式
+	set_mode qmi
+
+	#设置网络接口
+	local net_interface=$(uci -q get modem.modem$modem_no.net_interface)
+	set_interface $modem_no $net_interface
+
+	#拨号
+	procd_open_instance
+
+	if [ "$dial_tool" = "quectel-CM" ]; then
+		procd_set_param command quectel-CM
+	elif [[ -z "$dial_tool" ]]; then
+		procd_set_param command quectel-CM
+	else
+		procd_set_param command $dial_tool
+	fi
+
+	case $pdp_type in
+		"ipv4") procd_append_param command -4 ;;
+		"ipv6") procd_append_param command -6 ;;
+		"ipv4_ipv6") procd_append_param command -4 -6 ;;
+		"*") procd_append_param command -4 -6 ;;
+	esac
+
+	if [ "$apn" != "" ]; then
+		procd_append_param command -s $apn
+	fi
+	if [ "$user" != "" ]; then
+		procd_append_param command $user
+	fi
+	if [ "$password" != "" ]; then
+		procd_append_param command $password
+	fi
+	if [ "$auth" != "" ]; then
+		procd_append_param command $auth
+	fi
+	if [ "$moblie_net" != "" ]; then
+		procd_append_param command -i $moblie_net
+	fi
+	procd_set_param respawn
+	procd_set_param procd_pid /var/run/modem/modem$modem_no.pid
+	procd_close_instance
+}
+
+gobinet()
+{
+	qmi
+}
+
+ecm()
+{
+	#设置拨号模式
+	set_mode ecm
+	
+	#获取网络接口、AT串口、制造商
+	local net_interface=$(uci -q get modem.modem$modem_no.net_interface)
+	local at_port=$(uci -q get modem.modem$modem_no.at_port)
+	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
+	#设置网络接口
+	set_interface $modem_no $net_interface
+
+	#拨号
+	procd_open_instance
+	procd_set_param command sh /usr/share/modem/modem_at.sh $at_port
+	if [ "$manufacturer" = "quectel" ]; then
+		procd_append_param command 'ATI'
+	elif [ "$manufacturer" = "fibocom" ]; then
+		procd_append_param command 'AT+GTRNDIS=1,1'
+	fi
+	procd_set_param respawn
+	procd_close_instance
+}
+
+mbim()
+{
+	qmi
+}
+
+rndis()
+{
+	ecm
+	#广和通的rndis和ecm不同，后续再测试
+}
+
+ncm()
+{
+	ecm
+}
+
+#实例运行状态
+instance_status()
+{
+	#获取modem的实例信息
+	local response=$(ubus call service list '{"name": "modem"}')
+	local instance_number=$(echo "$response" | jq -r '.modem.instances | length')
+	for i in $(seq 1 $((instance_number))); do
+		#获取运行状态和拨号命令
+		local running_status=$(echo "$response" | jq -r '.modem.instances.$i.running')
+		local command=$(echo "$response" | jq -r '.modem.instances.instance$i.command')
+		if [ "$running_status" = "$true" ] && [[ "$command" = *"$moblie_net"* ]]; then
+			return 1
+		fi
+	done
+}
+
+dial()
+{
+	config_get enable $1 enable
+	[ "$enable" = "0" ] && return 0
+
+	local remarks #备注
+	local moblie_net #移动网络
+	local mode #拨号模式
+	local dial_tool #拨号工具
+	local pdp_type #网络类型
+	local apn
+	local user
+	local password
+	local auth
+
+	config_get remarks $1 remarks
+	config_get moblie_net $1 moblie_net
+	config_get mode $1 mode
+	config_get dial_tool $1 dial_tool
+	config_get pdp_type $1 pdp_type
+	config_get apn $1 apn
+	config_get user $1 user
+	config_get password $1 password
+	config_get auth $1 auth
+
+	#查看移动网络是否已经有实例在运行
+	instance_status
+	[ $? = "1" ] && return 0
+
+	#获取模块序号
+	local modem_number=$(uci -q get modem.@global[0].option.modem_number)
+	for i in $(seq 0 $((modem_number-1))); do
+		local net=$(uci -q get modem.modem$i.net)
+		if [ "$net" = "$moblie_net" ]; then
+			#模块序号
+			modem_no=$i 
+		fi
+	done
+
+	#根据不同的拨号模式拨号
+	if [ "$mode" = "qmi" ]; then
+		qmi
+	elif [ "$mode" = "gobinet" ]; then
+		gobinet #暂无，同qmi
+	elif [ "$mode" = "ecm" ]; then
+		ecm
+	elif [ "$mode" = "mbim" ]; then
+		mbim
+	elif [ "$mode" = "rndis" ]; then
+		rndis
+	elif [ "$mode" = "ncm" ]; then
+		ncm
+	fi
+
+	# sleep 15
+}
+
+stop_dial()
+{
+	#停止所有拨号
+	config_get enable $1 enable
+	[ "$enable" = "0" ] && {
+		killall quectel-CM >/dev/null 2>&1
+		return 0
+	}
+
+	#停止单个拨号
+	local moblie_net #移动网络
+	config_get moblie_net $1 moblie_net
+
+	#获取modem的实例信息
+	local response=$(ubus call service list '{"name": "modem"}')
+	local instance_number=$(echo "$response" | jq -r '.modem.instances | length')
+	for i in $(seq 1 $((instance_number))); do
+		#获取拨号命令
+		local command=$(echo "$response" | jq -r '.modem.instances.instance$i.command')
+		if [ "$command" = *"$moblie_net"* ]; then
+			local pid=$(echo "$response" | jq -r '.modem.instances.$i.pid')
+			kill $pid >/dev/null 2>&1
+		fi
+	done
+}
+
+service_triggers()
+{
+	procd_add_reload_trigger "modem"
+}
+
+start_service() {
+	enable=$(uci -q get modem.@global[0].enable)
+	if [ "$enable" = "0" ];then
+		stop_service
+	else
+		config_load modem
+		config_foreach dial "config"
+	fi
+}
+
+stop_service()
+{
+	config_load modem
+	config_foreach stop_dial "config"
+}

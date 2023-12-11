@@ -1,0 +1,83 @@
+msgid "Base Setting"
+msgstr "基本设置"
+
+msgid "Modem"
+msgstr "移动通信模组"
+
+msgid "Modem Config"
+msgstr "模组配置"
+
+msgid "Modem List"
+msgstr "模块列表"
+
+msgid "Configuration panel for Modem, Add and configure all modules on this page"
+msgstr "通信模组服务配置界面，在此页面添加和配置所有模块"
+
+msgid "AT Commands"
+msgstr "AT命令"
+
+msgid "Modem Info"
+msgstr "模组信息"
+
+msgid "General Settings"
+msgstr "通用配置"
+
+msgid "Advanced Settings"
+msgstr "高级配置"
+
+msgid "Remarks"
+msgstr "备注"
+
+msgid "Moblie Network"
+msgstr "移动网络"
+
+msgid "UNKNOWN"
+msgstr "未知"
+
+msgid "The network device was not found"
+msgstr "移动网络"
+
+msgid "Mode"
+msgstr "模式"
+
+msgid "Dial Tool"
+msgstr "拨号工具"
+
+msgid "Auto Choose"
+msgstr "自动选择"
+
+msgid "quectel-CM"
+msgstr "移远模组拨号工具"
+
+msgid "PDP Type"
+msgstr "网络类型"
+
+msgid "APN"
+msgstr "接入点"
+
+msgid "China Mobile"
+msgstr "中国移动"
+
+msgid "China Unicom"
+msgstr "中国联通"
+
+msgid "China Telecom"
+msgstr "中国电信"
+
+msgid "China Broadcast"
+msgstr "中国广电"
+
+msgid "Skytone"
+msgstr "天际通"
+
+msgid "PAP/CHAP Username"
+msgstr "PAP/CHAP 用户名"
+
+msgid "PAP/CHAP Password"
+msgstr "PAP/CHAP 密码"
+
+msgid "Authentication Type"
+msgstr "认证类型"
+
+msgid "NONE"
+msgstr "无"
