@@ -26,16 +26,15 @@ init_modem_info()
 
 	#信号信息
 	net_type="-"	#蜂窝网络类型
-	csq="" 			#CSQ
-	csq_per=""
-	ssi=""			#信号强度
+	csq=""			#CSQ
+	per=""			#信号强度
 	rssi="" 		#信号接收强度 RSSI
-	ECIO="-" 		#参考信号接收质量 RSRQ ecio
-	ECIO1=" " 		#参考信号接收质量 RSRQ ecio1
-	RSCP="-" 		#参考信号接收功率 RSRP rscp0
-	RSCP1=" " 		#参考信号接收功率 RSRP rscp1
-	SINR="-" 		#信噪比 SINR  rv["sinr"]
-	NETMODE="-" 	#连接状态监控 rv["netmode"]
+	ECIO="-"		#参考信号接收质量 RSRQ ecio
+	ECIO1=" "		#参考信号接收质量 RSRQ ecio1
+	RSCP="-"		#参考信号接收功率 RSRP rscp0
+	RSCP1=" "		#参考信号接收功率 RSRP rscp1
+	SINR="-"		#信噪比 SINR  rv["sinr"]
+	NETMODE="-"		#连接状态监控 rv["netmode"]
 
 	#基站信息
 	MCC=""
@@ -66,14 +65,13 @@ info_to_json()
 		\"phone\":\"$phone\",
 
 		\"net_type\":\"$net_type\",
-		\"csq\":\"$csq\"
+		\"csq\":\"$csq\",
+		\"per\":\"$per\",
+		\"rssi\":\"$rssi\"
 
     
     }"
 }
-
-
-        # echo $CSQ_RSSI
         # echo $ECIO #参考信号接收质量 RSRQ ecio
         # echo $ECIO1 #参考信号接收质量 RSRQ ecio1
         # echo $RSCP #参考信号接收功率 RSRP rscp0

@@ -14,7 +14,7 @@ get_fibocom_mode()
         "17") mode="qmi" ;; #-
         "31") mode="qmi" ;; #-
         "32") mode="qmi" ;;
-        "32") mode="gobinet" ;;
+        # "32") mode="gobinet" ;;
         "18") mode="ecm" ;;
         "23") mode="ecm" ;; #-
         "33") mode="ecm" ;; #-
@@ -97,9 +97,21 @@ fibocom_net_info()
     net_type=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/+PSRAT: //g' | sed 's/\r//g')
 
     #CSQ
+    local at_command="AT+CSQ"
+    csq=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'[ ,]+' '{print $2}')
+    if [ $CSQ = "99" ]; then
+        csq=""
+    fi
 
-    #per（信号强度）
+    #PER（信号强度）
+    if [ -n "$csq" ]; then
+        per=$(($csq * 100/31))"%"
+    fi
 
+    #RSSI（信号接收强度）
+    if [ -n "$csq" ]; then
+        rssi=$((2 * $csq - 113))" dBm"
+    fi
 }
 
 # fibocom获取基站信息
@@ -248,7 +260,7 @@ get_fibocom_info()
     #网络信息
     fibocom_net_info
 
-    # All_CSQ
+    return
     # Fibocom_Cellinfo
 
     #基站信息

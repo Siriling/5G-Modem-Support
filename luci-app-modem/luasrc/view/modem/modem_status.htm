@@ -16,8 +16,13 @@
 				for ( var key in modems)
 				{
 					var modem=modems[key];
+					var mode="unknown mode";
+					if (modem["mode"]!=null) {
+						mode=modem["mode"].toUpperCase()
+					}
+
 					var state = '';
-					var css = ''
+					var css = '';
 					switch (modem["connect_status"])
 					{
 						case 'connect':
@@ -51,7 +56,7 @@
 					);
 					modem_view += String.format(
 						'<div><strong><%:Mode%>: </strong>%s</div>',
-						modem.mode.toUpperCase()
+						mode
 					);
 					modem_view += String.format(
 						'<div><strong><%:Moblie Network%>: </strong>%s</div>',

@@ -326,7 +326,6 @@ stop_ncm()
 get_modem_no()
 {
 	local modem_number=$(uci -q get modem.@global[0].modem_number)
-	echo "modem_number:$modem_number" >> /root/a
 	local modem_network
 	for i in $(seq 0 $((modem_number-1))); do
 		modem_network=$(uci -q get modem.modem$i.network)
@@ -336,7 +335,6 @@ get_modem_no()
 			break
 		fi
 	done
-	echo "modem_no:$modem_no" >> /root/a
 }
 
 #获取实例运行状态（未使用）
@@ -437,6 +435,9 @@ dial()
 	#获取模组的拨号模式
 	[ -z "$modem_no" ] && return 0
 	local mode=$(uci -q get modem.modem$modem_no.mode)
+	if [ "$mode" = "unknown" ]; then
+		mode="qmi"
+	fi
 
 	#查看移动网络是否已经有配置在运行
 	local run_path="/tmp/modem"
@@ -494,10 +495,17 @@ stop_service()
 	rm -rf /tmp/modem
 	#停止qmi、mbim拨号
 	killall quectel-CM >/dev/null 2>&1
-	#停止ecm、rndis、ncm拨号
+	#停止gobinet、ecm、rndis、ncm拨号
 	local modem_number=$(uci -q get modem.@global[0].modem_number)
 	for i in $(seq 0 $((modem_number-1))); do
 		modem_no=$i
-		stop_ecm
+		local mode=$(uci -q get modem.modem$modem_no.mode)
+		case $mode in
+			"gobinet") stop_gobinet ;;
+			"ecm") stop_ecm ;;
+			"rndis") stop_rndis ;;
+			"ncm") stop_ncm ;;
+			"*") stop_ecm ;;
+		esac
 	done
 }

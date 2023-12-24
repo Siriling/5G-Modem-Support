@@ -7,7 +7,7 @@ get_quectel_mode()
 {
     local at_port="$1"
     local at_command='AT+QCFG="usbnet"'
-    local mode_num=$(echo "$response" | sed -n '2p' | sed 's/+QCFG: "usbnet",//g' | sed 's/\r//g')
+    local mode_num=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/+QCFG: "usbnet",//g' | sed 's/\r//g')
 
     local mode
     case "$mode_num" in
@@ -72,9 +72,11 @@ quectel_sim_info()
     isp=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}')
     if [ "$isp" = "CHN-CMCC" ] || [ "$isp" = "CMCC" ]|| [ "$isp" = "46000" ]; then
         isp="中国移动"
-    elif [ "$isp" = "CHN-UNICOM" ] || [ "$isp" = "UNICOM" ] || [ "$isp" = "46001" ]; then
+    # elif [ "$isp" = "CHN-UNICOM" ] || [ "$isp" = "UNICOM" ] || [ "$isp" = "46001" ]; then
+    elif [ "$isp" = "CHN-UNICOM" ] || [ "$isp" = "CUCC" ] || [ "$isp" = "46001" ]; then
         isp="中国联通"
-    elif [ "$isp" = "CHN-CT" ] || [ "$isp" = "CT" ] || [ "$isp" = "46011" ]; then
+    # elif [ "$isp" = "CHN-CT" ] || [ "$isp" = "CT" ] || [ "$isp" = "46011" ]; then
+    elif [ "$isp" = "CHN-TELECOM" ] || [ "$isp" = "CTCC" ] || [ "$isp" = "46011" ]; then
         isp="中国电信"
     fi
 
@@ -106,8 +108,21 @@ quectel_net_info()
     net_type=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}')
 
     #CSQ
-    #per（信号强度）
+    local at_command="AT+CSQ"
+    csq=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'[ ,]+' '{print $2}')
+    if [ $CSQ = "99" ]; then
+        csq=""
+    fi
 
+    #PER（信号强度）
+    if [ -n "$csq" ]; then
+        per=$((csq * 100/31))"%"
+    fi
+
+    #RSSI（信号接收强度）
+    if [ -n "$csq" ]; then
+        rssi=$((2 * csq - 113))" dBm"
+    fi
 }
 
 #quectel
@@ -135,27 +150,6 @@ nr_bw() {
 		"14")
 			BW="400" ;;
 	esac
-}
-
-#查询信息强度
-All_CSQ()
-{
-    debug "All_CSQ"
-	#信号
-	OX=$( sh modem_at.sh $at_port "AT+CSQ" |grep "+CSQ:")
-	OX=$(echo $OX | tr 'a-z' 'A-Z')
-	CSQ=$(echo "$OX" | grep -o "+CSQ: [0-9]\{1,2\}" | grep -o "[0-9]\{1,2\}")
-	if [ $CSQ = "99" ]; then
-		CSQ=""
-	fi
-	if [ -n "$CSQ" ]; then
-		CSQ_PER=$(($CSQ * 100/31))"%"
-		CSQ_RSSI=$((2 * CSQ - 113))" dBm"
-	else
-		CSQ="-"
-		CSQ_PER="-"
-		CSQ_RSSI="-"
-	fi
 }
 
 # SIMCOM获取基站信息
@@ -302,7 +296,6 @@ get_quectel_info()
     quectel_net_info
 
     return
-    # All_CSQ
     
     # Quectel_Cellinfo
 
@@ -311,14 +304,14 @@ get_quectel_info()
     NR_NSA=$(echo $OX | grep -o -i "+QENG:[ ]\?\"NR5G-NSA\",")
     NR_SA=$(echo $OX | grep -o -i "+QENG: \"SERVINGCELL\",[^,]\+,\"NR5G-SA\",\"[DFT]\{3\}\",")
     if [ -n "$NR_NSA" ]; then
-	QENG=",,"$(echo $OX" " | grep -o -i "+QENG: \"LTE\".\+\"NR5G-NSA\"," | tr " " ",")
-	QENG5=$(echo $OX | grep -o -i "+QENG:[ ]\?\"NR5G-NSA\",[0-9]\{3\},[0-9]\{2,3\},[0-9]\{1,5\},-[0-9]\{2,5\},[-0-9]\{1,3\},-[0-9]\{2,3\},[0-9]\{1,7\},[0-9]\{1,3\}.\{1,6\}")
-	if [ -z "$QENG5" ]; then
-		QENG5=$(echo $OX | grep -o -i "+QENG:[ ]\?\"NR5G-NSA\",[0-9]\{3\},[0-9]\{2,3\},[0-9]\{1,5\},-[0-9]\{2,3\},[-0-9]\{1,3\},-[0-9]\{2,3\}")
-		if [ -n "$QENG5" ]; then
-			QENG5=$QENG5",,"
-		fi
-	fi
+        QENG=",,"$(echo $OX" " | grep -o -i "+QENG: \"LTE\".\+\"NR5G-NSA\"," | tr " " ",")
+        QENG5=$(echo $OX | grep -o -i "+QENG:[ ]\?\"NR5G-NSA\",[0-9]\{3\},[0-9]\{2,3\},[0-9]\{1,5\},-[0-9]\{2,5\},[-0-9]\{1,3\},-[0-9]\{2,3\},[0-9]\{1,7\},[0-9]\{1,3\}.\{1,6\}")
+        if [ -z "$QENG5" ]; then
+            QENG5=$(echo $OX | grep -o -i "+QENG:[ ]\?\"NR5G-NSA\",[0-9]\{3\},[0-9]\{2,3\},[0-9]\{1,5\},-[0-9]\{2,3\},[-0-9]\{1,3\},-[0-9]\{2,3\}")
+            if [ -n "$QENG5" ]; then
+                QENG5=$QENG5",,"
+            fi
+        fi
     elif [ -n "$NR_SA" ]; then
 	    QENG=$(echo $NR_SA | tr " " ",")
 	    QENG5=$(echo $OX | grep -o -i "+QENG: \"SERVINGCELL\",[^,]\+,\"NR5G-SA\",\"[DFT]\{3\}\",[ 0-9]\{3,4\},[0-9]\{2,3\},[0-9A-F]\{1,10\},[0-9]\{1,5\},[0-9A-F]\{2,6\},[0-9]\{6,7\},[0-9]\{1,3\},[0-9]\{1,2\},-[0-9]\{2,5\},-[0-9]\{2,3\},[-0-9]\{1,3\}")
