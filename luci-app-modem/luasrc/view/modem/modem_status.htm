@@ -16,9 +16,16 @@
 				for ( var key in modems)
 				{
 					var modem=modems[key];
+					// 获取拨号模式
 					var mode="unknown mode";
 					if (modem["mode"]!=null) {
 						mode=modem["mode"].toUpperCase()
+					}
+					// 获取连接状态
+					var connect_status;
+					if (modem["connect_status"]!=null) {
+						// 首字母大写
+						connect_status=modem["connect_status"].charAt(0).toUpperCase() + modem["connect_status"].slice(1);
 					}
 
 					var state = '';
@@ -44,7 +51,7 @@
 					);
 					modem_view += String.format(
 						'<div><strong>No: </strong>%s</div>',
-						modem[".name"]
+						modem[".name"].slice(-1)
 					);
 					modem_view += String.format(
 						'<div><strong><%:Modem Name%>: </strong>%s</div>',
@@ -64,7 +71,7 @@
 					);
 					modem_view += String.format(
 						'<div><strong><%:Connect Status%>: </strong>%s</div>',
-						<%:modem.connect_status%>
+						<%:connect_status%>
 					);
 					modem_view += '</div>'
 				}
