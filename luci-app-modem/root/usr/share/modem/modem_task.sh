@@ -6,6 +6,7 @@ source "$current_dir/modem_scan.sh"
 #模组扫描任务
 modem_scan_task()
 {
+    sleep 8s #刚开机需要等待移动网络出来
 	while true; do
         enable=$(uci -q get modem.@global[0].enable)
         if [ "$enable" = "1" ] ;then

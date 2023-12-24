@@ -196,23 +196,25 @@ modem_scan()
     modem_count=0
     ########设置模块基本信息########
     #USB  
-    local usb_network=$(find /sys/class/net -name usb*)
+    local usb_network
+    usb_network=$(find /sys/class/net -name usb*)
     for network in $usb_network; do
         local usb_device_bus_path=$(getDeviceBusPath $network)
         setModemConfig $modem_count "usb" $usb_device_bus_path
     done
-    local usb_network=$(find /sys/class/net -name wwan*)
+    usb_network=$(find /sys/class/net -name wwan*)
     for network in $usb_network; do
         local usb_device_bus_path=$(getDeviceBusPath $network)
         setModemConfig $modem_count "usb" $usb_device_bus_path
     done
     #PCIE
-    local pcie_network=$(find /sys/class/net -name mhi_hwip*) #（通用mhi驱动）
+    local pcie_network
+    pcie_network=$(find /sys/class/net -name mhi_hwip*) #（通用mhi驱动）
     for network in $pcie_network; do
         local pcie_device_bus_path=$(getDeviceBusPath $network)
         setModemConfig $modem_count "pcie" $pcie_device_bus_path
     done
-    local pcie_network=$(find /sys/class/net -name rmnet_mhi*) #（制造商mhi驱动）
+    pcie_network=$(find /sys/class/net -name rmnet_mhi*) #（制造商mhi驱动）
     for network in $pcie_network; do
         local pcie_device_bus_path=$(getDeviceBusPath $network)
         setModemConfig $modem_count "pcie" $pcie_device_bus_path
@@ -230,12 +232,13 @@ modem_scan()
         setPortConfig $usb_port_device_bus_path $port
     done
     #PCIE串口
-    local pcie_port=$(find /dev -name wwan*)
+    local pcie_port
+    pcie_port=$(find /dev -name wwan*)
     for port in $pcie_port; do
         local pcie_port_device_bus_path=$(getDeviceBusPath $port)
         setPortConfig $pcie_port_device_bus_path $port
     done
-    local pcie_port=$(find /dev -name mhi*)
+    pcie_port=$(find /dev -name mhi*)
     for port in $pcie_port; do
         local pcie_port_device_bus_path=$(getDeviceBusPath $port)
         setPortConfig $pcie_port_device_bus_path $port
