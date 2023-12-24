@@ -1,3 +1,4 @@
 
 config global 'global'
-	option enable '0'
+	option enable '1'
+	option modem_number '0'

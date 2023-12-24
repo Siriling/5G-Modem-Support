@@ -1,8 +1,9 @@
 local d = require "luci.dispatcher"
 local uci = require "luci.model.uci".cursor()
+local http = require "luci.http"
 
 m = Map("modem", translate("Modem Config"))
-m.redirect = d.build_url("admin", "network", "modem")
+m.redirect = d.build_url("admin", "network", "modem","index")
 
 s = m:section(NamedSection, arg[1], "config", "")
 s.addremove = false
@@ -17,59 +18,53 @@ enable = s:taboption("general", Flag, "enable", translate("Enable"))
 enable.default = "0"
 enable.rmempty = false
 
+-- 配置ID
+uci:set('modem',arg[1],'id',arg[1])
+
 -- 备注
 remarks = s:taboption("general", Value, "remarks", translate("Remarks"))
 remarks.rmempty = true
 
 -- 移动网络
--- moblie_net = s:taboption("general", Value, "moblie_net", translate("Moblie Network"))
-moblie_net = s:taboption("general", ListValue, "moblie_net", translate("Moblie Network"))
--- moblie_net.default = ""
-moblie_net.rmempty = false
+-- network = s:taboption("general", Value, "network", translate("Moblie Network"))
+network = s:taboption("general", ListValue, "network", translate("Moblie Network"))
+-- network.default = ""
+network.rmempty = false
 
--- 拨号模式
--- mode = s:taboption("general", ListValue, "mode", translate("Mode"))
--- mode.rmempty = false
-
--- 根据调制解调器节点获取模块名
--- function getDeviceName(device_node)
--- 	local deviceName
--- 	uci:foreach("modem", "modem-device", function (modem_device)
--- 		if device_node == modem_device["device_node"] then
--- 			deviceName = modem_device["name"]
--- 		end
--- 	end)
--- 	return string.upper(deviceName)
--- end
-
--- 显示设备通用信息（网络，拨号模式）（有bug）
-function devicesGeneralInfo()
+-- 获取移动网络，并显示设备名
+function getMoblieNetwork()
 	local modem_number=uci:get('modem','global','modem_number')
-	for i=0,modem_number do
+	if modem_number == "0" then
+		network:value("",translate("Mobile network not found"))
+	end
+
+	for i=0,modem_number-1 do
 		--获取模块名
-		local deviceName = uci:get('modem','modem'..i,'name')
-		if deviceName == nil then
-			deviceName = "unknown"
+		local modem_name = uci:get('modem','modem'..i,'name')
+		if modem_name == nil then
+			modem_name = "unknown"
 		end
 		--设置网络
-		local net = uci:get('modem','modem'..i,'net')
-		if net ~= nil then
-			moblie_net:value(net,net.." ("..translate(deviceName:upper())..")")
-
-			--设置拨号模式
-			local mode = s:taboption("general", ListValue, "mode", translate("Mode"))
-			mode.rmempty = false
-
-			local modes = uci:get_list('modem','modem'..tostring(i),'modes')
-			for i in ipairs(modes) do
-				mode:value(modes[i],string.upper(modes[i]))
-			end
-			mode:depends("moblie_net", net)
+		modem_network = uci:get('modem','modem'..i,'network')
+		if modem_network ~= nil then
+			network:value(modem_network,modem_network.." ("..translate(modem_name:upper())..")")
 		end
 	end
 end
 
-devicesGeneralInfo()
+getMoblieNetwork()
+
+-- 拨号模式
+-- mode = s:taboption("general", ListValue, "mode", translate("Mode"))
+-- mode.rmempty = false
+-- mode.description = translate("Only display the modes available for the adaptation modem")
+-- local modes = {"qmi","gobinet","ecm","mbim","rndis","ncm"}
+-- for i in ipairs(modes) do
+-- 	mode:value(modes[i],string.upper(modes[i]))
+-- end
+
+-- 添加获取拨号模式信息
+-- m:append(Template("modem/mode_info"))
 
 --------advanced--------
 

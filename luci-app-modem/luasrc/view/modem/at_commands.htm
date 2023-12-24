@@ -1,38 +1,69 @@
 <%+header%>
 
-<!--
--- Copyright 2020-2021 Rafał Wabik (IceG) - From eko.one.pl forum
--- Licensed to the GNU General Public License v3.0.
--->
+<%
+local uci = luci.model.uci.cursor()
 
+-- 获取模组的备注
+-- @Param network 移动网络
+function getModemRemarks(network)
+	local remarks=""
+	uci:foreach("modem", "config", function (config)
+		---配置启用，且备注存在
+		if network == config["network"] and config["enable"] == "1" then
+			if config["remarks"] then
+				remarks=" ("..config["remarks"]..")" --" (备注)"
+				return true --跳出循环
+			end
+		end
+	end)
+	return remarks
+end
+
+-- 获取AT串口
+function getATPort()
+	local at_ports={}
+	uci:foreach("modem", "modem-device", function (modem_device)
+		--获取模块的备注
+		local network=modem_device["network"]
+		local remarks=getModemRemarks(network)
+
+		local name=modem_device["name"]:upper()..remarks
+		local at_port = modem_device["at_port"]
+		at_ports[at_port]=name
+	end)
+	return at_ports
+end
+%>
 <h2 name="content"><%:AT Commands%></h2>
-	<div class="cbi-map-descr"><%:Web UI for handling AT commands via sms_tool.%></div>
+	<div class="cbi-map-descr"><%:Debugging Your Module with AT Command%></div>
 	<p></p>
 	<h4><br/></h4>
 	<div class="table" width="100%">
 
 		<div class="tr">
 			<div class="td left" width="25%"><%:Modem Select%>:</div>
-
 			<div class="td left" style="width:50%;">
-				<select name="at_port" id="at_port" onclick="copyFunction()"></select>
+				<select name="modem_select" id="modem_select" onclick="afunction()">
+					<%  at_ports=getATPort() %>
+					<% for key in pairs(at_ports) do %>
+						<option value="<%= key %>"><%= at_ports[key] %></option>
+					<% end %>
+				</select>
 			</div>
 			<div class="td left" style="width:50%;"></div>
 		</div>
 
 		<div class="tr">
 			<div class="td left" width="25%"><%:User AT Commands%>:</div>
-
 			<div class="td left" style="width:50%;">
-				<select name="ussd" id="pl" onclick="copyFunction()"></select>
+				<select name="command_choose" id="command_choose" onclick="copyToSend()"></select>
 			</div>
 			<div class="td left" style="width:50%;"></div>
 		</div>
 
 		<div class="tr">
 			<div class="td left" style="width:25%;"><%:Command to send%>:</div>
-
-			<div class="td left" ><input type="text" id="code" required size="20" ></div>
+			<div class="td left" ><input type="text" id="at_command" required size="20" ></div>
 		</div>
 
 	</div>
@@ -50,71 +81,83 @@
 
 <script type="text/javascript">
 
-// 读取AT串口
-window.onload = function readATPort()
+window.onload = function readData()
 {
-	XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "at_port_select")%>', null,
+	// 选择AT命令
+	XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "user_at_command")%>', null,
 		function(x, json)
 		{
-			select = document.getElementById('at_port');
-			var count = Object.keys(json).length;
-			for(var d=0;d<=count;d++)
-			{
-				var opt = document.createElement('option');
-				console.log("hello")
-				console.log(json)
-				var s = json[d].at_ports;
-				// var fields = s.split(/;/);
-				// var name = fields[0];
-				// var port = fields[1];
-				var name = s;
-				var port = s;
-				opt.text = name;
-				opt.value = port.trim();
-				opt.innerHTML = name;
-				select.appendChild(opt);
+			select = document.getElementById('command_choose');
+			// 遍历序号
+			for (var command in json) {
+				// 遍历AT命令
+				for (var key in json[command]) {
+					var option = document.createElement('option');
+					option.text = key;
+					option.value = json[command][key].trim();
+					option.innerHTML = key;
+					select.appendChild(option);
+				}
 			}
 		}
 	);
-}
 
-window.onload = function readUSER()
-{
-	XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "user_atc")%>', null,
-		function(x, json)
-		{
-			select = document.getElementById('pl');
-			var count = Object.keys(json).length;
-			for(var d=0;d<=count;d++)
+	// 定时触发更新AT串口
+	XHR.poll(5,'<%=luci.dispatcher.build_url("admin", "network", "modem", "get_at_port")%>', null,
+		function(x, port)
+		{	
+			//获取模块选择框元素
+			var modem_select = document.getElementById('modem_select');
+			// 记录所选
+			var selected=modem_select.value;
+			// 删除原来的选项
+			modem_select.options.length=0;
+			// 更新（key：AT串口，value：模块名称）
+			for (var key in port)
 			{
-				var opt = document.createElement('option');
-
-				var s = json[d].atu;
-				var fields = s.split(/;/);
-				var name = fields[0];
-				var code = fields[1];
-				opt.text = name;
-				opt.value = code.trim();
-				opt.innerHTML = name;
-				select.appendChild(opt);
+				var option = document.createElement('option');
+				option.text = port[key].trim();
+				option.value = key;
+				modem_select.appendChild(option);
+			}
+			// 恢复原来的选择
+			for (let i = 0; i < modem_select.options.length; i++)
+			{
+				if(modem_select.options[i].value == selected)
+				{
+					modem_select.selectedIndex=i;
+					break;
+				}
 			}
 		}
 	);
+};
+
+// 根据所选的模组改变AT命令
+function afunction()
+{
+	// var node = document.getElementById('odp');
+	// node.style.visibility = 'hidden';
+
+	// var x = document.getElementById("at_command").value;
+	// document.getElementById("code").value = x;
+	// document.getElementById("odp").innerHTML = "";
 }
 
-function copyFunction() {
+//自动填写到命令输入框
+function copyToSend()
+{
+	var node = document.getElementById('odp');
+	node.style.visibility = 'hidden';
 
-  var node = document.getElementById('odp');
-  node.style.visibility = 'hidden';
-
-  var x = document.getElementById("pl").value;
-  document.getElementById("code").value = x;
-  document.getElementById("odp").innerHTML = "";
+	var command_choose = document.getElementById("command_choose").value;
+	document.getElementById("at_command").value = command_choose;
+	document.getElementById("odp").innerHTML = "";
 }
 
 
-function postcmd(cmd) {
-    (new XHR()).post("<%=luci.dispatcher.build_url("admin", "network", "modem", "run_at")%>", {"code":cmd}, function(x) {
+function postCommand(at_port,at_command) {
+    (new XHR()).post('<%=luci.dispatcher.build_url("admin", "network", "modem", "send_at_command")%>', {"port":at_port,"command":at_command}, function(x) {
         console.log(x.response)
         console.log(x)
 
@@ -131,29 +174,38 @@ function postcmd(cmd) {
 
 document.addEventListener('DOMContentLoaded', function (ev) {var button = document.getElementById("sendcmd");
         button.addEventListener("click", function () {
-
-
-		var s = document.getElementById("code").value;
-		if ( s.length == 0 )
+		
+		//获取AT串口
+		var at_port = document.getElementById("modem_select").value;
+		if ( at_port.length == 0 )
 		{
-  			document.getElementById("odp").innerHTML = "";
+			document.getElementById("odp").innerHTML = "";
+			alert("<%:Please choose a Modem%>");
+			return false;
+		}
+
+		//获取AT命令
+		var at_command = document.getElementById("at_command").value;
+		if ( at_command.length == 0 )
+		{
+			document.getElementById("odp").innerHTML = "";
 			alert("<%:Please enter a AT Command%>");
 			return false;
 		}
 
-        var cmd = document.getElementById("code");
-        postcmd(cmd.value);
-        cmd.value = "";
+		//发送AT命令
+		postCommand(at_port,at_command);
+		at_command = "";
 
-	    var node = document.getElementById('odp');
-    	if (node.style.visibility=='visible') {
-        node.style.visibility = 'hidden';
-    	}
-    	else
-        node.style.visibility = 'visible'
+		var node = document.getElementById('odp');
+		if (node.style.visibility=='visible') {
+			node.style.visibility = 'hidden';
+		}
+		else
+		node.style.visibility = 'visible'
 
-        return true;
-        });
+		return true;
+		});
     }, true);
 
 

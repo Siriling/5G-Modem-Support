@@ -5,5 +5,6 @@ quectel;rm500q-gl;pcie;qmi,gobinet,ecm,mbim,rndis,ncm
 fibocom;fm650-cn;usb;ecm,mbim,rndis,ncm
 fibocom;fm150-ae;usb;qmi,gobinet,ecm,mbim,rndis,ncm
 fibocom;fm150-ae;pcie;qmi
+fibocom;fm160-cn;usb;qmi,gobinet,ecm,mbim,rndis,ncm
 unknown;unknown;usb;qmi,gobinet,ecm,mbim,rndis,ncm
 unknown;unknown;pcie;qmi,gobinet,mbim

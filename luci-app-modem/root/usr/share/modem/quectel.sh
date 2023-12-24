@@ -1,4 +1,114 @@
 #!/bin/sh
+current_dir="$(dirname "$0")"
+
+#获取拨号模式
+# $1:AT串口
+get_quectel_mode()
+{
+    local at_port="$1"
+    local at_command='AT+QCFG="usbnet"'
+    local mode_num=$(echo "$response" | sed -n '2p' | sed 's/+QCFG: "usbnet",//g' | sed 's/\r//g')
+
+    local mode
+    case "$mode_num" in
+        "0") mode="qmi" ;;
+        # "0") mode="gobinet" ;;
+        "1") mode="ecm" ;;
+        "2") mode="mbim" ;;
+        "3") mode="rndis" ;;
+        "5") mode='ncm' ;;
+        "*") mode="$mode_num" ;;
+    esac
+    echo "$mode"
+}
+
+#基本信息
+quectel_base_info()
+{
+    debug "Quectel base info"
+
+    local at_command="ATI"
+    local response=$(sh $current_dir/modem_at.sh $at_port $at_command)
+
+    #名称
+    name=$(echo "$response" | sed -n '3p' | sed 's/\r//g')
+    #制造商
+    manufacturer=$(echo "$response" | sed -n '2p' | sed 's/\r//g')
+    #固件版本
+    revision=$(echo "$response" | sed -n '4p' | sed 's/Revision: //g' | sed 's/\r//g')
+
+    #拨号模式
+    mode=$(get_quectel_mode $at_port | tr 'a-z' 'A-Z')
+
+    #温度
+    at_command="AT+QTEMP"
+	response=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $4}')
+	if [ -n "$response" ]; then
+		temperature="$response$(printf "\xc2\xb0")C"
+	fi
+    # response=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+QTEMP:")
+    # QTEMP=$(echo $response | grep -o -i "+QTEMP: [0-9]\{1,3\}")
+    # if [ -z "$QTEMP" ]; then
+    #     QTEMP=$(echo $response | grep -o -i "+QTEMP:[ ]\?\"XO[_-]THERM[_-][^,]\+,[\"]\?[0-9]\{1,3\}" | grep -o "[0-9]\{1,3\}")
+    # fi
+    # if [ -z "$QTEMP" ]; then
+    #     QTEMP=$(echo $response | grep -o -i "+QTEMP:[ ]\?\"MDM-CORE-USR.\+[0-9]\{1,3\}\"" | cut -d\" -f4)
+    # fi
+    # if [ -z "$QTEMP" ]; then
+    #     QTEMP=$(echo $response | grep -o -i "+QTEMP:[ ]\?\"MDMSS.\+[0-9]\{1,3\}\"" | cut -d\" -f4)
+    # fi
+    # if [ -n "$QTEMP" ]; then
+    #     CTEMP=$(echo $QTEMP | grep -o -i "[0-9]\{1,3\}")$(printf "\xc2\xb0")"C"
+    # fi
+}
+
+#SIM卡信息
+quectel_sim_info()
+{
+    debug "Quectel sim info"
+    
+    #ISP（互联网服务提供商）
+    local at_command="AT+COPS?"
+    isp=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}')
+    if [ "$isp" = "CHN-CMCC" ] || [ "$isp" = "CMCC" ]|| [ "$isp" = "46000" ]; then
+        isp="中国移动"
+    elif [ "$isp" = "CHN-UNICOM" ] || [ "$isp" = "UNICOM" ] || [ "$isp" = "46001" ]; then
+        isp="中国联通"
+    elif [ "$isp" = "CHN-CT" ] || [ "$isp" = "CT" ] || [ "$isp" = "46011" ]; then
+        isp="中国电信"
+    fi
+
+    #IMEI
+    at_command="AT+CGSN"
+	imei=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+
+	#IMSI
+    at_command="AT+CIMI"
+	imsi=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+
+	#ICCID
+    at_command="AT+ICCID"
+	# iccid=$(sh $current_dir/modem_at.sh $at_port $at_command | grep -o "+ICCID:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}")
+	
+    #SIM卡号码（手机号）
+    at_command="AT+CNUM"
+	phone=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $4}')
+}
+
+#网络信息
+quectel_net_info()
+{
+    debug "Quectel net info"
+
+    #Network Type（网络类型）
+    # local at_command="AT+COPS?"
+    local at_command="AT+QNWINFO"
+    net_type=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}')
+
+    #CSQ
+    #per（信号强度）
+
+}
 
 #quectel
 lte_bw() {
@@ -48,19 +158,6 @@ All_CSQ()
 	fi
 }
 
-Quectel_SIMINFO()
-{
-    debug "Quectel_SIMINFO"
-    # 获取IMEI
-	IMEI=$( sh modem_at.sh $at_port "AT+CGSN"  | sed -n '2p'  )
-	# 获取IMSI
-	IMSI=$( sh modem_at.sh $at_port "AT+CIMI"  | sed -n '2p'  )
-	# 获取ICCID
-	ICCID=$( sh modem_at.sh $at_port "AT+ICCID"  | grep -o "+ICCID:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}"  )
-	# 获取电话号码
-	phone=$( sh modem_at.sh $at_port "AT+CNUM"  | grep "+CNUM:"  )
-
-}
 # SIMCOM获取基站信息
 Quectel_Cellinfo()
 {
@@ -189,18 +286,25 @@ Quectel_Cellinfo()
     fi
 }
 
-#Quectel公司查找基站AT
+#获取Quectel模块信息
 # $1:AT串口
-get_quectel_data()
+get_quectel_info()
 {
-    debug "get quectel data"
+    debug "get quectel info"
     #设置AT串口
     at_port=$1
 
-    Quectel_SIMINFO
-    All_CSQ
+    #基本信息
+    quectel_base_info
+	#SIM卡信息
+    quectel_sim_info
+    #网络信息
+    quectel_net_info
+
+    return
+    # All_CSQ
     
-    Quectel_Cellinfo
+    # Quectel_Cellinfo
 
     #
     OX=$( sh modem_at.sh $at_port 'AT+QENG="servingcell"'  | grep "+QENG:"  )
@@ -434,24 +538,6 @@ get_quectel_data()
     #
     OX=$( sh modem_at.sh $at_port 'AT+QNWPREFCFG="mode_pref"'  | grep "+QNWPREFCFG:"  )
     QNWP=$(echo $OX | grep -o -i "+QNWPREFCFG: \"MODE_PREF\",[A-Z5:]\+" | cut -d, -f2)
-
-    #温度
-    OX=$( sh modem_at.sh $at_port 'AT+QTEMP'  | grep "+QTEMP:"  )
-    QTEMP=$(echo $OX | grep -o -i "+QTEMP: [0-9]\{1,3\}")
-    if [ -z "$QTEMP" ]; then
-        QTEMP=$(echo $OX | grep -o -i "+QTEMP:[ ]\?\"XO[_-]THERM[_-][^,]\+,[\"]\?[0-9]\{1,3\}" | grep -o "[0-9]\{1,3\}")
-    fi
-    if [ -z "$QTEMP" ]; then
-        QTEMP=$(echo $OX | grep -o -i "+QTEMP:[ ]\?\"MDM-CORE-USR.\+[0-9]\{1,3\}\"" | cut -d\" -f4)
-    fi
-    if [ -z "$QTEMP" ]; then
-        QTEMP=$(echo $OX | grep -o -i "+QTEMP:[ ]\?\"MDMSS.\+[0-9]\{1,3\}\"" | cut -d\" -f4)
-    fi
-    if [ -n "$QTEMP" ]; then
-        CTEMP=$(echo $QTEMP | grep -o -i "[0-9]\{1,3\}")$(printf "\xc2\xb0")"C"
-    fi
-
-
 
     #
     OX=$( sh modem_at.sh $at_port "AT+QRSRP"  | grep "+QRSRP:"  )

@@ -7,17 +7,59 @@ msgstr "移动通信模组"
 msgid "Modem Config"
 msgstr "模组配置"
 
-msgid "Modem List"
-msgstr "模块列表"
+msgid "Modem Status"
+msgstr "模组状态"
 
-msgid "Configuration panel for Modem, Add and configure all modules on this page"
-msgstr "通信模组服务配置界面，在此页面添加和配置所有模块"
+msgid "Modem Name"
+msgstr "模组名称"
+
+msgid "Modem Select"
+msgstr "选择模组"
+
+msgid "Check information about adapted modem on this page"
+msgstr "在此页面查看已适配模组的信息"
+
+msgid "Loading modem status..."
+msgstr "正在加载模组状态"
+
+msgid "Connect"
+msgstr "已连接"
+
+msgid "Disconnect"
+msgstr "未连接"
+
+msgid "Disabled"
+msgstr "未启用"
+
+msgid "Data Interface"
+msgstr "数据接口"
+
+msgid "Mode"
+msgstr "模式"
+
+msgid "Connect Status"
+msgstr "连接状态"
+
+msgid "Config List"
+msgstr "配置列表"
+
+msgid "Configuration panel for Modem, Add configuration to all modems on this page"
+msgstr "通信模组服务配置界面，在此页面给所有模组添加配置"
 
 msgid "AT Commands"
 msgstr "AT命令"
 
+msgid "Debugging Your Module with AT Command"
+msgstr "使用AT命令调试你的模组"
+
 msgid "Modem Info"
 msgstr "模组信息"
+
+msgid "No modems found"
+msgstr "没有找到模组"
+
+msgid "Check to enable all configurations"
+msgstr "勾选启用全部配置"
 
 msgid "General Settings"
 msgstr "通用配置"
@@ -34,11 +76,14 @@ msgstr "移动网络"
 msgid "UNKNOWN"
 msgstr "未知"
 
-msgid "The network device was not found"
-msgstr "移动网络"
+msgid "Mobile network not found"
+msgstr "未发现移动网络"
 
-msgid "Mode"
-msgstr "模式"
+msgid "The network device was not found"
+msgstr "找不到网络设备"
+
+msgid "Only display the modes available for the adaptation modem"
+msgstr "仅显示适配模组可用的拨号模式"
 
 msgid "Dial Tool"
 msgstr "拨号工具"

@@ -1,21 +1,123 @@
 #!/bin/sh
+current_dir="$(dirname "$0")"
+
+#获取拨号模式
+# $1:AT串口
+get_fibocom_mode()
+{
+    local at_port="$1"
+    local at_command="AT+GTUSBMODE?"
+    local mode_num=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/+GTUSBMODE: //g' | sed 's/\r//g')
+    
+    local mode
+    case "$mode_num" in
+        "17") mode="qmi" ;; #-
+        "31") mode="qmi" ;; #-
+        "32") mode="qmi" ;;
+        "32") mode="gobinet" ;;
+        "18") mode="ecm" ;;
+        "23") mode="ecm" ;; #-
+        "33") mode="ecm" ;; #-
+        "29") mode="mbim" ;; #-
+        "30") mode="mbim" ;;
+        "24") mode="rndis" ;;
+        "18") mode='ncm' ;;
+        "*") mode="$mode_num" ;;
+    esac
+    echo "$mode"
+}
+
+
+#基本信息
+fibocom_base_info()
+{
+    debug "Fibocom base info"
+
+    local at_command="ATI"
+    local response=$(sh $current_dir/modem_at.sh $at_port $at_command)
+
+    #名称
+    name=$(echo "$response" | sed -n '3p' | sed 's/Model: //g' | sed 's/\r//g')
+    #制造商
+    manufacturer=$(echo "$response" | sed -n '2p' | sed 's/Manufacturer: //g' | sed 's/\r//g')
+    #固件版本
+    revision=$(echo "$response" | sed -n '4p' | sed 's/Revision: //g' | sed 's/\r//g')
+
+    #拨号模式
+    mode=$(get_fibocom_mode $at_port | tr 'a-z' 'A-Z')
+
+    #温度
+    at_command="AT+MTSM=1,6"
+	response=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/+MTSM: //g' | sed 's/\r//g')
+	if [ -n "$response" ]; then
+		temperature="$response$(printf "\xc2\xb0")C"
+	fi
+}
+
+#SIM卡信息
+fibocom_sim_info()
+{
+    debug "Fibocom sim info"
+    
+    #ISP（互联网服务提供商）
+    local at_command="AT+COPS?"
+    isp=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}')
+    if [ "$isp" = "CHN-CMCC" ] || [ "$isp" = "CMCC" ]|| [ "$isp" = "46000" ]; then
+        isp="中国移动"
+    elif [ "$isp" = "CHN-UNICOM" ] || [ "$isp" = "UNICOM" ] || [ "$isp" = "46001" ]; then
+        isp="中国联通"
+    elif [ "$isp" = "CHN-CT" ] || [ "$isp" = "CT" ] || [ "$isp" = "46011" ]; then
+        isp="中国电信"
+    fi
+
+    #IMEI
+    at_command="AT+CGSN"
+	imei=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+
+	#IMSI
+    at_command="AT+CIMI"
+	imsi=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+
+	#ICCID
+    at_command="AT+ICCID"
+	iccid=$(sh $current_dir/modem_at.sh $at_port $at_command | grep -o "+ICCID:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}")
+	
+    #SIM卡号码（手机号）
+    at_command="AT+CNUM?"
+	phone=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}')
+}
+
+#网络信息
+fibocom_net_info()
+{
+    debug "Fibocom net info"
+
+    #Network Type（网络类型）
+    local at_command="AT+PSRAT?"
+    net_type=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/+PSRAT: //g' | sed 's/\r//g')
+
+    #CSQ
+
+    #per（信号强度）
+
+}
 
 # fibocom获取基站信息
 Fibocom_Cellinfo()
 {
     #baseinfo.gcom
-    OX=$( sh modem_at.sh $at_port "ATI")
-    OX=$( sh modem_at.sh $at_port "AT+CGEQNEG=1")
+    OX=$( sh $current_dir/modem_at.sh $at_port "ATI")
+    OX=$( sh $current_dir/modem_at.sh $at_port "AT+CGEQNEG=1")
 
     #cellinfo0.gcom
-    OX1=$( sh modem_at.sh $at_port "AT+COPS=3,0;+COPS?")
-    OX2=$( sh modem_at.sh $at_port "AT+COPS=3,2;+COPS?")
+    # OX1=$( sh $current_dir/modem_at.sh $at_port "AT+COPS=3,0;+COPS?")
+    # OX2=$( sh $current_dir/modem_at.sh $at_port "AT+COPS=3,2;+COPS?")
     OX=$OX1" "$OX2
 
     #cellinfo.gcom
-    OY1=$( sh modem_at.sh $at_port "AT+CREG=2;+CREG?;+CREG=0")
-    OY2=$( sh modem_at.sh $at_port "AT+CEREG=2;+CEREG?;+CEREG=0")
-    OY3=$( sh modem_at.sh $at_port "AT+C5GREG=2;+C5GREG?;+C5GREG=0")
+    OY1=$( sh $current_dir/modem_at.sh $at_port "AT+CREG=2;+CREG?;+CREG=0")
+    OY2=$( sh $current_dir/modem_at.sh $at_port "AT+CEREG=2;+CEREG?;+CEREG=0")
+    OY3=$( sh $current_dir/modem_at.sh $at_port "AT+C5GREG=2;+C5GREG?;+C5GREG=0")
     OY=$OY1" "$OY2" "$OY3
 
 
@@ -131,42 +233,26 @@ Fibocom_Cellinfo()
     fi
 }
 
-Fibocom_SIMINFO()
-{
-    debug "Fibocom_SIMINFO"
-    
-    # 获取IMEI
-	IMEI=$( sh modem_at.sh $at_port "AT+CGSN"  | sed -n '2p'  )
-	# 获取IMSI
-	IMSI=$( sh modem_at.sh $at_port "AT+CIMI"  | sed -n '2p'  )
-	# 获取ICCID
-	ICCID=$( sh modem_at.sh $at_port "AT+ICCID"  | grep -o "+ICCID:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}"  )
-	# 获取电话号码
-	phone=$( sh modem_at.sh $at_port "AT+CNUM"  | grep "+CNUM:"  )
-}
-
-#fibocom查找基站AT
+#获取Fibocom模块信息
 # $1:AT串口
-get_fibocom_data()
+get_fibocom_info()
 {
-    debug "get fibocom data"
+    debug "get fibocom info"
     #设置AT串口
     at_port=$1
 
-    # All_CSQ
-    
-	Fibocom_SIMINFO
-    Fibocom_Cellinfo
+    #基本信息
+    fibocom_base_info
+	#SIM卡信息
+    fibocom_sim_info
+    #网络信息
+    fibocom_net_info
 
-    #温度
-	OX=$( sh modem_at.sh $at_port "AT+CPMUTEMP")
-	TEMP=$(echo "$OX" | grep -o "+CPMUTEMP:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}")
-	if [ -n "$TEMP" ]; then
-		TEMP=$(echo $TEMP)$(printf "\xc2\xb0")"C"
-	fi
-    
+    # All_CSQ
+    # Fibocom_Cellinfo
+
     #基站信息
-	OX=$( sh modem_at.sh $at_port "AT+CPSI?")
+	OX=$( sh $current_dir/modem_at.sh $at_port "AT+CPSI?")
 	rec=$(echo "$OX" | grep "+CPSI:")
 	w=$(echo $rec |grep "NO SERVICE"| wc -l)
 	if [ $w -ge 1 ];then
@@ -244,7 +330,7 @@ get_fibocom_data()
 	fi
 
 	#CNMP
-	OX=$( sh modem_at.sh $at_port "AT+CNMP?")
+	OX=$( sh $current_dir/modem_at.sh $at_port "AT+CNMP?")
 	CNMP=$(echo "$OX" | grep -o "+CNMP:[ ]*[0-9]\{1,3\}" | grep -o "[0-9]\{1,3\}")
 	if [ -n "$CNMP" ]; then
 		case $CNMP in
@@ -266,7 +352,7 @@ get_fibocom_data()
 	fi
 	
 	# CMGRMI 信息
-	OX=$( sh modem_at.sh $at_port "AT+CMGRMI=4")
+	OX=$( sh $current_dir/modem_at.sh $at_port "AT+CMGRMI=4")
 	CAINFO=$(echo "$OX" | grep -o "$REGXz" | tr ' ' ':')
 	if [ -n "$CAINFO" ]; then
 		for CASV in $(echo "$CAINFO"); do

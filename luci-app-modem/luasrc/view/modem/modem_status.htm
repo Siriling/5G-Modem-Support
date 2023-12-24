@@ -1,0 +1,95 @@
+<%#
+ Copyright 2014 Aedan Renner <chipdankly@gmail.com>
+ Copyright 2018 Florian Eckert <fe@dev.tdt.de>
+ Licensed to the public under the GNU General Public License v2.
+-%>
+
+<script type="text/javascript">//<![CDATA[
+	XHR.poll(5, '<%=luci.dispatcher.build_url("admin", "network", "modem", "get_modems")%>', null,
+		function(x, modems)
+		{
+			console.log(modems);
+			var modemsDiv = document.getElementById('modem_status_text');
+			if (modems.length!=0)
+			{
+				var modem_view = '';
+				for ( var key in modems)
+				{
+					var modem=modems[key];
+					var state = '';
+					var css = ''
+					switch (modem["connect_status"])
+					{
+						case 'connect':
+							state = '<%:Connect%>';
+							css = 'success';
+							break;
+						case 'disconnect':
+							state = '<%:Disconnect%>';
+							css = 'danger';
+							break;
+						default:
+							state = '<%:Disabled%>';
+							css = 'warning';
+							break;
+					}
+					modem_view += String.format(
+						'<div class="alert-message %s">',
+						css
+					);
+					modem_view += String.format(
+						'<div><strong>No: </strong>%s</div>',
+						modem[".name"]
+					);
+					modem_view += String.format(
+						'<div><strong><%:Modem Name%>: </strong>%s</div>',
+						modem.name.toUpperCase()
+					);
+					modem_view += String.format(
+						'<div><strong><%:Data Interface%>: </strong>%s</div>',
+						modem.data_interface.toUpperCase()
+					);
+					modem_view += String.format(
+						'<div><strong><%:Mode%>: </strong>%s</div>',
+						modem.mode.toUpperCase()
+					);
+					modem_view += String.format(
+						'<div><strong><%:Moblie Network%>: </strong>%s</div>',
+						modem.network
+					);
+					modem_view += String.format(
+						'<div><strong><%:Connect Status%>: </strong>%s</div>',
+						<%:modem.connect_status%>
+					);
+					modem_view += '</div>'
+				}
+				modemsDiv.innerHTML = modem_view;
+			}
+			else
+			{
+				modemsDiv.innerHTML = '<strong><%:No modems found%></strong>';
+			}
+		}
+	);
+//]]>
+</script>
+
+<style type="text/css">
+	#modem_status_text > div {
+		display: inline-block;
+		margin: 1rem;
+		padding: 1rem;
+		width: 15rem;
+		float: left;
+		line-height: 125%;
+	}
+</style>
+
+<fieldset id="modem_field" class="cbi-section">
+	<!-- <legend><%:Modem Status%></legend> -->
+	<h3><%:Modem Status%></h3>
+	<div id="modem_status_text">
+		<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" />
+		<%:Loading modem status...%>
+	</div>
+</fieldset>

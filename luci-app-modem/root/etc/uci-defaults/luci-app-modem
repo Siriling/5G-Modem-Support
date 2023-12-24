@@ -3,9 +3,11 @@
 uci -q get modem.global >/dev/null || uci -q batch <<-EOF >/dev/null
 	set modem.global=global
 	set modem.global.enable=1
+	set modem.global.modem_number=0
 	commit modem
 EOF
 
+/etc/init.d/modeminit enable
 /etc/init.d/modem enable
 
 uci -q batch <<-EOF >/dev/null

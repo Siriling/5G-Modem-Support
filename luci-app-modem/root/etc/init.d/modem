@@ -1,88 +1,93 @@
 #!/bin/sh /etc/rc.common
 # Copyright (C) 2006-2014 OpenWrt.org
 
-START=94
+START=21
 STOP=13
 USE_PROCD=1
 
 #设置拨号模式
 # $1:拨号模式
-set_mode()
-{
-	#获取AT串口、制造商、模块名
-	local at_port=$(uci -q get modem.modem$modem_no.at_port)
-	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
-	local name=$(uci -q get modem.modem$modem_no.name)
+# set_mode()
+# {
+# 	#获取AT串口、制造商、模块名
+# 	local at_port=$(uci -q get modem.modem$modem_no.at_port)
+# 	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
+# 	local name=$(uci -q get modem.modem$modem_no.name)
 
-	#分制造商设置不同的AT命令
-	local command
-	if [ "$manufacturer" = "quectel" ]; then
-		local mode_num
-		case $1 in
-			"qmi") mode_num='0' ;;
-			"gobinet") mode_num='0' ;;
-			"ecm") mode_num='1' ;;
-			"mbim") mode_num='2' ;;
-			"rndis") mode_num='3' ;;
-			"ncm") mode_num='5' ;;
-			"*") mode_num='0' ;;
-		esac
+# 	#分制造商设置不同的AT命令
+# 	local command
+# 	if [ "$manufacturer" = "quectel" ]; then
+# 		local mode_num
+# 		case $1 in
+# 			"qmi") mode_num='0' ;;
+# 			"gobinet") mode_num='0' ;;
+# 			"ecm") mode_num='1' ;;
+# 			"mbim") mode_num='2' ;;
+# 			"rndis") mode_num='3' ;;
+# 			"ncm") mode_num='5' ;;
+# 			"*") mode_num='0' ;;
+# 		esac
 
-		#查询当前拨号模式
-		command='AT+QCFG="usbnet"'
-		local at_result=$(sh /usr/share/modem/modem_at.sh $at_port $command)
-		if [[ "$at_result" != *"$mode_num"* ]]; then
-			#切换到指定的拨号模式
-			case $1 in
-				"qmi") command='AT+QCFG="usbnet",0' ;;
-				"gobinet") command='AT+QCFG="usbnet",0' ;;
-				"ecm") command='AT+QCFG="usbnet",1' ;;
-				"mbim") command='AT+QCFG="usbnet",2' ;;
-				"rndis") command='AT+QCFG="usbnet",3' ;;
-				"ncm") command='AT+QCFG="usbnet",5' ;;
-				"*") command='AT+QCFG="usbnet",0' ;;
-			esac
-			sh /usr/share/modem/modem_at.sh $at_port $command
-			#移远切换模式后，还需要重启模块，待测试
-        fi
-	elif [ "$manufacturer" = "fibocom" ]; then
-		if [ "$name" = "fm150-ae" ]; then
-			local mode_num
-			case $1 in
-				"qmi") mode_num='32' ;;
-				"gobinet") mode_num='32' ;;
-				"ecm") mode_num='23' ;;
-				"mbim") mode_num='29' ;;
-				"rndis") mode_num='24' ;;
-				"ncm") mode_num='23' ;;
-				"*") mode_num='32' ;;
-			esac
+# 		#查询当前拨号模式
+# 		command='AT+QCFG="usbnet"'
+# 		local at_result=$(sh /usr/share/modem/modem_at.sh $at_port $command)
+# 		if [[ "$at_result" != *"$mode_num"* ]]; then
+			
+# 			#切换到指定的拨号模式
+# 			case $1 in
+# 				"qmi") command='AT+QCFG="usbnet",0' ;;
+# 				"gobinet") command='AT+QCFG="usbnet",0' ;;
+# 				"ecm") command='AT+QCFG="usbnet",1' ;;
+# 				"mbim") command='AT+QCFG="usbnet",2' ;;
+# 				"rndis") command='AT+QCFG="usbnet",3' ;;
+# 				"ncm") command='AT+QCFG="usbnet",5' ;;
+# 				"*") command='AT+QCFG="usbnet",0' ;;
+# 			esac
+# 			at_result=$(sh /usr/share/modem/modem_at.sh "$at_port" "$command")
+# 			#移远切换模式后，还需要重启模块，待测试
+# 			sleep 5
+# 			modem_scan
+#         fi
+# 	elif [ "$manufacturer" = "fibocom" ]; then
+# 		if [ "$name" = "fm150-ae" ]; then
+# 			local mode_num
+# 			case $1 in
+# 				"qmi") mode_num='32' ;;
+# 				"gobinet") mode_num='32' ;;
+# 				"ecm") mode_num='23' ;;
+# 				"mbim") mode_num='29' ;;
+# 				"rndis") mode_num='24' ;;
+# 				"ncm") mode_num='23' ;;
+# 				"*") mode_num='32' ;;
+# 			esac
 
-			#查询当前拨号模式
-			command='AT+GTUSBMODE?'
-			local at_result=$(sh /usr/share/modem/modem_at.sh $at_port $command)
-			if [[ "$at_result" != *"$mode_num"* ]]; then
-				#切换到指定的拨号模式
-				case $1 in
-					"qmi") command='AT+GTUSBMODE=32' ;;
-					"gobinet") command='AT+GTUSBMODE=32' ;;
-					"ecm") command='AT+GTUSBMODE=23' ;;
-					"mbim") command='AT+GTUSBMODE=29' ;;
-					"rndis") command='AT+GTUSBMODE=24' ;;
-					"ncm") command='AT+GTUSBMODE=23' ;;
-					"*") command='AT+GTUSBMODE=32' ;;
-				esac
-				sh /usr/share/modem/modem_at.sh $at_port $command
-			fi
-		elif [ "$name" = "fm650" ]; then
-			#待处理
-			echo "fm650"
-		fi
-	else
-		#没有匹配到制造商，需要手动切换模块的拨号模式
-		echo "请手动切换模块的拨号模式"
-	fi
-}
+# 			#查询当前拨号模式
+# 			command='AT+GTUSBMODE?'
+# 			local at_result=$(sh /usr/share/modem/modem_at.sh $at_port $command)
+# 			if [[ "$at_result" != *"$mode_num"* ]]; then
+# 				#切换到指定的拨号模式
+# 				case $1 in
+# 					"qmi") command='AT+GTUSBMODE=32' ;;
+# 					"gobinet") command='AT+GTUSBMODE=32' ;;
+# 					"ecm") command='AT+GTUSBMODE=23' ;;
+# 					"mbim") command='AT+GTUSBMODE=29' ;;
+# 					"rndis") command='AT+GTUSBMODE=24' ;;
+# 					"ncm") command='AT+GTUSBMODE=23' ;;
+# 					"*") command='AT+GTUSBMODE=32' ;;
+# 				esac
+# 				at_result=$(sh /usr/share/modem/modem_at.sh "$at_port" "$command")
+# 				sleep 5
+# 				modem_scan
+# 			fi
+# 		elif [ "$name" = "fm650" ]; then
+# 			#待处理
+# 			echo "fm650"
+# 		fi
+# 	else
+# 		#没有匹配到制造商，需要手动切换模块的拨号模式
+# 		echo "请手动切换模块的拨号模式"
+# 	fi
+# }
 
 #设置防火墙
 set_firewall()
@@ -100,10 +105,12 @@ set_firewall()
 # $2:网络接口
 set_ipv4_interface()
 {
-	[ "$(uci -q get network.$1.ifname)" != "$2" ] && {
+	#配置中不存在这个网络接口配置，或这个网络接口配置的设备不同
+	[ "$(uci -q get network.$1.device)" != "$2" ] && {
 		uci set network.$1='interface'
-		uci set network.$1.ifname="$2"
 		uci set network.$1.proto='dhcp'
+		uci set network.$1.device="$2"
+		uci set network.$1.ifname="$2"
 		uci commit network
 
 		#加入WAN防火墙
@@ -119,11 +126,12 @@ set_ipv4_interface()
 # $2:网络接口
 set_ipv6_interface()
 {
-	if [ "$(uci -q get network.$1.ifname)" != "$2" ]; then
+	if [ "$(uci -q get network.$1.device)" != "$2" ]; then
 		uci set network.$1='interface'
-		uci set network.$1.ifname="$2"
 		uci set network.$1.proto='dhcpv6'
 		uci set network.$1.extendprefix='1'
+		uci set network.$1.device="$2"
+		uci set network.$1.ifname="$2"
 		uci commit network
 
 		#加入WAN防火墙
@@ -146,24 +154,21 @@ set_interface()
 		"ipv4") set_ipv4_interface wwan_5g_$1 $2 ;;
 		"ipv6") set_ipv6_interface wwan6_5g_$1 $2 ;;
 		"ipv4_ipv6") 
-			set_ipv4_interface wwan_5g_$1 $2
-			set_ipv6_interface wwan6_5g_$1 $2
+			set_ipv4_interface "wwan_5g_$1" $2
+			set_ipv6_interface "wwan6_5g_$1" $2
 			;;
 		"*") 
-			set_ipv4_interface wwan_5g_$1 $2
-			set_ipv6_interface wwan6_5g_$1 $2
+			set_ipv4_interface "wwan_5g_$1" $2
+			set_ipv6_interface "wwan6_5g_$1" $2
 			;;
 	esac
 }
 
 qmi()
 {
-	#设置拨号模式
-	set_mode qmi
-
 	#设置网络接口
-	local net_interface=$(uci -q get modem.modem$modem_no.net_interface)
-	set_interface $modem_no $net_interface
+	local network_interface=$(uci -q get modem.modem$modem_no.network_interface)
+	set_interface $modem_no $network_interface
 
 	#拨号
 	procd_open_instance
@@ -195,8 +200,8 @@ qmi()
 	if [ "$auth" != "" ]; then
 		procd_append_param command $auth
 	fi
-	if [ "$moblie_net" != "" ]; then
-		procd_append_param command -i $moblie_net
+	if [ "$network" != "" ]; then
+		procd_append_param command -i $network
 	fi
 	procd_set_param respawn
 	procd_set_param procd_pid /var/run/modem/modem$modem_no.pid
@@ -205,29 +210,32 @@ qmi()
 
 gobinet()
 {
-	qmi
+	#获取网络接口、AT串口、制造商
+	local network_interface=$(uci -q get modem.modem$modem_no.network_interface)
+	local at_port=$(uci -q get modem.modem$modem_no.at_port)
+	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
+	#设置网络接口
+	set_interface $modem_no $network_interface
+
+	#拨号
+	procd_open_instance
+	procd_set_param command sh /usr/share/modem/modem_usb_network.sh $id $at_port $manufacturer "gobinet"
+	procd_set_param respawn
+	procd_close_instance
 }
 
 ecm()
 {
-	#设置拨号模式
-	set_mode ecm
-	
 	#获取网络接口、AT串口、制造商
-	local net_interface=$(uci -q get modem.modem$modem_no.net_interface)
+	local network_interface=$(uci -q get modem.modem$modem_no.network_interface)
 	local at_port=$(uci -q get modem.modem$modem_no.at_port)
 	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
 	#设置网络接口
-	set_interface $modem_no $net_interface
+	set_interface $modem_no $network_interface
 
 	#拨号
 	procd_open_instance
-	procd_set_param command sh /usr/share/modem/modem_at.sh $at_port
-	if [ "$manufacturer" = "quectel" ]; then
-		procd_append_param command 'ATI'
-	elif [ "$manufacturer" = "fibocom" ]; then
-		procd_append_param command 'AT+GTRNDIS=1,1'
-	fi
+	procd_set_param command sh /usr/share/modem/modem_usb_network.sh $id $at_port $manufacturer "ecm"
 	procd_set_param respawn
 	procd_close_instance
 }
@@ -248,30 +256,166 @@ ncm()
 	ecm
 }
 
-#实例运行状态
-instance_status()
+stop_qmi()
 {
 	#获取modem的实例信息
 	local response=$(ubus call service list '{"name": "modem"}')
 	local instance_number=$(echo "$response" | jq -r '.modem.instances | length')
 	for i in $(seq 1 $((instance_number))); do
-		#获取运行状态和拨号命令
-		local running_status=$(echo "$response" | jq -r '.modem.instances.$i.running')
+		#获取拨号命令
 		local command=$(echo "$response" | jq -r '.modem.instances.instance$i.command')
-		if [ "$running_status" = "$true" ] && [[ "$command" = *"$moblie_net"* ]]; then
-			return 1
+		if [ "$command" = *"$network"* ]; then
+			local pid=$(echo "$response" | jq -r '.modem.instances.$i.pid')
+			kill $pid >/dev/null 2>&1
 		fi
 	done
 }
 
+stop_gobinet()
+{
+	#获取AT串口、制造商
+	local at_port=$(uci -q get modem.modem$modem_no.at_port)
+	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
+
+	#停止拨号
+	local command="sh /usr/share/modem/modem_at.sh $at_port"
+	if [ "$manufacturer" = "quectel" ]; then
+		$command 'ATI'
+	elif [ "$manufacturer" = "fibocom" ]; then
+		$command 'AT$QCRMCALL=0,1'
+	else
+		$command 'ATI'
+	fi
+}
+
+stop_ecm()
+{
+	#获取AT串口、制造商
+	local at_port=$(uci -q get modem.modem$modem_no.at_port)
+	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
+
+	#停止拨号
+	local command="sh /usr/share/modem/modem_at.sh $at_port"
+	if [ "$manufacturer" = "quectel" ]; then
+		$command 'ATI'
+	elif [ "$manufacturer" = "fibocom" ]; then
+		$command 'AT+GTRNDIS=0,1'
+	else
+		$command 'ATI'
+	fi
+}
+
+stop_mbim()
+{
+	stop_qmi
+}
+
+stop_rndis()
+{
+	stop_ecm
+	#广和通的rndis和ecm不同，后续再测试
+}
+
+stop_ncm()
+{
+	stop_ecm
+}
+
+#获取模块序号
+# $1:移动网络
+get_modem_no()
+{
+	local modem_number=$(uci -q get modem.@global[0].modem_number)
+	echo "modem_number:$modem_number" >> /root/a
+	local modem_network
+	for i in $(seq 0 $((modem_number-1))); do
+		modem_network=$(uci -q get modem.modem$i.network)
+		if [ "$modem_network" = "$1" ]; then
+			#模块序号
+			modem_no=$i
+			break
+		fi
+	done
+	echo "modem_no:$modem_no" >> /root/a
+}
+
+#获取实例运行状态（未使用）
+# $1:配置ID
+get_instance_status()
+{
+	#获取modem的实例信息
+	local response=$(ubus call service list '{"name": "modem"}')
+	local instance_number=$(echo "$response" | jq -r ".modem.instances | length")
+	for i in $(seq 1 $((instance_number))); do
+		#获取运行状态和拨号命令
+		local running_status=$(echo "$response" | jq -r ".modem.instances.instance$i.running")
+		local command=$(echo "$response" | jq -r ".modem.instances.instance$i.command")
+		if [ "$running_status" = "true" ] && [[ "$command" = *"$network"* ]]; then
+			#查看配置ID是否记录在已运行的文件里
+			local run_config="/tmp/modem/run_config"
+			local run_config_id=$(grep -n "$network" "$run_config" | cut -d ';' -f 2)
+			if [ "$1" = "$run_config_id" ]; then
+				status=2
+				break
+			else
+				status=1
+				break
+			fi
+		fi
+	done
+}
+
+#停止拨号
+# $1:配置ID
+stop_dial()
+{
+	local id="$1" #配置ID
+	local network=$(uci -q get modem.$1.network) #移动网络
+
+	#把配置ID从临时列表中移除
+	local run_config="/tmp/modem/run_config"
+	local row_no=$(grep -n "$id" "$run_config" | cut -d ':' -f 1)
+	if [ -z "$row_no" ]; then
+		return 0
+	fi
+	#该配置ID在运行，需要删除记录
+	sed -i "$row_no"d $run_config
+
+	#获取模块序号
+	get_modem_no $network
+	#获取模组的拨号模式
+	local mode=$(uci -q get modem.modem$modem_no.mode)
+
+	#根据不同的拨号模式停止拨号
+	if [ "$mode" = "qmi" ]; then
+		stop_qmi
+	elif [ "$mode" = "gobinet" ]; then
+		stop_gobinet
+	elif [ "$mode" = "ecm" ]; then
+		stop_ecm
+	elif [ "$mode" = "mbim" ]; then
+		stop_mbim
+	elif [ "$mode" = "rndis" ]; then
+		stop_rndis
+	elif [ "$mode" = "ncm" ]; then
+		stop_ncm
+	fi
+}
+
 dial()
 {
+	local enable #启用
+	local id #ID
+
 	config_get enable $1 enable
-	[ "$enable" = "0" ] && return 0
+	config_get id $1 id
+	[ "$enable" = "0" ] && {
+		stop_dial "$id"
+		return 0
+	}
 
 	local remarks #备注
-	local moblie_net #移动网络
-	local mode #拨号模式
+	local network #移动网络
 	local dial_tool #拨号工具
 	local pdp_type #网络类型
 	local apn
@@ -280,8 +424,7 @@ dial()
 	local auth
 
 	config_get remarks $1 remarks
-	config_get moblie_net $1 moblie_net
-	config_get mode $1 mode
+	config_get network $1 network
 	config_get dial_tool $1 dial_tool
 	config_get pdp_type $1 pdp_type
 	config_get apn $1 apn
@@ -289,25 +432,34 @@ dial()
 	config_get password $1 password
 	config_get auth $1 auth
 
-	#查看移动网络是否已经有实例在运行
-	instance_status
-	[ $? = "1" ] && return 0
-
 	#获取模块序号
-	local modem_number=$(uci -q get modem.@global[0].option.modem_number)
-	for i in $(seq 0 $((modem_number-1))); do
-		local net=$(uci -q get modem.modem$i.net)
-		if [ "$net" = "$moblie_net" ]; then
-			#模块序号
-			modem_no=$i 
+	get_modem_no $network
+	#获取模组的拨号模式
+	[ -z "$modem_no" ] && return 0
+	local mode=$(uci -q get modem.modem$modem_no.mode)
+
+	#查看移动网络是否已经有配置在运行
+	local run_path="/tmp/modem"
+	mkdir -p $run_path
+	local run_config="/tmp/modem/run_config"
+	local row_no=$(grep -n "$network" "$run_config" | cut -d ':' -f 1) #1:wwan0;abc->1
+	if [ -z "$row_no" ]; then #未记录该移动网络
+		#把已运行的配置ID加入到记录中
+		echo "$network;$id" >> "$run_path/run_config"
+	else
+		local run_config_id=$(grep -n "$network" "$run_config" | cut -d ';' -f 2)
+		if [ "$id" != "$run_config_id" ]; then #该移动网络已存在，且已有其他配置运行
+			uci set modem.$1.enable=0
+			uci commit modem
+			return 0
 		fi
-	done
+	fi
 
 	#根据不同的拨号模式拨号
 	if [ "$mode" = "qmi" ]; then
 		qmi
 	elif [ "$mode" = "gobinet" ]; then
-		gobinet #暂无，同qmi
+		gobinet
 	elif [ "$mode" = "ecm" ]; then
 		ecm
 	elif [ "$mode" = "mbim" ]; then
@@ -321,40 +473,14 @@ dial()
 	# sleep 15
 }
 
-stop_dial()
-{
-	#停止所有拨号
-	config_get enable $1 enable
-	[ "$enable" = "0" ] && {
-		killall quectel-CM >/dev/null 2>&1
-		return 0
-	}
-
-	#停止单个拨号
-	local moblie_net #移动网络
-	config_get moblie_net $1 moblie_net
-
-	#获取modem的实例信息
-	local response=$(ubus call service list '{"name": "modem"}')
-	local instance_number=$(echo "$response" | jq -r '.modem.instances | length')
-	for i in $(seq 1 $((instance_number))); do
-		#获取拨号命令
-		local command=$(echo "$response" | jq -r '.modem.instances.instance$i.command')
-		if [ "$command" = *"$moblie_net"* ]; then
-			local pid=$(echo "$response" | jq -r '.modem.instances.$i.pid')
-			kill $pid >/dev/null 2>&1
-		fi
-	done
-}
-
 service_triggers()
 {
 	procd_add_reload_trigger "modem"
 }
 
 start_service() {
-	enable=$(uci -q get modem.@global[0].enable)
-	if [ "$enable" = "0" ];then
+	local enable=$(uci -q get modem.@global[0].enable)
+	if [ "$enable" = "0" ]; then
 		stop_service
 	else
 		config_load modem
@@ -364,6 +490,14 @@ start_service() {
 
 stop_service()
 {
-	config_load modem
-	config_foreach stop_dial "config"
+	#删除记录文件
+	rm -rf /tmp/modem
+	#停止qmi、mbim拨号
+	killall quectel-CM >/dev/null 2>&1
+	#停止ecm、rndis、ncm拨号
+	local modem_number=$(uci -q get modem.@global[0].modem_number)
+	for i in $(seq 0 $((modem_number-1))); do
+		modem_no=$i
+		stop_ecm
+	done
 }
