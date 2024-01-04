@@ -1,111 +1,89 @@
 <%+header%>
-
-<%
-local uci = luci.model.uci.cursor()
-
--- 获取模组的备注
--- @Param network 移动网络
-function getModemRemarks(network)
-	local remarks=""
-	uci:foreach("modem", "config", function (config)
-		---配置启用，且备注存在
-		if network == config["network"] and config["enable"] == "1" then
-			if config["remarks"] then
-				remarks=" ("..config["remarks"]..")" --" (备注)"
-				return true --跳出循环
-			end
-		end
-	end)
-	return remarks
-end
-
--- 获取AT串口
-function getATPort()
-	local at_ports={}
-	uci:foreach("modem", "modem-device", function (modem_device)
-		--获取模块的备注
-		local network=modem_device["network"]
-		local remarks=getModemRemarks(network)
-
-		local name=modem_device["name"]:upper()..remarks
-		local at_port = modem_device["at_port"]
-		at_ports[at_port]=name
-	end)
-	return at_ports
-end
-%>
 <h2 name="content"><%:AT Commands%></h2>
 	<div class="cbi-map-descr"><%:Debugging Your Module with AT Command%></div>
-	<p></p>
-	<h4><br/></h4>
-	<div class="table" width="100%">
 
-		<div class="tr">
-			<div class="td left" width="25%"><%:Modem Select%>:</div>
-			<div class="td left" style="width:50%;">
-				<select name="modem_select" id="modem_select" onclick="afunction()">
-					<%  at_ports=getATPort() %>
-					<% for key in pairs(at_ports) do %>
-						<option value="<%= key %>"><%= at_ports[key] %></option>
-					<% end %>
-				</select>
+	<fieldset class="cbi-section" id="cbi-info" style="display: block;">
+		<h3><%:Message%></h3>
+		<table width="550" border="0">
+			<tr>
+				<td width="10%"></td>
+				<td width="60%">
+					<div align="left" id="info_message" style="font-size:1.875em">
+						<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle"/>
+						<%:Loading modem%>...
+					</div>
+				</td>
+				<td width="30%"></td>
+			</tr>
+		</table>
+	</fieldset>
+
+	<div id="at_command_view" style="display: none;">
+		<h4><br/></h4>
+		<div class="table" width="100%">
+			<div class="tr">
+				<div class="td left" width="25%"><%:Modem Select%>:</div>
+				<div class="td left" style="width:50%;">
+					<select name="modem_select" id="modem_select" onclick="afunction()"></select>
+				</div>
+				<div class="td left" style="width:50%;"></div>
 			</div>
-			<div class="td left" style="width:50%;"></div>
-		</div>
 
-		<div class="tr">
-			<div class="td left" width="25%"><%:User AT Commands%>:</div>
-			<div class="td left" style="width:50%;">
-				<select name="command_choose" id="command_choose" onclick="copyToSend()"></select>
+			<div class="tr">
+				<div class="td left" width="25%"><%:User AT Commands%>:</div>
+				<div class="td left" style="width:50%;">
+					<select name="command_choose" id="command_choose" onclick="copyToSend()"></select>
+				</div>
+				<div class="td left" style="width:50%;"></div>
 			</div>
-			<div class="td left" style="width:50%;"></div>
+
+			<div class="tr">
+				<div class="td left" style="width:25%;"><%:Command to send%>:</div>
+				<div class="td left" ><input type="text" id="at_command" required size="20" ></div>
+			</div>
+
 		</div>
 
-		<div class="tr">
-			<div class="td left" style="width:25%;"><%:Command to send%>:</div>
-			<div class="td left" ><input type="text" id="at_command" required size="20" ></div>
+		<div class="table" width="100%">
+			<div class="td left" style="width:25%;"><%:Reply%>:
+			<p>
+			<pre id="odp" style="visibility: hidden; width:75%;"></pre></div>
+
+			<div class="tr cbi-rowstyle-2">
+			<div class="td right"><input type="button" style="margin-right: 26%"; id="sendcmd" class="btn cbi-button cbi-button-neutral" value="<%:Send Command%>" /></div>
+			</div>
+
 		</div>
-
-	</div>
-
-	<div class="table" width="100%">
-		<div class="td left" style="width:25%;"><%:Reply%>:
-		<p>
-		<pre id="odp" style="visibility: hidden; width:75%;"></pre></div>
-
-		<div class="tr cbi-rowstyle-2">
-		<div class="td right"><input type="button" style="margin-right: 26%"; id="sendcmd" class="btn cbi-button cbi-button-neutral" value="<%:Send Command%>" /></div>
-		</div>
-
 	</div>
 
 <script type="text/javascript">
 
-window.onload = function readData()
-{
-	// 选择AT命令
-	XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "user_at_command")%>', null,
-		function(x, json)
-		{
-			select = document.getElementById('command_choose');
-			// 遍历序号
-			for (var command in json) {
-				// 遍历AT命令
-				for (var key in json[command]) {
-					var option = document.createElement('option');
-					option.text = key;
-					option.value = json[command][key].trim();
-					option.innerHTML = key;
-					select.appendChild(option);
+	window.onload = function readData()
+	{
+		// 获取AT命令
+		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "user_at_command")%>', null,
+			function(x, json)
+			{
+				select = document.getElementById('command_choose');
+				// 遍历序号
+				for (var command in json) {
+					// 遍历AT命令
+					for (var key in json[command]) {
+						var option = document.createElement('option');
+						option.text = key;
+						option.value = json[command][key].trim();
+						option.innerHTML = key;
+						select.appendChild(option);
+					}
 				}
 			}
-		}
-	);
+		);
+	};
 
 	// 定时触发更新AT串口
 	XHR.poll(5,'<%=luci.dispatcher.build_url("admin", "network", "modem", "get_at_port")%>', null,
 		function(x, port)
-		{	
+		{
 			//获取模块选择框元素
 			var modem_select = document.getElementById('modem_select');
 			// 记录所选
@@ -116,8 +94,15 @@ window.onload = function readData()
 			for (var key in port)
 			{
 				var option = document.createElement('option');
-				option.text = port[key].trim();
 				option.value = key;
+				if (port[key].includes("unknown"))
+				{
+					option.text = port[key].replace("unknown", key);
+				}
+				else
+				{
+					option.text = port[key];
+				}
 				modem_select.appendChild(option);
 			}
 			// 恢复原来的选择
@@ -129,84 +114,101 @@ window.onload = function readData()
 					break;
 				}
 			}
+
+			// 界面显示控制
+			if (Object.keys(port).length==0)
+			{
+				// 更新提示信息
+				document.getElementById("info_message").innerHTML="<strong><%:No modems found%></strong>";
+				// 显示提示信息
+				document.getElementById("cbi-info").style.display="block";
+				// 隐藏AT命令界面
+				document.getElementById("at_command_view").style.display="none";
+			}
+			else
+			{
+				// 显示AT命令界面
+				document.getElementById("at_command_view").style.display="block";
+				// 隐藏提示信息
+				document.getElementById("cbi-info").style.display="none";
+			}
 		}
 	);
-};
 
-// 根据所选的模组改变AT命令
-function afunction()
-{
-	// var node = document.getElementById('odp');
-	// node.style.visibility = 'hidden';
+	// 根据所选的模组改变AT命令
+	function afunction()
+	{
+		// var node = document.getElementById('odp');
+		// node.style.visibility = 'hidden';
 
-	// var x = document.getElementById("at_command").value;
-	// document.getElementById("code").value = x;
-	// document.getElementById("odp").innerHTML = "";
-}
+		// var x = document.getElementById("at_command").value;
+		// document.getElementById("code").value = x;
+		// document.getElementById("odp").innerHTML = "";
+	}
 
-//自动填写到命令输入框
-function copyToSend()
-{
-	var node = document.getElementById('odp');
-	node.style.visibility = 'hidden';
-
-	var command_choose = document.getElementById("command_choose").value;
-	document.getElementById("at_command").value = command_choose;
-	document.getElementById("odp").innerHTML = "";
-}
-
-
-function postCommand(at_port,at_command) {
-    (new XHR()).post('<%=luci.dispatcher.build_url("admin", "network", "modem", "send_at_command")%>', {"port":at_port,"command":at_command}, function(x) {
-        console.log(x.response)
-        console.log(x)
-
-        var aStr = x.response;
-		var myre = /^[\s\t]*(\r\n|\n|\r)/gm;
-		var bStr = aStr.replace(myre,"");
-			document.getElementById("odp").innerHTML = bStr;
-		var el = document.getElementsByName("odp")[0];
-		el.value.replace(/(\r\n|\n|\r)/gm, "");
-    });
-    return false;
-}
-
-
-document.addEventListener('DOMContentLoaded', function (ev) {var button = document.getElementById("sendcmd");
-        button.addEventListener("click", function () {
-		
-		//获取AT串口
-		var at_port = document.getElementById("modem_select").value;
-		if ( at_port.length == 0 )
-		{
-			document.getElementById("odp").innerHTML = "";
-			alert("<%:Please choose a Modem%>");
-			return false;
-		}
-
-		//获取AT命令
-		var at_command = document.getElementById("at_command").value;
-		if ( at_command.length == 0 )
-		{
-			document.getElementById("odp").innerHTML = "";
-			alert("<%:Please enter a AT Command%>");
-			return false;
-		}
-
-		//发送AT命令
-		postCommand(at_port,at_command);
-		at_command = "";
-
+	//自动填写到命令输入框
+	function copyToSend()
+	{
 		var node = document.getElementById('odp');
-		if (node.style.visibility=='visible') {
-			node.style.visibility = 'hidden';
-		}
-		else
-		node.style.visibility = 'visible'
+		node.style.visibility = 'hidden';
 
-		return true;
+		var command_choose = document.getElementById("command_choose").value;
+		document.getElementById("at_command").value = command_choose;
+		document.getElementById("odp").innerHTML = "";
+	}
+
+	function postCommand(at_port,at_command)
+	{
+		(new XHR()).post('<%=luci.dispatcher.build_url("admin", "network", "modem", "send_at_command")%>', {"port":at_port,"command":at_command}, function(x) {
+			console.log(x.response)
+			console.log(x)
+
+			var aStr = x.response;
+			var myre = /^[\s\t]*(\r\n|\n|\r)/gm;
+			var bStr = aStr.replace(myre,"");
+				document.getElementById("odp").innerHTML = bStr;
+			var el = document.getElementsByName("odp")[0];
+			el.value.replace(/(\r\n|\n|\r)/gm, "");
 		});
-    }, true);
+		return false;
+	}
+
+
+	document.addEventListener('DOMContentLoaded', function (ev) {var button = document.getElementById("sendcmd");
+			button.addEventListener("click", function () {
+			
+			//获取AT串口
+			var at_port = document.getElementById("modem_select").value;
+			if ( at_port.length == 0 )
+			{
+				document.getElementById("odp").innerHTML = "";
+				alert("<%:Please choose a Modem%>");
+				return false;
+			}
+
+			//获取AT命令
+			var at_command = document.getElementById("at_command").value;
+			if ( at_command.length == 0 )
+			{
+				document.getElementById("odp").innerHTML = "";
+				alert("<%:Please enter a AT Command%>");
+				return false;
+			}
+
+			//发送AT命令
+			postCommand(at_port,at_command);
+			at_command = "";
+
+			var node = document.getElementById('odp');
+			if (node.style.visibility=='visible') {
+				node.style.visibility = 'hidden';
+			}
+			else
+			node.style.visibility = 'visible'
+
+			return true;
+			});
+		}, true);
 
 
 </script>

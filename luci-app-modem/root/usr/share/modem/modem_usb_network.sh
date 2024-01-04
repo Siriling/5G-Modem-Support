@@ -65,7 +65,7 @@ modem_network_task()
             case "$4" in
                 "ecm") ecm_dial $at_port $3 ;;
                 "gobinet") gobinet_dial $at_port $3 ;;
-                "*") ecm_dial $at_port $3 ;;
+                *) ecm_dial $at_port $3 ;;
             esac
         fi
         debug "结束网络连接检查任务"

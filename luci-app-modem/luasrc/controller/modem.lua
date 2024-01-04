@@ -14,7 +14,7 @@ function index()
 	entry({"admin", "network", "modem"}, alias("admin", "network", "modem", "modem_info"), translate("Modem"), 100).dependent = true
 
 	--模块状态
-	entry({"admin", "network", "modem", "modem_info"}, template("modem/modem_info"), translate("Modem Info"),10).leaf = true
+	entry({"admin", "network", "modem", "modem_info"}, template("modem/modem_info"), translate("Modem Information"),10).leaf = true
 	entry({"admin", "network", "modem", "get_modem_info"}, call("getModemInfo"))
 
 	--模块设置
@@ -76,7 +76,7 @@ function getModemBaseInfo(at_port)
 			--获取数据接口
 			local data_interface=modem_device["data_interface"]:upper()
 			--获取连接状态
-			local connect_status
+			local connect_status="unknown"
 			if modem_device["at_port"] then
 				connect_status=getModemConnectStatus(modem_device["at_port"])
 			end
@@ -94,10 +94,16 @@ end
 
 -- 获取模组更多信息
 function getModemMoreInfo(at_port,manufacturer)
+	local modem_more_info={}
+
+	-- if manufacturer == "unknown" then
+	-- 	return modem_more_info
+	-- end
+
 	local odpall = io.popen("sh "..script_path.."modem_info.sh".." "..at_port.." "..manufacturer)
 	local opd = odpall:read("*a")
 	odpall:close()
-	local modem_more_info=json.parse(opd)
+	modem_more_info=json.parse(opd)
 	return modem_more_info
 end
 
@@ -107,7 +113,7 @@ function getModemInfo()
 	--获取AT串口
     local at_port = http.formvalue("port")
 
-	--获取值
+	--获取信息
 	local modem_base_info
 	local modem_more_info
 	if at_port then
@@ -115,38 +121,74 @@ function getModemInfo()
 		modem_more_info=getModemMoreInfo(at_port,modem_base_info["manufacturer"])
 	end
 
-	--设置值
+	--设置信息
 	local modem_info={}
 	modem_info["base_info"]=modem_base_info
 	modem_info["more_info"]=modem_more_info
 
+	--设置翻译
+	local translation={}
+	if modem_more_info["sim_info"] then
+		for key in pairs(modem_more_info["sim_info"]) do
+			local key_origin=modem_more_info["sim_info"][key]:upper()
+			translation[key_origin]=luci.i18n.translate(key_origin)
+		end
+	end
+	
+	if modem_more_info["cell_info"] then
+		for key in pairs(modem_more_info["cell_info"]) do
+			local network_mode=modem_more_info["cell_info"][key]
+			for i = 1, #network_mode do
+				local value = network_mode[i]
+				for key in pairs(value) do
+					translation[key]=luci.i18n.translate(key)
+				end
+			end
+		end
+	end
+
+	--整合数据
+	local data={}
+	data["modem_info"]=modem_info
+	data["translation"]=translation
+	
 	-- 写入Web界面
 	luci.http.prepare_content("application/json")
-	luci.http.write_json(modem_info)
+	luci.http.write_json(data)
 end
 
 -- 获取模组信息
 function getModems()
-
-	local modems={}
-
+	
 	-- 获取所有模组
+	local modems={}
+	local translation={}
 	uci:foreach("modem", "modem-device", function (modem_device)
-		--获取连接状态
-		local connect_status
+		-- 获取连接状态
+		local connect_status="unknown"
 		if modem_device["at_port"] then
 			connect_status=getModemConnectStatus(modem_device["at_port"])
 		end
 
-		--设置值
+		-- 获取翻译
+		translation[connect_status]=luci.i18n.translate(connect_status)
+		translation[modem_device["name"]]=luci.i18n.translate(modem_device["name"])
+		translation[modem_device["mode"]]=luci.i18n.translate(modem_device["mode"])
+
+		-- 设置值
 		local modem=modem_device
 		modem["connect_status"]=connect_status
 		modems[modem_device[".name"]]=modem
 	end)
+	
+	-- 设置值
+	local data={}
+	data["modems"]=modems
+	data["translation"]=translation
 
 	-- 写入Web界面
 	luci.http.prepare_content("application/json")
-	luci.http.write_json(modems)
+	luci.http.write_json(data)
 end
 
 -- 模块列表状态函数
@@ -245,13 +287,22 @@ end
 function getATPort()
 	local at_ports={}
 	uci:foreach("modem", "modem-device", function (modem_device)
-		--获取模块的备注
+		--获取模组的备注
 		local network=modem_device["network"]
 		local remarks=getModemRemarks(network)
 
-		local name=modem_device["name"]:upper()..remarks
-		local at_port = modem_device["at_port"]
-		at_ports[at_port]=name
+		--设置模组AT串口
+		if modem_device["name"] and modem_device["at_port"] then
+			
+			local name=modem_device["name"]:upper()..remarks
+			if modem_device["name"] == "unknown" then
+				-- name=modem_device["at_port"]..remarks
+				name=modem_device["name"]..remarks
+			end
+
+			local at_port = modem_device["at_port"]
+			at_ports[at_port]=name
+		end
 	end)
 	-- 写入Web界面
 	luci.http.prepare_content("application/json")

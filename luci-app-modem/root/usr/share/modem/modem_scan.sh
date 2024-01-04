@@ -126,11 +126,19 @@ setModemInfoConfig()
         if [ "$data_interface" = "$data_interface_info" ]; then
             #获取模块名
             local modem_name=$(echo "$line_context" | cut -d ";" -f 2)
-            #获取AT命令返回的内容
-            local at_result=$(echo `sh $current_dir/modem_at.sh $2 "ATI" | sed -n '3p' | tr 'A-Z' 'a-z'`)
+            
+            local at_result
+            if [ "$modem_name" != "unknown" ]; then
+                #获取AT命令返回的内容
+                at_result=$(echo `sh $current_dir/modem_at.sh $2 "ATI" | sed -n '3p' | tr 'A-Z' 'a-z'`)
+            else
+                #数据库中没有此模块的信息，使用默认值
+                at_result="unknown"
+            fi
+
             if [[ "$at_result" = *"$modem_name"* ]]; then
                 #设置模块名
-                uci set modem.modem$1.name="$modem_name" 
+                uci set modem.modem$1.name="$modem_name"
 
                 #设置制造商
                 local manufacturer=$(echo "$line_context" | cut -d ";" -f 1)
@@ -152,22 +160,22 @@ setModemInfoConfig()
                 break
             fi
 
-            #数据库中没有此模块的信息，使用默认值
-            if [ $i -ge $(($line_count-1)) ]; then
+            # #数据库中没有此模块的信息，使用默认值
+            # if [ $i -ge $(($line_count-1)) ]; then
 
-                #设置模块名
-                uci set modem.modem$1.name="$modem_name" 
-                #设置制造商
-                local manufacturer=$(echo "$line_context" | cut -d ";" -f 1)
-                uci set modem.modem$1.manufacturer="$manufacturer"
-                #删除原来的拨号模式列表
-                uci -q del modem.modem$1.modes
-                #添加新的拨号模式列表
-                for mode in $modes; do
-                    uci add_list modem.modem$1.modes="$mode"
-                done
-                break
-            fi
+            #     #设置模块名
+            #     uci set modem.modem$1.name="$modem_name" 
+            #     #设置制造商
+            #     local manufacturer=$(echo "$line_context" | cut -d ";" -f 1)
+            #     uci set modem.modem$1.manufacturer="$manufacturer"
+            #     #删除原来的拨号模式列表
+            #     uci -q del modem.modem$1.modes
+            #     #添加新的拨号模式列表
+            #     for mode in $modes; do
+            #         uci add_list modem.modem$1.modes="$mode"
+            #     done
+            #     break
+            # fi
         fi
     done
 }

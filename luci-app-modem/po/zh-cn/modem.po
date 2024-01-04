@@ -19,16 +19,22 @@ msgstr "选择模组"
 msgid "Check information about adapted modem on this page"
 msgstr "在此页面查看已适配模组的信息"
 
-msgid "Loading modem status..."
+msgid "Loading modem information"
+msgstr "正在加载模组信息"
+
+msgid "Loading modem status"
 msgstr "正在加载模组状态"
 
-msgid "Connect"
+msgid "Loading modem"
+msgstr "正在加载模组"
+
+msgid "connect"
 msgstr "已连接"
 
-msgid "Disconnect"
+msgid "disconnect"
 msgstr "未连接"
 
-msgid "Disabled"
+msgid "disabled"
 msgstr "未启用"
 
 msgid "Data Interface"
@@ -52,7 +58,7 @@ msgstr "AT命令"
 msgid "Debugging Your Module with AT Command"
 msgstr "使用AT命令调试你的模组"
 
-msgid "Modem Info"
+msgid "Modem Information"
 msgstr "模组信息"
 
 msgid "No modems found"
@@ -74,6 +80,9 @@ msgid "Moblie Network"
 msgstr "移动网络"
 
 msgid "UNKNOWN"
+msgstr "未知"
+
+msgid "unknown"
 msgstr "未知"
 
 msgid "Mobile network not found"
@@ -126,3 +135,201 @@ msgstr "认证类型"
 
 msgid "NONE"
 msgstr "无"
+
+msgid "Message"
+msgstr "信息"
+
+msgid "Base Information"
+msgstr "基本信息"
+
+msgid "Manufacturer"
+msgstr "制造商"
+
+msgid "Revision"
+msgstr "固件版本"
+
+msgid "AT Port"
+msgstr "AT串口"
+
+msgid "Temperature"
+msgstr "温度"
+
+msgid "Update Time"
+msgstr "更新时间"
+
+msgid "SIM Information"
+msgstr "SIM卡信息"
+
+msgid "ISP"
+msgstr "运营商"
+
+msgid "IMEI"
+msgstr "IMEI"
+
+msgid "IMSI"
+msgstr "IMSI"
+
+msgid "ICCID"
+msgstr "ICCID"
+
+msgid "SIM Number"
+msgstr "SIM卡号码"
+
+msgid "Network Information"
+msgstr "网络信息"
+
+msgid "Network Type"
+msgstr "网络类型"
+
+msgid "Cell Information"
+msgstr "小区信息"
+
+msgid "Network Mode"
+msgstr "网络模式"
+
+msgid "NR5G-SA Mode"
+msgstr "NR5G-SA 模式"
+
+msgid "EN-DC Mode"
+msgstr "EN-DC 模式"
+
+msgid "LTE Mode"
+msgstr "LTE 模式"
+
+msgid "WCDMA Mode"
+msgstr "WCDMA 模式"
+
+msgid "MCC"
+msgstr "移动国家代码"
+
+msgid "MNC"
+msgstr "移动网络代码"
+
+msgid "Duplex Mode"
+msgstr "双工模式"
+
+msgid "LAC"
+msgstr "位置区码"
+
+msgid "Cell ID"
+msgstr "小区ID"
+
+msgid "Physical Cell ID"
+msgstr "物理小区ID"
+
+msgid "TAC"
+msgstr "跟踪区编码"
+
+msgid "ARFCN"
+msgstr "绝对射频信道号"
+
+msgid "EARFCN"
+msgstr "E-UTRA绝对射频信道号"
+
+msgid "UARFCN"
+msgstr "UTRA绝对射频信道号"
+
+msgid "Band"
+msgstr "频段"
+
+msgid "Freq band indicator"
+msgstr "频带指示"
+
+msgid "UL Bandwidth"
+msgstr "上行带宽"
+
+msgid "DL Bandwidth"
+msgstr "下行带宽"
+
+msgid "RSRP"
+msgstr "参考信号接收功率"
+
+msgid "RSRQ"
+msgstr "参考信号接收质量"
+
+msgid "RSSI"
+msgstr "接收信号强度指示"
+
+msgid "SINR"
+msgstr "信号与干扰加噪声比"
+
+msgid "RSSNR"
+msgstr "信号干扰比"
+
+msgid "SCS"
+msgstr "NR子载波间隔"
+
+msgid "CQI"
+msgstr "信道质量指示"
+
+msgid "TX Power"
+msgstr "TX 功率"
+
+msgid "PSC"
+msgstr "主扰码"
+
+msgid "RAC"
+msgstr "路由区域码"
+
+msgid "RSCP"
+msgstr "接收信号码功率"
+
+msgid "Ec/Io"
+msgstr "Ec/Io"
+
+msgid "Ec/No"
+msgstr "Ec/No"
+
+msgid "Physical Channel"
+msgstr "物理信道"
+
+msgid "Spreading Factor"
+msgstr "扩频因子"
+
+msgid "Slot"
+msgstr "插槽格式"
+
+msgid "Speech Code"
+msgstr "语音编码"
+
+msgid "Compression Mode"
+msgstr "压缩模式"
+
+msgid "RxLev"
+msgstr "接收信号功率"
+
+msgid "CHN-CMCC"
+msgstr "中国移动"
+
+msgid "CMCC"
+msgstr "中国移动"
+
+msgid "46000"
+msgstr "中国移动"
+
+msgid "CHN-UNICOM"
+msgstr "中国联通"
+
+msgid "UNICOM"
+msgstr "中国联通"
+
+msgid "CUCC"
+msgstr "中国联通"
+
+msgid "46001"
+msgstr "中国联通"
+
+msgid "CHN-CT"
+msgstr "中国电信"
+
+msgid "CHN-TELECOM"
+msgstr "中国电信"
+
+msgid "CTCC"
+msgstr "中国电信"
+
+msgid "CT"
+msgstr "中国电信"
+
+msgid "46011"
+msgstr "中国电信"

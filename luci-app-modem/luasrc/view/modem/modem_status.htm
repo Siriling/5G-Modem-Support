@@ -5,29 +5,66 @@
 -%>
 
 <script type="text/javascript">//<![CDATA[
+	
 	XHR.poll(5, '<%=luci.dispatcher.build_url("admin", "network", "modem", "get_modems")%>', null,
-		function(x, modems)
+		function(x, data)
 		{
-			console.log(modems);
-			var modemsDiv = document.getElementById('modem_status_text');
-			if (modems.length!=0)
+			var modems=data["modems"];
+			var translation=data["translation"];
+
+			var modems_div=document.getElementById('modem_status_view');
+			if (Object.keys(modems).length!=0)
 			{
-				var modem_view = '';
+				var modem_view = "";
 				for ( var key in modems)
 				{
 					var modem=modems[key];
-					// 获取拨号模式
-					var mode="unknown mode";
-					if (modem["mode"]!=null) {
-						mode=modem["mode"].toUpperCase()
+
+					var language=navigator.language;
+					// 检查模组名
+					var name=modem["name"];
+					if (name==null)
+					{
+						continue;
 					}
-					// 获取连接状态
-					var connect_status;
-					if (modem["connect_status"]!=null) {
-						// 首字母大写
-						connect_status=modem["connect_status"].charAt(0).toUpperCase() + modem["connect_status"].slice(1);
+					else if (name=="unknown")
+					{
+						language=="en" ? name=name.toUpperCase() : translation[name];
+					}
+					else
+					{
+						name=name.toUpperCase();
 					}
 
+					// 检查拨号模式
+					var mode=modem["mode"]
+					if (mode==null)
+					{
+						continue;
+					}
+					else if (mode=="unknown")
+					{
+						language=="en" ? mode=mode.toUpperCase() : translation[mode];
+					}
+					else
+					{
+						name=name.toUpperCase();
+					}
+
+					// 获取连接状态
+					var connect_status=modem["connect_status"];
+					if (modem["connect_status"]!=null) 
+					{
+						if (language=="en") {
+							// 首字母大写
+							connect_status=connect_status.charAt(0).toUpperCase() + modem["connect_status"].slice(1);
+						}
+						else if (language=="zh-CN"||language=="zh") {
+							connect_status=translation[connect_status];
+						}
+					}
+
+					// 设置显示样式
 					var state = '';
 					var css = '';
 					switch (modem["connect_status"])
@@ -41,10 +78,12 @@
 							css = 'danger';
 							break;
 						default:
-							state = '<%:Disabled%>';
+							state = '<%:unknown%>';
 							css = 'warning';
 							break;
 					}
+
+					// 设置显示内容
 					modem_view += String.format(
 						'<div class="alert-message %s">',
 						css
@@ -55,7 +94,7 @@
 					);
 					modem_view += String.format(
 						'<div><strong><%:Modem Name%>: </strong>%s</div>',
-						modem.name.toUpperCase()
+						name
 					);
 					modem_view += String.format(
 						'<div><strong><%:Data Interface%>: </strong>%s</div>',
@@ -71,15 +110,25 @@
 					);
 					modem_view += String.format(
 						'<div><strong><%:Connect Status%>: </strong>%s</div>',
-						<%:connect_status%>
+						connect_status
 					);
-					modem_view += '</div>'
+					modem_view += '</div>';
 				}
-				modemsDiv.innerHTML = modem_view;
+				
+				// 有参数不存在，则不显示模块状态
+				if (modem_view != "")
+				{
+					modems_div.innerHTML=modem_view;
+					// 显示模块状态（状态加载完成才显示）
+					document.getElementById("modem_status_field").style.display="block";
+				}
 			}
 			else
 			{
-				modemsDiv.innerHTML = '<strong><%:No modems found%></strong>';
+				var modem_view="<strong><%:No modems found%></strong>";
+				modems_div.innerHTML=modem_view;
+				// 隐藏模块状态
+				document.getElementById("modem_status_field").style.display="none";
 			}
 		}
 	);
@@ -87,7 +136,7 @@
 </script>
 
 <style type="text/css">
-	#modem_status_text > div {
+	#modem_status_view > div {
 		display: inline-block;
 		margin: 1rem;
 		padding: 1rem;
@@ -97,11 +146,12 @@
 	}
 </style>
 
-<fieldset id="modem_field" class="cbi-section">
+<!-- 默认隐藏模块状态 -->
+<fieldset id="modem_status_field" class="cbi-section" style="display: none;">
 	<!-- <legend><%:Modem Status%></legend> -->
 	<h3><%:Modem Status%></h3>
-	<div id="modem_status_text">
-		<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" />
-		<%:Loading modem status...%>
+	<div id="modem_status_view">
+		<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle"/>
+		<%:Loading modem status%>...
 	</div>
 </fieldset>

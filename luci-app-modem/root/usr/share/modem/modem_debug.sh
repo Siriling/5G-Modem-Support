@@ -50,10 +50,10 @@ get_mode()
 		"quectel") mode=$(get_quectel_mode "$2") ;;
 		"fibocom") mode=$(get_fibocom_mode "$2") ;;
 		"simcom") mode=$(get_simcom_mode "$2") ;;
-		"*") 
+		*) 
 			debug "未适配该模块"
 			mode="unknown"
-			;;
+		;;
 	esac
 	echo "$mode"
 }

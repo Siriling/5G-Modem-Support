@@ -25,7 +25,7 @@ USE_PROCD=1
 # 			"mbim") mode_num='2' ;;
 # 			"rndis") mode_num='3' ;;
 # 			"ncm") mode_num='5' ;;
-# 			"*") mode_num='0' ;;
+# 			*) mode_num='0' ;;
 # 		esac
 
 # 		#查询当前拨号模式
@@ -41,7 +41,7 @@ USE_PROCD=1
 # 				"mbim") command='AT+QCFG="usbnet",2' ;;
 # 				"rndis") command='AT+QCFG="usbnet",3' ;;
 # 				"ncm") command='AT+QCFG="usbnet",5' ;;
-# 				"*") command='AT+QCFG="usbnet",0' ;;
+# 				*) command='AT+QCFG="usbnet",0' ;;
 # 			esac
 # 			at_result=$(sh /usr/share/modem/modem_at.sh "$at_port" "$command")
 # 			#移远切换模式后，还需要重启模块，待测试
@@ -58,7 +58,7 @@ USE_PROCD=1
 # 				"mbim") mode_num='29' ;;
 # 				"rndis") mode_num='24' ;;
 # 				"ncm") mode_num='23' ;;
-# 				"*") mode_num='32' ;;
+# 				*) mode_num='32' ;;
 # 			esac
 
 # 			#查询当前拨号模式
@@ -73,7 +73,7 @@ USE_PROCD=1
 # 					"mbim") command='AT+GTUSBMODE=29' ;;
 # 					"rndis") command='AT+GTUSBMODE=24' ;;
 # 					"ncm") command='AT+GTUSBMODE=23' ;;
-# 					"*") command='AT+GTUSBMODE=32' ;;
+# 					*) command='AT+GTUSBMODE=32' ;;
 # 				esac
 # 				at_result=$(sh /usr/share/modem/modem_at.sh "$at_port" "$command")
 # 				sleep 5
@@ -157,7 +157,7 @@ set_interface()
 			set_ipv4_interface "wwan_5g_$1" $2
 			set_ipv6_interface "wwan6_5g_$1" $2
 			;;
-		"*") 
+		*) 
 			set_ipv4_interface "wwan_5g_$1" $2
 			set_ipv6_interface "wwan6_5g_$1" $2
 			;;
@@ -185,7 +185,7 @@ qmi()
 		"ipv4") procd_append_param command -4 ;;
 		"ipv6") procd_append_param command -6 ;;
 		"ipv4_ipv6") procd_append_param command -4 -6 ;;
-		"*") procd_append_param command -4 -6 ;;
+		*) procd_append_param command -4 -6 ;;
 	esac
 
 	if [ "$apn" != "" ]; then
@@ -505,7 +505,7 @@ stop_service()
 			"ecm") stop_ecm ;;
 			"rndis") stop_rndis ;;
 			"ncm") stop_ncm ;;
-			"*") stop_ecm ;;
+			*) stop_ecm ;;
 		esac
 	done
 }
