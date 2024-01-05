@@ -51,11 +51,14 @@ end
 					if (key=="UL Bandwidth"||key=="DL Bandwidth") {
 						info[key]=info[key]+" MHz"
 					}
-					else if (key=="RSRP"||key=="RxLev") {
-						info[key]=info[key]+" dbm"
+					else if (key=="RSRP"||key=="TX Power"||key=="RxLev") {
+						info[key]=info[key]+" dBm"
 					}
-					else if (key=="RSRQ"||key=="RSSNR") {
+					else if (key=="RSRQ"||key=="SINR"||key=="RSSNR"||key=="Ec/Io") {
 						info[key]=info[key]+" dB"
+					}
+					else if (key=="SCS") {
+						info[key]=info[key]+" KHz"
 					}
 					cell_info_view+='<tr><td width="20%" title="'+full_name+'">'+translation[key]+' :</td><td id="'+key+'">'+info[key]+'</td><td></td></tr>';
 				}
@@ -74,7 +77,7 @@ end
 		var cell_info_Element=document.getElementById("cell_info");
 
 		//初始化视图
-		var cell_info_view='<caption>'+<%:network_mode%>+'</caption>';
+		var cell_info_view='<caption>'+translation[network_mode]+'</caption>';
 		if (network_mode=="EN-DC Mode")
 		{
 			var lte=network_mode_info[0]["LTE"];
@@ -159,6 +162,10 @@ end
 				}
 				else
 				{
+					// 更新提示信息
+					document.getElementById("info_message").innerHTML="<strong><%:Not adapted to this modem%></strong>";
+					// 显示提示信息
+					document.getElementById("cbi-info").style.display="block";
 					// 隐藏SIM卡信息
 					document.getElementById("cbi-siminfo").style.display="none";
 					return

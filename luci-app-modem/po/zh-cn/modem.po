@@ -19,6 +19,9 @@ msgstr "选择模组"
 msgid "Check information about adapted modem on this page"
 msgstr "在此页面查看已适配模组的信息"
 
+msgid "Not adapted to this modem"
+msgstr "未适配该模组"
+
 msgid "Loading modem information"
 msgstr "正在加载模组信息"
 
@@ -274,10 +277,16 @@ msgstr "路由区域码"
 msgid "RSCP"
 msgstr "接收信号码功率"
 
-msgid "Ec/Io"
+msgid "每比特能量与干扰功率密度(干扰比)之比"
+msgstr "Eb/Io"
+
+msgid "每比特能量与噪声功率密度(噪声比)之比"
+msgstr "Eb/No"
+
+msgid "每码片能量与干扰功率密度(干扰比)之比"
 msgstr "Ec/Io"
 
-msgid "Ec/No"
+msgid "每码片能量与噪声功率密度(噪声比)之比"
 msgstr "Ec/No"
 
 msgid "Physical Channel"

@@ -139,6 +139,20 @@ fibocom_network_info()
     # fi
 }
 
+#获取频段
+# $1:网络类型
+# $2:频段数字
+get_band()
+{
+    local band
+    case $1 in
+		"WCDMA") band="B$2" ;;
+		"LTE") band="B$(($2-100))" ;;
+        "NR") band="N$(($2-500))" ;;
+	esac
+    echo "$band"
+}
+
 #获取上行带宽
 # $1:上行带宽数字
 get_ul_bandwidth()
@@ -182,7 +196,7 @@ get_rsrp()
 {
     local rsrp
     case $1 in
-		"LTE") rsrp=$(($2-141)) ;;
+        "LTE") rsrp=$(($2-141)) ;;
         "NR") rsrp=$(($2-157)) ;;
 	esac
     echo "$rsrp"
@@ -195,8 +209,8 @@ get_rsrq()
 {
     local rsrq
     case $1 in
-		"LTE") rsrq=$(awk 'BEGIN{ printf "%.2f", $2 * 0.5 - 20 }' | sed 's/\.*0*$//') ;;
-        "NR") rsrq=$(awk -v num="$2" 'BEGIN{ printf "%.2f", (num+1) * 0.5 - 44 }' | sed 's/\.*0*$//') ;;
+        "LTE") rsrq=$(awk "BEGIN{ printf \"%.2f\", $2 * 0.5 - 20 }" | sed 's/\.*0*$//') ;;
+        "NR") rsrq=$(awk -v num="$2" "BEGIN{ printf \"%.2f\", (num+1) * 0.5 - 44 }" | sed 's/\.*0*$//') ;;
 	esac
     echo "$rsrq"
 }
@@ -206,7 +220,7 @@ get_rsrq()
 get_rssnr()
 {
     #去掉小数点后的0
-    local rssnr=$(awk 'BEGIN{ printf "%.2f", $1 / 2 }' | sed 's/\.*0*$//')
+    local rssnr=$(awk "BEGIN{ printf \"%.2f\", $1 / 2 }" | sed 's/\.*0*$//')
     echo "$rssnr"
 }
 
@@ -217,13 +231,20 @@ get_rxlev()
 {
     local rxlev
     case $1 in
-		"WCDMA") rxlev=$(($2-121)) ;;
-		"LTE") rxlev=$(($2-141)) ;;
+        "WCDMA") rxlev=$(($2-121)) ;;
+        "LTE") rxlev=$(($2-141)) ;;
         "NR") rxlev=$(($2-157)) ;;
 	esac
     echo "$rxlev"
 }
 
+#获取Ec/Io
+# $1:Ec/Io数字
+get_ecio()
+{
+    local ecio=$(awk "BEGIN{ printf \"%.2f\", $1 * 0.5 - 24.5 }" | sed 's/\.*0*$//')
+    echo "$ecio"
+}
 
 #网络信息
 fibocom_cell_info()
@@ -244,7 +265,8 @@ fibocom_cell_info()
                 nr_cell_id=$(echo "$response" | awk -F',' '{print $6}')
                 nr_arfcn=$(echo "$response" | awk -F',' '{print $7}')
                 nr_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
-                nr_band=$(echo "$response" | awk -F',' '{print $9}')
+                nr_band_num=$(echo "$response" | awk -F',' '{print $9}')
+                nr_band=$(get_band "NR" $nr_band_num)
                 nr_dl_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
                 nr_dl_bandwidth=$(get_nr_dl_bandwidth $nr_dl_bandwidth_num)
                 nr_sinr=$(echo "$response" | awk -F',' '{print $11}')
@@ -264,7 +286,8 @@ fibocom_cell_info()
                 endc_lte_cell_id=$(echo "$response" | awk -F',' '{print $6}')
                 endc_lte_earfcn=$(echo "$response" | awk -F',' '{print $7}')
                 endc_lte_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
-                endc_lte_band=$(echo "$response" | awk -F',' '{print $9}')
+                endc_lte_band_num=$(echo "$response" | awk -F',' '{print $9}')
+                endc_lte_band=$(get_band "LTE" $endc_lte_band_num)
                 ul_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
                 endc_lte_ul_bandwidth=$(get_ul_bandwidth $ul_bandwidth_num)
                 endc_lte_dl_bandwidth="$endc_lte_ul_bandwidth"
@@ -283,7 +306,8 @@ fibocom_cell_info()
                 endc_nr_cell_id=$(echo "$response" | awk -F',' '{print $6}')
                 endc_nr_arfcn=$(echo "$response" | awk -F',' '{print $7}')
                 endc_nr_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
-                endc_nr_band=$(echo "$response" | awk -F',' '{print $9}')
+                endc_nr_band_num=$(echo "$response" | awk -F',' '{print $9}')
+                endc_nr_band=$(get_band "NR" $endc_nr_band_num)
                 nr_dl_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
                 endc_nr_dl_bandwidth=$(get_nr_dl_bandwidth $nr_dl_bandwidth_num)
                 endc_nr_sinr=$(echo "$response" | awk -F',' '{print $11}')
@@ -302,7 +326,8 @@ fibocom_cell_info()
                 lte_cell_id=$(echo "$response" | awk -F',' '{print $6}')
                 lte_earfcn=$(echo "$response" | awk -F',' '{print $7}')
                 lte_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
-                lte_band=$(echo "$response" | awk -F',' '{print $9}')
+                lte_band_num=$(echo "$response" | awk -F',' '{print $9}')
+                lte_band=$(get_band "LTE" $lte_band_num)
                 ul_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
                 lte_ul_bandwidth=$(get_ul_bandwidth $ul_bandwidth_num)
                 lte_dl_bandwidth="$lte_ul_bandwidth"
@@ -322,14 +347,16 @@ fibocom_cell_info()
                 wcdma_cell_id=$(echo "$response" | awk -F',' '{print $6}')
                 wcdma_uarfcn=$(echo "$response" | awk -F',' '{print $7}')
                 wcdma_psc=$(echo "$response" | awk -F',' '{print $8}')
-                wcdma_band=$(echo "$response" | awk -F',' '{print $9}')
+                wcdma_band_num=$(echo "$response" | awk -F',' '{print $9}')
+                wcdma_band=$(get_band "WCDMA" $wcdma_band_num)
                 wcdma_ecno=$(echo "$response" | awk -F',' '{print $10}')
                 wcdma_rscp=$(echo "$response" | awk -F',' '{print $11}')
                 wcdma_rac=$(echo "$response" | awk -F',' '{print $12}')
                 wcdma_rxlev_num=$(echo "$response" | awk -F',' '{print $13}')
                 wcdma_rxlev=$(get_rxlev "WCDMA" $wcdma_rxlev_num)
                 wcdma_reserved=$(echo "$response" | awk -F',' '{print $14}')
-                wcdma_ecio=$(echo "$response" | awk -F',' '{print $15}' | sed 's/\r//g')
+                wcdma_ecio_num=$(echo "$response" | awk -F',' '{print $15}' | sed 's/\r//g')
+                wcdma_ecio=$(get_ecio $wcdma_ecio_num)
             ;;
         esac
 }

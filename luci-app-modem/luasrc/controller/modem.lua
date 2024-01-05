@@ -137,6 +137,7 @@ function getModemInfo()
 	
 	if modem_more_info["cell_info"] then
 		for key in pairs(modem_more_info["cell_info"]) do
+			translation[key]=luci.i18n.translate(key)
 			local network_mode=modem_more_info["cell_info"][key]
 			for i = 1, #network_mode do
 				local value = network_mode[i]
