@@ -44,27 +44,18 @@ function at(at_port,at_command)
 end
 
 -- 获取模组连接状态
-function getModemConnectStatus(at_port)
-	local at_command="AT+CGDCONT?"
-	local response=at(at_port,at_command)
+function getModemConnectStatus(at_port,manufacturer)
 
-	-- 第六个引号的索引
-	local sixth_index=1
-	for i = 1, 5 do
-		sixth_index=string.find(response,'"',sixth_index)+1
+	local connect_status="unknown"
+
+	if at_port and manufacturer then
+		local odpall = io.popen("cd /usr/share/modem && source $(dirname \"$0\")/"..manufacturer..".sh && get_connect_status "..at_port)
+		connect_status = odpall:read("*a")
+		connect_status=string.gsub(connect_status, "\n", "")
+		odpall:close()
 	end
-	-- 第七个引号的索引
-	local seven_index=string.find(response,'"',sixth_index+1)
 
-	-- 获取IPv4和IPv6
-	local ip=string.sub(response,sixth_index,seven_index-1)
-
-	local not_ip="0.0.0.0,0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0"
-	if string.find(ip,not_ip) then
-        return "disconnect"
-    else
-        return "connect"
-    end
+	return connect_status
 end
 
 -- 获取模组基本信息
@@ -76,10 +67,7 @@ function getModemBaseInfo(at_port)
 			--获取数据接口
 			local data_interface=modem_device["data_interface"]:upper()
 			--获取连接状态
-			local connect_status="unknown"
-			if modem_device["at_port"] then
-				connect_status=getModemConnectStatus(modem_device["at_port"])
-			end
+			local connect_status=getModemConnectStatus(modem_device["at_port"],modem_device["manufacturer"])
 
 			--设置值
 			modem_base_info=modem_device
@@ -166,10 +154,7 @@ function getModems()
 	local translation={}
 	uci:foreach("modem", "modem-device", function (modem_device)
 		-- 获取连接状态
-		local connect_status="unknown"
-		if modem_device["at_port"] then
-			connect_status=getModemConnectStatus(modem_device["at_port"])
-		end
+		local connect_status=getModemConnectStatus(modem_device["at_port"],modem_device["manufacturer"])
 
 		-- 获取翻译
 		translation[connect_status]=luci.i18n.translate(connect_status)

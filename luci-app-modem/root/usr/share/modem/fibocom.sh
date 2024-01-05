@@ -27,6 +27,25 @@ get_fibocom_mode()
     echo "$mode"
 }
 
+#获取连接状态
+# $1:AT串口
+get_connect_status()
+{
+    local at_port="$1"
+    local at_command="AT+CGDCONT?"
+
+	local response=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $6}')
+	local not_ip="0.0.0.0,0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0"
+
+	if [ "$response" = "$not_ip" ]; then
+        connect_status="disconnect"
+    else
+        connect_status="connect"
+    fi
+
+    echo "$connect_status"
+}
+
 #获取SIM卡状态
 get_fibocom_sim_status()
 {
@@ -148,7 +167,7 @@ get_band()
     case $1 in
 		"WCDMA") band="B$2" ;;
 		"LTE") band="B$(($2-100))" ;;
-        "NR") band="N$(($2-500))" ;;
+        "NR") band="$2" band="N${band#*50}" ;;
 	esac
     echo "$band"
 }

@@ -22,6 +22,24 @@ get_quectel_mode()
     echo "$mode"
 }
 
+#获取连接状态
+# $1:AT串口
+get_connect_status()
+{
+    local at_port="$1"
+    local at_command="AT+QNWINFO"
+
+	local response=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p')
+
+	if [[ "$response" = *"No Service"* ]]; then
+        connect_status="disconnect"
+    else
+        connect_status="connect"
+    fi
+
+    echo "$connect_status"
+}
+
 #获取SIM卡状态
 get_quectel_sim_status()
 {
