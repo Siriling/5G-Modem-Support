@@ -5,7 +5,8 @@ m = Map("modem")
 m.title = translate("Modem Config")
 m.description = translate("Configuration panel for Modem, Add configuration to all modems on this page")
 
-s = m:section(NamedSection, "global", "global")
+--全局配置
+s = m:section(NamedSection, "global", "global", translate("Global Config"))
 s.anonymous = true
 s.addremove = false
 

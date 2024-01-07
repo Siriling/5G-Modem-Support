@@ -6,7 +6,7 @@ current_dir="$(dirname "$0")"
 get_quectel_mode()
 {
     local at_port="$1"
-    local at_command='AT+QCFG="usbnet"'
+    at_command='AT+QCFG="usbnet"'
     local mode_num=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/+QCFG: "usbnet",//g' | sed 's/\r//g')
 
     local mode
@@ -27,10 +27,11 @@ get_quectel_mode()
 get_connect_status()
 {
     local at_port="$1"
-    local at_command="AT+QNWINFO"
+    at_command="AT+QNWINFO"
 
 	local response=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p')
 
+    local connect_status
 	if [[ "$response" = *"No Service"* ]]; then
         connect_status="disconnect"
     else
@@ -40,51 +41,25 @@ get_connect_status()
     echo "$connect_status"
 }
 
-#获取SIM卡状态
-get_quectel_sim_status()
-{
-    debug "检查SIM状态"
-    local sim_status
-
-    local at_command="AT+CPIN?"
-	local response=$(sh $current_dir/modem_at.sh $at_port $at_command)
-    local sim_error=$(echo "$response" | grep "ERROR")
-	if [ -n "$sim_error" ]; then
-		debug "未插入SIM卡"
-        sim_status="miss"
-		return
-	fi
-	local sim_ready=$(echo "$response" | grep "READY")
-	if [ -n "$sim_ready" ]; then
-		debug "SIM卡正常"
-        sim_status="ready"
-	else
-		debug "SIM卡被锁定"
-        sim_status="locked"
-		return
-	fi
-    echo "$sim_status"
-}
-
 #基本信息
 quectel_base_info()
 {
     debug "Quectel base info"
 
-    local at_command="ATI"
-    local response=$(sh $current_dir/modem_at.sh $at_port $at_command)
+    at_command="ATI"
+    response=$(sh $current_dir/modem_at.sh $at_port $at_command)
 
-    #名称
+    #Name（名称）
     name=$(echo "$response" | sed -n '3p' | sed 's/\r//g')
-    #制造商
+    #Manufacturer（制造商）
     manufacturer=$(echo "$response" | sed -n '2p' | sed 's/\r//g')
-    #固件版本
+    #Revision（固件版本）
     revision=$(echo "$response" | sed -n '4p' | sed 's/Revision: //g' | sed 's/\r//g')
 
-    #拨号模式
+    #Mode（拨号模式）
     mode=$(get_quectel_mode $at_port | tr 'a-z' 'A-Z')
 
-    #温度
+    #Temperature（温度）
     at_command="AT+QTEMP"
 	response=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $4}')
 	if [ -n "$response" ]; then
@@ -111,8 +86,31 @@ quectel_sim_info()
 {
     debug "Quectel sim info"
     
+    #SIM Slot（SIM卡卡槽）
+    at_command="AT+QUIMSLOT?"
+	sim_slot=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F' ' '{print $2}' | sed 's/\r//g')
+
+    #IMEI（国际移动设备识别码）
+    at_command="AT+CGSN"
+	imei=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+
+    #SIM Status（SIM状态）
+    at_command="AT+CPIN?"
+	response=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p')
+    if [[ "$response" = *"READY"* ]]; then
+        sim_status="ready"
+    elif [ "$response" = "" ]; then
+        sim_status="miss"
+	else
+        sim_status="locked"
+    fi
+
+    if [ "$sim_status" != "ready" ]; then
+        return
+    fi
+
     #ISP（互联网服务提供商）
-    local at_command="AT+COPS?"
+    at_command="AT+COPS?"
     isp=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}')
     # if [ "$isp" = "CHN-CMCC" ] || [ "$isp" = "CMCC" ]|| [ "$isp" = "46000" ]; then
     #     isp="中国移动"
@@ -124,21 +122,17 @@ quectel_sim_info()
     #     isp="中国电信"
     # fi
 
-    #IMEI
-    at_command="AT+CGSN"
-	imei=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+    #SIM Number（SIM卡号码，手机号）
+    at_command="AT+CNUM"
+	sim_number=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $4}')
 
-	#IMSI
+    #IMSI（国际移动用户识别码）
     at_command="AT+CIMI"
 	imsi=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
 
-	#ICCID
+    	#ICCID（集成电路卡识别码）
     at_command="AT+ICCID"
 	# iccid=$(sh $current_dir/modem_at.sh $at_port $at_command | grep -o "+ICCID:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}")
-	
-    #SIM卡号码（手机号）
-    at_command="AT+CNUM"
-	sim_number=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $4}')
 }
 
 #网络信息
@@ -146,9 +140,15 @@ quectel_network_info()
 {
     debug "Quectel network info"
 
+    #Connect Status（连接状态）
+    connect_status=$(get_connect_status $at_port)
+    if [ "$connect_status" != "connect" ]; then
+        return
+    fi
+
     #Network Type（网络类型）
-    # local at_command="AT+COPS?"
-    local at_command="AT+QNWINFO"
+    # at_command="AT+COPS?"
+    at_command="AT+QNWINFO"
     network_type=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}')
 
     #CSQ
@@ -176,9 +176,9 @@ get_band()
 {
     local band
     case $1 in
-        "WCDMA") band="B$2" ;;
-        "LTE") band="B$2" ;;
-        "NR") band="N$2" ;;
+        "WCDMA") band="$2" ;;
+        "LTE") band="$2" ;;
+        "NR") band="$2" ;;
 	esac
     echo "$band"
 }
@@ -280,9 +280,9 @@ quectel_cell_info()
 {
     debug "Quectel cell info"
 
-    local at_command='AT+QENG="servingcell"'
-    local response=$(sh $current_dir/modem_at.sh $at_port $at_command)
-
+    at_command='AT+QENG="servingcell"'
+    response=$(sh $current_dir/modem_at.sh $at_port $at_command)
+    
     local lte=$(echo "$response" | grep "+QENG: \"LTE\"")
     local nr5g_nsa=$(echo "$response" | grep "+QENG: \"NR5G-NSA\"")
     if [ -n "$lte" ] && [ -n "$nr5g_nsa" ] ; then
@@ -708,16 +708,18 @@ get_quectel_info()
     #基本信息
     quectel_base_info
 
-    #获取SIM状态
-    sim_status=$(get_quectel_sim_status)
-    if [ "$sim_status" != "ready" ];then
+	#SIM卡信息
+    quectel_sim_info
+    if [ "$sim_status" != "ready" ]; then
         return
     fi
 
-	#SIM卡信息
-    quectel_sim_info
     #网络信息
     quectel_network_info
+    if [ "$connect_status" != "connect" ]; then
+        return
+    fi
+
     #小区信息
     quectel_cell_info
 

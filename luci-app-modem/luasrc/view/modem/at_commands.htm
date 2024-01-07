@@ -1,60 +1,15 @@
 <%+header%>
-<h2 name="content"><%:AT Commands%></h2>
-	<div class="cbi-map-descr"><%:Debugging Your Module with AT Command%></div>
 
-	<fieldset class="cbi-section" id="cbi-info" style="display: block;">
-		<h3><%:Message%></h3>
-		<table width="550" border="0">
-			<tr>
-				<td width="10%"></td>
-				<td width="60%">
-					<div align="left" id="info_message" style="font-size:1.875em">
-						<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle"/>
-						<%:Loading modem%>...
-					</div>
-				</td>
-				<td width="30%"></td>
-			</tr>
-		</table>
-	</fieldset>
-
-	<div id="at_command_view" style="display: none;">
-		<h4><br/></h4>
-		<div class="table" width="100%">
-			<div class="tr">
-				<div class="td left" width="25%"><%:Modem Select%>:</div>
-				<div class="td left" style="width:50%;">
-					<select name="modem_select" id="modem_select" onclick="afunction()"></select>
-				</div>
-				<div class="td left" style="width:50%;"></div>
-			</div>
-
-			<div class="tr">
-				<div class="td left" width="25%"><%:User AT Commands%>:</div>
-				<div class="td left" style="width:50%;">
-					<select name="command_choose" id="command_choose" onclick="copyToSend()"></select>
-				</div>
-				<div class="td left" style="width:50%;"></div>
-			</div>
-
-			<div class="tr">
-				<div class="td left" style="width:25%;"><%:Command to send%>:</div>
-				<div class="td left" ><input type="text" id="at_command" required size="20" ></div>
-			</div>
-
-		</div>
-
-		<div class="table" width="100%">
-			<div class="td left" style="width:25%;"><%:Reply%>:
-			<p>
-			<pre id="odp" style="visibility: hidden; width:75%;"></pre></div>
-
-			<div class="tr cbi-rowstyle-2">
-			<div class="td right"><input type="button" style="margin-right: 26%"; id="sendcmd" class="btn cbi-button cbi-button-neutral" value="<%:Send Command%>" /></div>
-			</div>
-
-		</div>
-	</div>
+<style type="text/css">
+	#modem_status_view > div {
+		display: inline-block;
+		margin: 1rem;
+		padding: 1rem;
+		width: 15rem;
+		float: left;
+		line-height: 125%;
+	}
+</style>
 
 <script type="text/javascript">
 
@@ -173,7 +128,6 @@
 		return false;
 	}
 
-
 	document.addEventListener('DOMContentLoaded', function (ev) {var button = document.getElementById("sendcmd");
 			button.addEventListener("click", function () {
 			
@@ -212,6 +166,66 @@
 
 
 </script>
+
+<h2 name="content"><%:AT Commands%></h2>
+	<div class="cbi-map-descr"><%:Debugging Your Module with AT Command%></div>
+
+	<fieldset class="cbi-section" id="cbi-info" style="display: block;">
+		<h3><%:Message%></h3>
+		<table width="550" border="0">
+			<tr>
+				<td width="10%"></td>
+				<td width="60%">
+					<div align="left" id="info_message" style="font-size:1.875em">
+						<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle"/>
+						<%:Loading modem%>...
+					</div>
+				</td>
+				<td width="30%"></td>
+			</tr>
+		</table>
+	</fieldset>
+
+	<div id="at_command_view" style="display: none;">
+		<h4><br/></h4>
+		<div class="table" width="100%">
+			<div class="tr">
+				<div class="td left" style="width:25%;"><%:Modem Select%>:</div>
+				<div class="td left" style="width:50%;">
+					<select name="modem_select" id="modem_select" onclick="afunction()"></select>
+				</div>
+				<!-- <div class="td left" style="width:50%;"></div> -->
+			</div>
+
+			<div class="tr">
+				<div class="td left" style="width:25%;"><%:User AT Commands%>:</div>
+				<div class="td left" style="width:50%;">
+					<select name="command_choose" id="command_choose" onclick="copyToSend()"></select>
+				</div>
+				<!-- <div class="td left" style="width:50%;"></div> -->
+			</div>
+
+			<div class="tr">
+				<div class="td left" style="width:25%;"><%:Command to send%>:</div>
+				<div class="td left" style="width:50%;">
+					<input type="text" id="at_command" required size="20" >
+				</div>
+				<!-- <div class="td left" style="width:50%;"></div> -->
+			</div>
+
+		</div>
+
+		<div class="table" width="100%">
+			<div class="td left" style="width:25%;"><%:Response%>:
+				<pre id="odp" style="visibility: hidden; width:75%;"></pre>
+			</div>
+
+			<div class="tr cbi-rowstyle-2">
+				<div class="td right"><input type="button" style="margin-right: 26%"; id="sendcmd" class="btn cbi-button cbi-button-neutral" value="<%:Send Command%>" /></div>
+			</div>
+
+		</div>
+	</div>
 
 <%+footer%>
 

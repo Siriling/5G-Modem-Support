@@ -24,14 +24,17 @@ function index()
 	entry({"admin", "network", "modem", "status"}, call("act_status")).leaf = true
 
 	--AT命令
-	-- local modem_number=uci:get('modem','@global[0]','modem_number')
-	-- if modem_number ~= "0" or modem_number == nil then
-		entry({"admin", "network", "modem", "at_commands"},template("modem/at_commands"),translate("AT Commands"),30).leaf = true
-	-- end
+	entry({"admin", "network", "modem", "at_commands"},template("modem/at_commands"),translate("AT Commands"),30).leaf = true
 	entry({"admin", "network", "modem", "mode_info"}, call("modeInfo"), nil).leaf = true
 	entry({"admin", "network", "modem", "send_at_command"}, call("sendATCommand"), nil).leaf = true
 	entry({"admin", "network", "modem", "user_at_command"}, call("userATCommand"), nil).leaf = true
 	entry({"admin", "network", "modem", "get_at_port"}, call("getATPort"), nil).leaf = true
+end
+
+-- 判断字符串是否含有字母
+function hasLetters(str)
+    local pattern = "%a" -- 匹配字母的正则表达式
+    return string.find(str, pattern) ~= nil
 end
 
 -- AT命令
@@ -49,7 +52,7 @@ function getModemConnectStatus(at_port,manufacturer)
 	local connect_status="unknown"
 
 	if at_port and manufacturer then
-		local odpall = io.popen("cd /usr/share/modem && source $(dirname \"$0\")/"..manufacturer..".sh && get_connect_status "..at_port)
+		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_connect_status "..at_port)
 		connect_status = odpall:read("*a")
 		connect_status=string.gsub(connect_status, "\n", "")
 		odpall:close()
@@ -59,8 +62,8 @@ function getModemConnectStatus(at_port,manufacturer)
 end
 
 -- 获取模组基本信息
-function getModemBaseInfo(at_port)
-	local modem_base_info={}
+function getModemDeviceInfo(at_port)
+	local modem_device_info={}
 
 	uci:foreach("modem", "modem-device", function (modem_device)
 		if at_port == modem_device["at_port"] then
@@ -70,28 +73,26 @@ function getModemBaseInfo(at_port)
 			local connect_status=getModemConnectStatus(modem_device["at_port"],modem_device["manufacturer"])
 
 			--设置值
-			modem_base_info=modem_device
-			modem_base_info["data_interface"]=data_interface
-			modem_base_info["connect_status"]=connect_status
+			modem_device_info=modem_device
+			modem_device_info["data_interface"]=data_interface
+			modem_device_info["connect_status"]=connect_status
 			return true
 		end
 	end)
 
-	return modem_base_info
+	return modem_device_info
 end
 
 -- 获取模组更多信息
 function getModemMoreInfo(at_port,manufacturer)
-	local modem_more_info={}
 
-	-- if manufacturer == "unknown" then
-	-- 	return modem_more_info
-	-- end
-
+	--获取模组信息
 	local odpall = io.popen("sh "..script_path.."modem_info.sh".." "..at_port.." "..manufacturer)
 	local opd = odpall:read("*a")
 	odpall:close()
-	modem_more_info=json.parse(opd)
+
+	--设置值
+	local modem_more_info=json.parse(opd)
 	return modem_more_info
 end
 
@@ -102,34 +103,53 @@ function getModemInfo()
     local at_port = http.formvalue("port")
 
 	--获取信息
-	local modem_base_info
+	local modem_device_info
 	local modem_more_info
 	if at_port then
-		modem_base_info=getModemBaseInfo(at_port)
-		modem_more_info=getModemMoreInfo(at_port,modem_base_info["manufacturer"])
+		modem_device_info=getModemDeviceInfo(at_port)
+		modem_more_info=getModemMoreInfo(at_port,modem_device_info["manufacturer"])
 	end
 
 	--设置信息
 	local modem_info={}
-	modem_info["base_info"]=modem_base_info
+	modem_info["device_info"]=modem_device_info
 	modem_info["more_info"]=modem_more_info
 
 	--设置翻译
 	local translation={}
+	--SIM卡信息翻译
 	if modem_more_info["sim_info"] then
-		for key in pairs(modem_more_info["sim_info"]) do
-			local key_origin=modem_more_info["sim_info"][key]:upper()
-			translation[key_origin]=luci.i18n.translate(key_origin)
+
+		local sim_info=modem_more_info["sim_info"]
+		for i = 1, #sim_info do
+			local info = sim_info[i]
+			for key in pairs(info) do
+				translation[key]=luci.i18n.translate(key)
+				local value=info[key]
+				if hasLetters(value) then
+					translation[value]=luci.i18n.translate(value)
+				end
+			end
 		end
 	end
-	
+	--网络信息翻译
+	if modem_more_info["network_info"] then
+		for key in pairs(modem_more_info["network_info"]) do
+			translation[key]=luci.i18n.translate(key)
+			local value=modem_more_info["network_info"][key]
+			if hasLetters(value) then
+				translation[value]=luci.i18n.translate(value)
+			end
+		end
+	end
+	--小区信息翻译
 	if modem_more_info["cell_info"] then
 		for key in pairs(modem_more_info["cell_info"]) do
 			translation[key]=luci.i18n.translate(key)
 			local network_mode=modem_more_info["cell_info"][key]
 			for i = 1, #network_mode do
-				local value = network_mode[i]
-				for key in pairs(value) do
+				local info = network_mode[i]
+				for key in pairs(info) do
 					translation[key]=luci.i18n.translate(key)
 				end
 			end

@@ -31,6 +31,12 @@ msgstr "正在加载模组状态"
 msgid "Loading modem"
 msgstr "正在加载模组"
 
+msgid "Configuration panel for Modem, Add configuration to all modems on this page"
+msgstr "通信模组服务配置界面，在此页面给所有模组添加配置"
+
+msgid "Global Config"
+msgstr "全局配置"
+
 msgid "connect"
 msgstr "已连接"
 
@@ -52,14 +58,14 @@ msgstr "连接状态"
 msgid "Config List"
 msgstr "配置列表"
 
-msgid "Configuration panel for Modem, Add configuration to all modems on this page"
-msgstr "通信模组服务配置界面，在此页面给所有模组添加配置"
-
 msgid "AT Commands"
 msgstr "AT命令"
 
 msgid "Debugging Your Module with AT Command"
 msgstr "使用AT命令调试你的模组"
+
+msgid "Response"
+msgstr "响应"
 
 msgid "Modem Information"
 msgstr "模组信息"
@@ -166,17 +172,29 @@ msgstr "SIM卡信息"
 msgid "ISP"
 msgstr "运营商"
 
-msgid "IMEI"
-msgstr "IMEI"
+msgid "SIM Slot"
+msgstr "SIM卡卡槽"
 
-msgid "IMSI"
-msgstr "IMSI"
+msgid "SIM Status"
+msgstr "SIM卡状态"
 
-msgid "ICCID"
-msgstr "ICCID"
+msgid "miss"
+msgstr "未插入"
+
+msgid "locked"
+msgstr "锁定"
 
 msgid "SIM Number"
 msgstr "SIM卡号码"
+
+msgid "IMEI"
+msgstr "国际移动设备识别码"
+
+msgid "IMSI"
+msgstr "国际移动用户识别码"
+
+msgid "ICCID"
+msgstr "集成电路卡识别码"
 
 msgid "Network Information"
 msgstr "网络信息"

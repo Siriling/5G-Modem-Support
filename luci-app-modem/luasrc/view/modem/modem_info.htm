@@ -28,8 +28,52 @@ end
 		});
 	}
 
+	//获取SIM卡信息视图
+	function get_sim_info_view(sim_info,translation)
+	{
+		//初始化视图
+		var sim_info_view='';
+		//遍历每一条信息
+		for (var info of sim_info)
+		{
+			//遍历每一条信息里的键
+			for (var key in info)
+			{
+				//获取全名
+				var full_name=info["full_name"];
+				if (full_name==null)
+				{
+					full_name='';
+				}
+				//写入视图（不显示空的信息）
+				var value=info[key];
+				if (key!="full_name"&&value!="-"&&value!="")
+				{
+					if (key=="SIM Status") {
+						if (value!="ready") {
+							value=translation[value];
+						}
+					}
+					sim_info_view+='<tr><td width="20%" title="'+full_name+'">'+translation[key]+' :</td><td id="'+key+'">'+value+'</td><td></td></tr>';
+					break;
+				}
+			}
+		}
+		return sim_info_view;
+	}
+
+	//设置SIM卡信息
+	function set_sim_info(sim_info,translation)
+	{
+		//获取SIM卡信息视图
+		var sim_info_view=get_sim_info_view(sim_info,translation);
+		//获取SIM卡信息表格
+		var sim_info_Element=document.getElementById("sim_info");
+		sim_info_Element.innerHTML=sim_info_view;
+	}
+
 	//获取小区信息视图
-	function get_cell_info_view(network_mode_info,translation)
+	function get_cell_info_view(network_mode_info,network_type,translation)
 	{
 		//初始化视图
 		var cell_info_view='';
@@ -39,28 +83,42 @@ end
 			//遍历每一条信息里的键
 			for (var key in info)
 			{
+				//获取全名
 				var full_name=info["full_name"];
 				if (full_name==null)
 				{
 					full_name='';
 				}
-				//不显示空的信息
-				if (key!="full_name"&&info[key]!="")
+				//写入视图（不显示空的信息）
+				var value=info[key];
+				if (key!="full_name"&&value!="-"&&value!="")
 				{
 					//添加单位
-					if (key=="UL Bandwidth"||key=="DL Bandwidth") {
-						info[key]=info[key]+" MHz"
+					if (key=="Band") {
+						if (network_type.includes("NR")) {
+							value="N"+value
+						}
+						else if (network_type.includes("LTE")) {
+							value="B"+value
+						}
+						else if (network_type.includes("WCDMA")) {
+							value="B"+value
+						}
+					}
+					else if (key=="UL Bandwidth"||key=="DL Bandwidth") {
+						value=value+" MHz"
 					}
 					else if (key=="RSRP"||key=="TX Power"||key=="RxLev") {
-						info[key]=info[key]+" dBm"
+						value=value+" dBm"
 					}
 					else if (key=="RSRQ"||key=="SINR"||key=="RSSNR"||key=="Ec/Io") {
-						info[key]=info[key]+" dB"
+						value=value+" dB"
 					}
 					else if (key=="SCS") {
-						info[key]=info[key]+" KHz"
+						value=value+" KHz"
 					}
-					cell_info_view+='<tr><td width="20%" title="'+full_name+'">'+translation[key]+' :</td><td id="'+key+'">'+info[key]+'</td><td></td></tr>';
+					cell_info_view+='<tr><td width="20%" title="'+full_name+'">'+translation[key]+' :</td><td id="'+key+'">'+value+'</td><td></td></tr>';
+					break;
 				}
  			}
 		}
@@ -68,44 +126,143 @@ end
 	}
 
 	//获取小区信息
-	function show_cell_info(cell_info,translation) {
+	function set_cell_info(cell_info,translation)
+	{
 		//获取网络模式
 		var network_mode=Object.keys(cell_info)[0];
+		//获取视图
+		var cell_info_view='<caption>'+translation[network_mode]+'</caption>'; //网络模式视图
 		//获取网络模式下的信息
 		var network_mode_info=cell_info[network_mode];
-		//获取表格
-		var cell_info_Element=document.getElementById("cell_info");
-
-		//初始化视图
-		var cell_info_view='<caption>'+translation[network_mode]+'</caption>';
 		if (network_mode=="EN-DC Mode")
 		{
+			console.log(aaa);
 			var lte=network_mode_info[0]["LTE"];
 			cell_info_view+='<tr><td colspan="3">LTE</td></tr>';
-			cell_info_view+=get_cell_info_view(lte,translation);
+			cell_info_view+=get_cell_info_view(lte,"LTE",translation);
 			var nsa=network_mode_info[1]["NR5G-NSA"];
 			cell_info_view+='<tr><td colspan="3">NR5G-NSA</td></tr>';
-			cell_info_view+=get_cell_info_view(nsa,translation);
+			cell_info_view+=get_cell_info_view(nsa,"NR",translation);
 		}
 		else
 		{
 			// cell_info_view+='<tr><td colspan="3">NR5G-NSA</td></tr>';
-			cell_info_view+=get_cell_info_view(network_mode_info,translation);
+			cell_info_view+=get_cell_info_view(network_mode_info,network_mode,translation);
 		}
+
+		//获取表格
+		var cell_info_Element=document.getElementById("cell_info");
 		cell_info_Element.innerHTML=cell_info_view;
 	}
 
-	// 更新模组数据
+	//显示信息
+	function set_info(info)
+	{
+		for (var key in info)
+		{
+			var info_Element=document.getElementById(key);
+			if (info_Element!=null)
+			{
+				info_Element.innerHTML=info[key];
+			}
+		}
+	}
+
+	//基本信息界面
+	function base_info_view(manufacturer)
+	{
+		if (manufacturer!="unknown")
+		{
+			// 隐藏提示信息
+			document.getElementById("cbi-info").style.display="none";
+			// 显示基本信息
+			document.getElementById("cbi-baseinfo").style.display="block";
+		}
+		else //未适配模组
+		{
+			// 更新提示信息
+			document.getElementById("info_message").innerHTML="<strong><%:Not adapted to this modem%></strong>";
+			// 显示提示信息
+			document.getElementById("cbi-info").style.display="block";
+			// 隐藏SIM卡信息
+			document.getElementById("cbi-siminfo").style.display="none";
+			// 隐藏网络信息
+			document.getElementById("cbi-networkinfo").style.display="none";
+			// 隐藏小区信息
+			document.getElementById("cbi-cellinfo").style.display="none";
+		}
+	}
+
+	//SIM卡信息界面
+	function sim_info_view(sim_status,connect_status)
+	{
+		//未插入SIM卡
+		if (sim_status=="miss")
+		{
+			// 更新提示信息
+			document.getElementById("info_message").innerHTML="<strong><%:SIM card not inserted%></strong>";
+			// 显示提示信息
+			document.getElementById("cbi-info").style.display="block";
+			// 显示SIM卡信息
+			document.getElementById("cbi-siminfo").style.display="block";
+		}
+		//SIM卡被锁定
+		else if (sim_status=="locked")
+		{
+			// 更新提示信息
+			document.getElementById("info_message").innerHTML="<strong><%:SIM card locked%></strong>";
+			// 显示提示信息
+			document.getElementById("cbi-info").style.display="block";
+			// 显示SIM卡信息
+			document.getElementById("cbi-siminfo").style.display="block";
+		}
+		//SIM卡已准备
+		else
+		{
+			// 隐藏提示信息
+			document.getElementById("cbi-info").style.display="none";
+			// 显示SIM卡信息
+			document.getElementById("cbi-siminfo").style.display="block";
+		}
+
+		//SIM卡未准备或网络未连接
+		if (sim_status!=null||connect_status!="connect")
+		{
+			// 隐藏网络信息
+			document.getElementById("cbi-networkinfo").style.display="none";
+			// 隐藏小区信息
+			document.getElementById("cbi-cellinfo").style.display="none";
+		}
+	}
+
+	//网络信息界面和小区信息界面
+	function network_info_view(connect_status)
+	{
+		//已连接
+		if (connect_status=="connect")
+		{
+			// 显示网络信息
+			document.getElementById("cbi-networkinfo").style.display="block";
+			// 显示小区信息
+			document.getElementById("cbi-cellinfo").style.display="block";
+		}
+		//未连接
+		else
+		{
+			// 隐藏网络信息
+			document.getElementById("cbi-networkinfo").style.display="none";
+			// 隐藏小区信息
+			document.getElementById("cbi-cellinfo").style.display="none";
+		}
+	}
+
+	// 更新模组信息
 	function update()
 	{
-		// var at_port="";
-		// if (modem_select.options.length!=0) {
-			var at_port=modem_select.options[modem_select.selectedIndex].value;
-		// }
-		// else {
-		// 	return
-		// }
+		//获取选中的AT串口
+		var at_port=modem_select.options[modem_select.selectedIndex].value;
 
+		//获取模组信息
 		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "get_modem_info")%>', {"port":at_port},
 			function(x, data)
 			{
@@ -114,204 +271,117 @@ end
 				var modem_info=data["modem_info"];
 				var translation=data["translation"];
 
-				var base_info=modem_info["base_info"];
-				var connect_status=base_info["connect_status"];
-				for (var key in base_info)
-				{
-					var base_info_Element=document.getElementById(key);
-					if (base_info_Element!=null)
-					{
-						base_info_Element.innerHTML=base_info[key];
-					}
-				}
+				// 设备信息
+				var device_info=modem_info["device_info"];
+				set_info(device_info);
 
+				// 更多信息
 				var more_info=modem_info["more_info"];
 				//基本信息
-				base_info=more_info["base_info"];
-				for (var key in base_info)
-				{
-					var base_info_Element=document.getElementById(key);
-					if (base_info_Element!=null)
-					{
-						base_info_Element.innerHTML=base_info[key];
-					}
-				}
+				var base_info=more_info["base_info"];
+				set_info(base_info);
 
-				// 界面显示控制
-				// 隐藏提示信息
-				document.getElementById("cbi-info").style.display="none";
-				// 显示基本信息
-				document.getElementById("cbi-baseinfo").style.display="block";
+				//基本信息界面控制
+				base_info_view(base_info["manufacturer"]);
+				//未适配模组
+				if (base_info["manufacturer"]=="unknown") {
+					return
+				}
 
 				//SIM卡信息
 				var sim_info=more_info["sim_info"];
-				for (var key in sim_info)
-				{
-					var sim_info_Element=document.getElementById(key);
-					if (sim_info_Element!=null)
-					{
-						sim_info_Element.innerHTML=translation[sim_info[key]];
-					}
-				}
+				set_sim_info(sim_info,translation);
 
-				// 界面显示控制
-				if (base_info["manufacturer"]!="unknown")
-				{
-					// 显示SIM卡信息
-					document.getElementById("cbi-siminfo").style.display="block";
-				}
-				else
-				{
-					// 更新提示信息
-					document.getElementById("info_message").innerHTML="<strong><%:Not adapted to this modem%></strong>";
-					// 显示提示信息
-					document.getElementById("cbi-info").style.display="block";
-					// 隐藏SIM卡信息
-					document.getElementById("cbi-siminfo").style.display="none";
+				//SIM卡信息显示控制
+				var sim_status=sim_info[0]["SIM Status"];
+				sim_info_view(sim_status,device_info["connect_status"]);
+				//SIM卡未插入或SIM卡被锁定
+				if (sim_status!=null||device_info["connect_status"]!="connect") {
 					return
 				}
 
 				//网络信息
 				var network_info=more_info["network_info"];
-				for (var key in network_info)
-				{
-					var network_info_Element=document.getElementById(key);
-					if (network_info_Element!=null)
-					{
-						network_info_Element.innerHTML=network_info[key];
-					}
-				}
+				set_info(network_info);
 
 				//小区信息
 				var cell_info=more_info["cell_info"];
-				if (cell_info!=null)
-				{
-					show_cell_info(cell_info,translation);
-				}
+				set_cell_info(cell_info,translation);
 
-				// 界面显示控制
-				if (connect_status=="connect")
-				{
-					// 显示网络信息
-					document.getElementById("cbi-networkinfo").style.display="block";
-					// 显示小区信息
-					document.getElementById("cbi-cellinfo").style.display="block";
-				}
-				else
-				{
-					// 隐藏网络信息
-					document.getElementById("cbi-networkinfo").style.display="none";
-					// 隐藏小区信息
-					document.getElementById("cbi-cellinfo").style.display="none";
-				}
+				//网络信息和小区信息界面显示控制
+				network_info_view(device_info["connect_status"]);
 			}
 		);
+	}
+
+	//设置AT串口选项
+	function set_at_port(port)
+	{
+		//获取模块选择框元素
+		var modem_select = document.getElementById('modem_select');
+		// 记录所选
+		var selected=modem_select.value;
+		// 删除原来的选项
+		modem_select.options.length=0;
+		// 更新（key：AT串口，value：模块名称）
+		for (var key in port)
+		{
+			var option = document.createElement('option');
+			option.text = port[key].trim();
+			option.value = key;
+			modem_select.appendChild(option);
+		}
+		// 恢复原来的选择
+		for (let i = 0; i < modem_select.options.length; i++)
+		{
+			if(modem_select.options[i].value == selected)
+			{
+				modem_select.selectedIndex=i;
+				break;
+			}
+		}
 	}
 
 	// 定时触发更新AT串口和模组数据
 	XHR.poll(5,'<%=luci.dispatcher.build_url("admin", "network", "modem", "get_at_port")%>', null,
 		function(x, port)
 		{
-			//获取模块选择框元素
-			var modem_select = document.getElementById('modem_select');
-			// 记录所选
-			var selected=modem_select.value;
-			// 删除原来的选项
-			modem_select.options.length=0;
-			// 更新（key：AT串口，value：模块名称）
-			for (var key in port)
-			{
-				var option = document.createElement('option');
-				option.text = port[key].trim();
-				option.value = key;
-				modem_select.appendChild(option);
-			}
-			// 恢复原来的选择
-			for (let i = 0; i < modem_select.options.length; i++)
-			{
-				if(modem_select.options[i].value == selected)
-				{
-					modem_select.selectedIndex=i;
-					break;
-				}
-			}
-			
-			// 界面显示控制
+			//设置AT串口选项
+			set_at_port(port);
+			//更新模组信息
 			if (Object.keys(port).length==0)
 			{
-				// 更新提示信息
-				document.getElementById("info_message").innerHTML="<strong><%:No modems found%></strong>";
-				// 显示提示信息
-				document.getElementById("cbi-info").style.display="block";
-				// 隐藏基本信息
-				document.getElementById("cbi-baseinfo").style.display="none";
-				// 隐藏SIM卡信息
-				document.getElementById("cbi-siminfo").style.display="none";
-				// 隐藏网络信息
-				document.getElementById("cbi-networkinfo").style.display="none";
-				// 隐藏小区信息
-				document.getElementById("cbi-cellinfo").style.display="none";
-				return
+				no_modems_view();
 			}
-			
-			update();
+			else
+			{
+				update();
+			}
 		}
 	);
 
-	modemtype=0;
-	cell=0;
-	portx="-";
-	phonenx = "";
-	hided = 0;
-
-	function clear_data()
+	//无模块界面
+	function no_modems_view()
 	{
-		document.getElementById('port').innerHTML="<%:Changing Port%>";
-		document.getElementById('csq').innerHTML="-";
-		document.getElementById('per').innerHTML="-";
-		document.getElementById('rssi').innerHTML="-";
-		// document.getElementById('modem').innerHTML="-";
-		document.getElementById('cops').innerHTML="-";
-		document.getElementById('net_type').innerHTML="-";
-		document.getElementById('lac').innerHTML="-";
-		document.getElementById('cid').innerHTML="-";
-		document.getElementById('lacn').innerHTML="-";
-		document.getElementById('cidn').innerHTML="-";
-		document.getElementById('mcc').innerHTML="-";
-		document.getElementById('mnc').innerHTML="-";
-		document.getElementById('rnc').innerHTML="-";
-		document.getElementById('rncn').innerHTML="-";
-		document.getElementById('down').innerHTML="-";
-		document.getElementById('up').innerHTML="-";
-		document.getElementById('ecio').innerHTML="-";
-		document.getElementById('rscp').innerHTML="-";
-		document.getElementById('ecio1').innerHTML="-";
-		document.getElementById('rscp1').innerHTML="-";
-		document.getElementById('netmode').innerHTML="-";
-		document.getElementById('manufacturer').innerHTML=" ";
-		document.getElementById('chan').innerHTML=" ";
-		document.getElementById('conmon').innerHTML="-";
-		document.getElementById('phone').value="-";
-		
-		document.getElementById('imei').innerHTML="-";
-		document.getElementById('imsi').innerHTML="-";
-		document.getElementById('iccid').innerHTML="-";
-		document.getElementById('lband').innerHTML="-";
-		document.getElementById('pci').innerHTML="-";
-		<% if havegps == 1 then %>
-		document.getElementById('lat').innerHTML="-";
-		document.getElementById('long').innerHTML="-";
-		<% end %>
-
-		// document.getElementById('idvp').innerHTML="-";
-		// document.getElementById('phonen').value="-";
+		// 更新提示信息
+		document.getElementById("info_message").innerHTML="<strong><%:No modems found%></strong>";
+		// 显示提示信息
+		document.getElementById("cbi-info").style.display="block";
+		// 隐藏基本信息
+		document.getElementById("cbi-baseinfo").style.display="none";
+		// 隐藏SIM卡信息
+		document.getElementById("cbi-siminfo").style.display="none";
+		// 隐藏网络信息
+		document.getElementById("cbi-networkinfo").style.display="none";
+		// 隐藏小区信息
+		document.getElementById("cbi-cellinfo").style.display="none";
 	}
 //]]>
 </script>
 
 <div class="cbi-map" id="cbi-modem">
-<h2 name="content"><%:Modem Information%></h2>
-<div class="cbi-map-descr"><%:%></div>
+	<h2 name="content"><%:Modem Information%></h2>
+	<div class="cbi-map-descr"><%:%></div>
 
 <!-- <fieldset class="cbi-section" id="simwarn" style="display:none;">
 	<legend><%:SIM警告%></legend>
@@ -362,12 +432,14 @@ end
 
 	<fieldset class="cbi-section" id="cbi-siminfo" style="display: none;">
 		<h3><%:SIM Information%></h3>
-		<table width="100%" cellspacing="10">
+		<table width="100%" cellspacing="10" id="sim_info">
+			<!-- <tr><td width="20%"><%:SIM Status%> :</td><td id="sim_status"></td><td></td></tr>
 			<tr><td width="20%"><%:ISP%> :</td><td id="isp"></td><td></td></tr>
+			<tr><td width="20%"><%:SIM Slot%> :</td><td id="sim_slot"></td><td></td></tr>
+			<tr><td width="20%"><%:SIM Number%> :</td><td id="sim_number"></td><td></td></tr>
 			<tr><td width="20%"><%:IMEI%> :</td><td id="imei"></td><td></td></tr>
 			<tr><td width="20%"><%:IMSI%> :</td><td id="imsi"></td><td></td></tr>
-			<tr><td width="20%"><%:ICCID%> :</td><td id="iccid"></td><td></td></tr>
-			<tr><td width="20%"><%:SIM Number%> :</td><td id="sim_number"></td><td></td></tr>
+			<tr><td width="20%"><%:ICCID%> :</td><td id="iccid"></td><td></td></tr> -->
 		</table>
 	</fieldset>
 

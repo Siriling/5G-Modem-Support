@@ -15,17 +15,19 @@ init_modem_info()
 	at_port='-'		#AT串口
 	mode='unknown'	#拨号模式
 	temperature="NaN $(printf "\xc2\xb0")C"	#温度
-    update_time=''	#更新时间
+    update_time='-'	#更新时间
 
 	#SIM卡信息
 	sim_status="miss"	#SIM卡状态
+	sim_slot="-"		#SIM卡卡槽
 	isp="-"				#运营商（互联网服务提供商）
+	sim_number='-'		#SIM卡号码（手机号）
 	imei='-'			#IMEI
 	imsi='-'			#IMSI
 	iccid='-'			#ICCID
-	sim_number='-'		#SIM卡号码（手机号）
 
 	#网络信息
+	connect_status="disconnect"	#SIM卡状态
 	network_type="-" #蜂窝网络类型
 
 	#小区信息
@@ -131,8 +133,8 @@ init_modem_info()
 	qos="" #最大Qos级别
 }
 
-#获取基本信息
-get_base_info()
+#设置基本信息
+set_base_info()
 {
 	base_info="\"base_info\":{
 		\"manufacturer\":\"$manufacturer\",
@@ -144,28 +146,44 @@ get_base_info()
 	},"
 }
 
-#获取SIM卡信息
-get_sim_info()
+#设置SIM卡信息
+set_sim_info()
 {
-	sim_info="\"sim_info\":{
-		\"isp\":\"$isp\",
-		\"imei\":\"$imei\",
-		\"imsi\":\"$imsi\",
-		\"iccid\":\"$iccid\",
-		\"sim_number\":\"$sim_number\"
-	},"
+	if [ "$sim_status" = "ready" ]; then
+		sim_info="\"sim_info\":[
+			{\"ISP\":\"$isp\", \"full_name\":\"Internet Service Provider\"},
+			{\"SIM Slot\":\"$sim_slot\", \"full_name\":\"SIM Slot\"},
+			{\"SIM Number\":\"$sim_number\", \"full_name\":\"SIM Number\"},
+			{\"IMEI\":\"$imei\", \"full_name\":\"International Mobile Equipment Identity\"},
+			{\"IMSI\":\"$imsi\", \"full_name\":\"International Mobile Subscriber Identity\"},
+			{\"ICCID\":\"$iccid\", \"full_name\":\"Integrate Circuit Card Identity\"}
+		],"
+	elif [ "$sim_status" = "miss" ]; then
+		sim_info="\"sim_info\":[
+			{\"SIM Status\":\"$sim_status\", \"full_name\":\"SIM Status\"},
+			{\"IMEI\":\"$imei\", \"full_name\":\"International Mobile Equipment Identity\"}
+		],"
+	elif [ "$sim_status" = "locked" ]; then
+		sim_info="\"sim_info\":[
+			{\"SIM Status\":\"$sim_status\", \"full_name\":\"SIM Status\"},
+			{\"SIM Slot\":\"$sim_slot\", \"full_name\":\"SIM Slot\"},
+			{\"IMEI\":\"$imei\", \"full_name\":\"International Mobile Equipment Identity\"},
+			{\"IMSI\":\"$imsi\", \"full_name\":\"International Mobile Subscriber Identity\"},
+			{\"ICCID\":\"$iccid\", \"full_name\":\"Integrate Circuit Card Identity\"}
+		],"
+	fi
 }
 
-#获取网络信息
-get_network_info()
+#设置网络信息
+set_network_info()
 {
 	network_info="\"network_info\":{
 		\"network_type\":\"$network_type\"
 	},"
 }
 
-#获取信号信息
-get_cell_info()
+#设置信号信息
+set_cell_info()
 {
 	if [ "$network_mode" = "NR5G-SA Mode" ]; then
 		cell_info="\"cell_info\":{
@@ -284,16 +302,17 @@ info_to_json()
 	network_info="\"network_info\":{},"
 	cell_info="\"cell_info\":{}"
 	
-	#获取基本信息
-	get_base_info
+	#设置基本信息
+	set_base_info
 
-	if [ "$sim_status" = "ready" ];then
-		#获取SIM卡信息
-        get_sim_info
-		#获取网络信息
-		get_network_info
-		#获取小区信息
-		get_cell_info
+	#设置SIM卡信息
+	set_sim_info
+
+	if [ "$sim_status" = "ready" ] && [ "$connect_status" = "connect" ]; then
+		#设置网络信息
+		set_network_info
+		#设置小区信息
+		set_cell_info
     fi
 
 	#拼接所有信息（不要漏掉最后一个}）
