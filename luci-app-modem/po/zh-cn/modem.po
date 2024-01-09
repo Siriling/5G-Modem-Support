@@ -85,7 +85,7 @@ msgstr "高级配置"
 msgid "Remarks"
 msgstr "备注"
 
-msgid "Moblie Network"
+msgid "Mobile Network"
 msgstr "移动网络"
 
 msgid "UNKNOWN"
