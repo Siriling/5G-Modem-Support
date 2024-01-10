@@ -61,7 +61,7 @@ end
 
 o = s:option(DummyValue, "dial_tool", translate("Dial Tool"))
 o.cfgvalue = function(t, n)
-    local dial_tool = (Value.cfgvalue(t, n) or ""):upper()
+    local dial_tool = (Value.cfgvalue(t, n) or "")
     if dial_tool == "" then
         dial_tool=translate("Auto Choose")
     end

@@ -1,0 +1,150 @@
+<%+header%>
+<% 
+local sys = require "luci.sys" 
+local utl = require "luci.util" 
+local fs = require "nixio.fs"
+local uci = require "luci.model.uci".cursor()
+local s = uci:get("custom", "bandlock", "enabled")
+local a = uci:get("custom", "atcmd", "enabled")
+
+local multilock = uci:get("custom", "multiuser", "multi") or "0"
+local rootlock = uci:get("custom", "multiuser", "root") or "0"
+nomulti=1
+if (multilock == "0") or (multilock == "1" and rootlock == "1") then
+	nosms = 1
+	if a == "1" then
+		nosms = 0
+	end
+else
+	nosms = 1
+	nomulti = 0
+end
+block = 1
+if s == "1" then
+	block = 0
+end
+
+function showicon(lck)
+end
+
+-%>
+<script type="text/javascript" src="<%=resource%>/xhr.js"></script>
+<script type="text/javascript">//<![CDATA[
+
+
+	function sendcmd(event)
+	{
+		
+		var v = document.getElementById("drop1").value;
+		var s = document.getElementById("atcmd").value;
+		var r =document.getElementById("attxt").value;
+		if ( s.length == 0 )
+		{
+
+			document.getElementById("attxt").value= '<%:请输入AT命令!%>\r' + r;
+			return false;
+		}
+		XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "send_atcmd")%>',
+				{ set: s , p: v},
+				function(x, rv)
+				{
+					 var pd = rv.result;
+					 document.getElementById("attxt").value=pd  + r;
+				}
+			);
+		
+	       
+	}
+	function sendclean(event)
+	{
+		document.getElementById("attxt").value='';
+	}
+//]]></script>
+
+
+<div class="cbi-map" id="cbi-at-commands">
+	<h2 id="content" name="content"><%:AT Commands%></h2>
+	<div class="cbi-map-descr"><%:Debugging Your Module with AT Command%></div>
+	<head>
+		<style>
+		input {
+			vertical-align: bottom;
+		}
+		
+		#popup {
+			width:560px;
+			height:190px;
+			padding:20px;
+			background-color:gainsboro;  
+			border-style : solid;	
+			position:fixed;
+			top : 40%;
+			margin-left: auto;
+			margin-right: auto;
+			left: 0;
+			right: 0;
+			text-align: center;
+			display:none;
+		}
+		textarea{
+			background:#373737;
+			border:none;
+			color:#FFF;
+		}
+		</style>
+	</head>
+
+	<fieldset class="cbi-section" id="cbi-term">
+		<!-- <legend><%:AT Command Console%></legend> -->
+		<h3><%:AT Command Console%></h3>
+		<!-- <div id="popup">
+			<table width="500" border="0">
+				<tr>
+					<td width="50px"><div><%:Enter Password to Unlock Full Terminal%></div></td>
+				</tr>
+				<tr>
+					<td width="200px"><input id="pass" type="password"/></td>
+				</tr>
+				<tr>
+					<td><input type="image" src="<%=showicon(0)%>" style="width:48px;height:48px;" onclick="return done()" /></td>
+				</tr>
+			</table>
+		</div> -->
+		
+		<table width="700" border="0" id="droptxt">
+			<tr>
+				<td width="10%"><div align="right"><%:Quick Option%>:</div></td>
+				<td width="15%">
+					<div align="left">
+						<input type="radio" name="quick_option" value="auto" checked="checked">自动
+						<input type="radio" name="quick_option" value="custom">自定义
+					</div>
+				</td>
+				<td width="10%"><div align="right"><%:Quick Commands%>:</div></td>
+				<td width="15%"><select name="command_choose" id="command_choose" onclick="copyToSend()"></select></td>
+				<td width="10%"></td>
+				<td width="15%"></td>
+			</tr>
+			<tr>
+				<td width="10%"><div align="right"><%:Modem Select%>:</div></td>
+				<td width="15%"><select style="width:200px" name="modem_select" id="modem_select"></select></td>
+				<td width="10%"><div align="right"><%:AT Commands%>:</div></td>
+				<td width="15%"><input style="visibility:visible;width: 200px;maxlength="200" type="text" name="atcmdlck" id="atcmd" class="cbi-input-text"></input></td>
+				<td width="10%">
+					<input style="visibility:visible" type="submit" id="sendat" class="cbi-button cbi-button-apply" value="<%:发送%>" onclick="return sendcmd()" />
+					<input style="visibility:visible" type="submit" id="sendclean" class="cbi-button cbi-button-reset" value="<%:清除%>" onclick="return sendclean()" />
+				</td>
+				<td width="15%"></td>
+				<!-- <td width="47%">&nbsp;</td> -->
+			</tr>
+		</table>
+		<textarea readonly="readonly"  name="attxt" id="attxt" rows="50" style="width: 100%;" maxlength="160"></textarea>
+		<div class="table" width="100%">
+			<h2 name="content"><%=translate("TTYD Terminal")%></h2>
+			<iframe id="terminal" style="width: 100%; min-height: 500px; border: none; border-radius: 3px;" src="http://192.168.10.1:7681"></iframe>
+		</div>
+	</fieldset>
+	
+</div>
+
+<%+footer%>

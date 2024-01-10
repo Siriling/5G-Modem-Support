@@ -12,7 +12,22 @@ if fs.stat("/etc/havegps") then
 	havegps = 1
 end
 %>
-<style>g {color:grey; font-size:75%; vertical-align: super;}</style>
+<style>
+	g {color:grey; font-size:75%; vertical-align: super;}
+	
+	/*移动端显示优化*/
+	@media (max-width: 768px) {
+		tr td:first-child {
+			width: 30%;
+		}
+	}
+
+	table {
+		width: 100%;
+  		border-spacing: 10px;
+		border: 0px;
+	}
+</style>
 <script type="text/javascript" src="<%=resource%>/xhr.js?v=git-23.159.15540-7154b89"></script>
 <script type="text/javascript">//<![CDATA[
 
@@ -54,7 +69,7 @@ end
 							value=translation[value];
 						}
 					}
-					sim_info_view+='<tr><td width="20%" title="'+full_name+'">'+translation[key]+' :</td><td id="'+key+'">'+value+'</td><td></td></tr>';
+					sim_info_view+='<tr><td width="20%" title="'+full_name+'">'+translation[key]+'</td><td id="'+key+'">'+value+'</td><td></td></tr>';
 					break;
 				}
 			}
@@ -117,7 +132,7 @@ end
 					else if (key=="SCS") {
 						value=value+" KHz"
 					}
-					cell_info_view+='<tr><td width="20%" title="'+full_name+'">'+translation[key]+' :</td><td id="'+key+'">'+value+'</td><td></td></tr>';
+					cell_info_view+='<tr><td width="20%" title="'+full_name+'">'+translation[key]+'</td><td id="'+key+'">'+value+'</td><td></td></tr>';
 					break;
 				}
  			}
@@ -396,7 +411,7 @@ end
 
 	<fieldset class="cbi-section" id="cbi-info" style="display: block;">
 		<h3><%:Message%></h3>
-		<table width="550" border="0">
+		<table>
 			<tr>
 				<td width="10%"></td>
 				<td width="60%">
@@ -412,18 +427,21 @@ end
 
 	<fieldset class="cbi-section" id="cbi-baseinfo" style="display: none;">
 		<h3><%:Base Information%></h3>
-		<table width="100%" cellspacing="10">
-			<tr><td width="20%"><%:Modem%> :</td><td id="modem_name">
-				<select name="modem_select" id="modem_select"></select>
-			</td><td></td></tr>
-			<tr><td width="20%"><%:Manufacturer%> :</td><td id="manufacturer"></td><td></td></tr>
-			<tr><td width="20%"><%:Revision%>:</td><td id="revision"></td><td></td></tr>
-			<tr><td width="20%"><%:Data Interface%> :</td><td id="data_interface"></td><td></td></tr>
-			<tr><td width="20%"><%:Mode%> :</td><td id="mode"></td><td></td></tr>
-			<tr><td width="20%"><%:AT Port%> :</td><td id="at_port"></td><td></td></tr>
-			<tr><td width="20%"><%:Mobile Network%> :</td><td id="network"></td><td></td></tr>
-			<tr><td width="20%"><%:Temperature%> :</td><td id="temperature"></td><td></td></tr>
-			<tr><td width="20%"><%:Update Time%> :</td><td id="update_time"></td><td></td></tr>
+		<table id="base_info">
+			<tr>
+				<td width="20%"><%:Modem%></td><td id="modem_name">
+					<select name="modem_select" id="modem_select"></select>
+				</td>
+				<td></td>
+			</tr>
+			<tr><td width="20%"><%:Manufacturer%></td><td id="manufacturer"></td><td></td></tr>
+			<tr><td width="20%"><%:Revision%></td><td id="revision"></td><td></td></tr>
+			<tr><td width="20%"><%:Data Interface%></td><td id="data_interface"></td><td></td></tr>
+			<tr><td width="20%"><%:Mode%></td><td id="mode"></td><td></td></tr>
+			<tr><td width="20%"><%:AT Port%></td><td id="at_port"></td><td></td></tr>
+			<tr><td width="20%"><%:Mobile Network%></td><td id="network"></td><td></td></tr>
+			<tr><td width="20%"><%:Temperature%></td><td id="temperature"></td><td></td></tr>
+			<tr><td width="20%"><%:Update Time%></td><td id="update_time"></td><td></td></tr>
 		</table>
 	</fieldset>
 
@@ -432,7 +450,7 @@ end
 
 	<fieldset class="cbi-section" id="cbi-siminfo" style="display: none;">
 		<h3><%:SIM Information%></h3>
-		<table width="100%" cellspacing="10" id="sim_info">
+		<table id="sim_info">
 			<!-- <tr><td width="20%"><%:SIM Status%> :</td><td id="sim_status"></td><td></td></tr>
 			<tr><td width="20%"><%:ISP%> :</td><td id="isp"></td><td></td></tr>
 			<tr><td width="20%"><%:SIM Slot%> :</td><td id="sim_slot"></td><td></td></tr>
@@ -445,14 +463,14 @@ end
 
 	<fieldset class="cbi-section" id="cbi-networkinfo" style="display: none;">
 		<h3><%:Network Information%></h3>
-		<table width="100%" cellspacing="10">
-			<tr><td width="20%"><%:Network Type%> :</td><td id="network_type"></td><td></td></tr>
+		<table>
+			<tr><td width="20%"><%:Network Type%></td><td id="network_type"></td><td></td></tr>
 		</table>
 	</fieldset>
 
 	<fieldset class="cbi-section" id="cbi-cellinfo" style="display: none;">
 		<h3><%:Cell Information%></h3>
-		<table width="100%" cellspacing="10" id="cell_info">
+		<table id="cell_info">
 			<!-- <tr><td width="20%"><%:MCC/MNC 国家码/网络码 %> :</td><td id="nr_mcc"></td><td id="nr_mnc"></td></tr>
 			<tr><td width="20%"><%:Duplex Mode 双工模式 %> :</td><td id="nr_duplex_mode"></td><td></td></tr>
 			<tr><td width="20%"><%:Cell ID 小区ID %> :</td><td><ul><span id="nr_cell_id" class="r"></span><span id="cidn" class="r"></span></ul></td><td></td></tr>
@@ -504,16 +522,16 @@ end
 	<% if havegps == 1 then %>
 	<fieldset class="cbi-section" id="cbi-gpsinfo">
 		<h3><%:GPS 定位%></h3>
-		<table width="550"  border="0">
+		<table>
 		<tr>
-				<td width="30%"><div align="right"><%:纬度 %> :</div></td>
-				<td><ul id="lat"></ul></td>
-				<td width="1%">&nbsp;</td>
+			<td width="30%"><div align="right"><%:纬度 %> :</div></td>
+			<td><ul id="lat"></ul></td>
+			<td width="1%">&nbsp;</td>
 		</tr>
 		<tr>
-				<td><div align="right"><%:经度 %> :</div></td>
-				<td><ul id="long"></ul></td>
-				<td>&nbsp;</td>
+			<td><div align="right"><%:经度 %> :</div></td>
+			<td><ul id="long"></ul></td>
+			<td>&nbsp;</td>
 		</tr>
 		</table>
 	</fieldset>
