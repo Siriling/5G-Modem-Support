@@ -7,7 +7,7 @@ get_quectel_mode()
 {
     local at_port="$1"
     at_command='AT+QCFG="usbnet"'
-    local mode_num=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/+QCFG: "usbnet",//g' | sed 's/\r//g')
+    local mode_num=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+QCFG:" | sed 's/+QCFG: "usbnet",//g' | sed 's/\r//g')
 
     local mode
     case "$mode_num" in
@@ -29,10 +29,12 @@ get_connect_status()
     local at_port="$1"
     at_command="AT+QNWINFO"
 
-	local response=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p')
+	local response=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+QNWINFO:")
 
     local connect_status
 	if [[ "$response" = *"No Service"* ]]; then
+        connect_status="disconnect"
+    elif [[ "$response" = *"Unknown Service"* ]]; then
         connect_status="disconnect"
     else
         connect_status="connect"
@@ -88,7 +90,7 @@ quectel_sim_info()
     
     #SIM Slot（SIM卡卡槽）
     at_command="AT+QUIMSLOT?"
-	sim_slot=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F' ' '{print $2}' | sed 's/\r//g')
+	sim_slot=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+QUIMSLOT:" | awk -F' ' '{print $2}' | sed 's/\r//g')
 
     #IMEI（国际移动设备识别码）
     at_command="AT+CGSN"
@@ -149,7 +151,7 @@ quectel_network_info()
     #Network Type（网络类型）
     # at_command="AT+COPS?"
     at_command="AT+QNWINFO"
-    network_type=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}')
+    network_type=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+QNWINFO:" | awk -F'"' '{print $2}')
 
     #CSQ
     at_command="AT+CSQ"

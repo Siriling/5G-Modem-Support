@@ -7,7 +7,7 @@ get_fibocom_mode()
 {
     local at_port="$1"
     at_command="AT+GTUSBMODE?"
-    local mode_num=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/+GTUSBMODE: //g' | sed 's/\r//g')
+    local mode_num=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+GTUSBMODE:" | sed 's/+GTUSBMODE: //g' | sed 's/\r//g')
     
     local mode
     case "$mode_num" in
@@ -80,7 +80,7 @@ fibocom_sim_info()
     
     #SIM Slot（SIM卡卡槽）
     at_command="AT+GTDUALSIM"
-	sim_slot=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}' | sed 's/SUB//g')
+	sim_slot=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+GTDUALSIM:" | awk -F'"' '{print $2}' | sed 's/SUB//g')
 
     #IMEI（国际移动设备识别码）
     at_command="AT+CGSN"
@@ -138,7 +138,7 @@ fibocom_network_info()
 
     #Network Type（网络类型）
     at_command="AT+PSRAT?"
-    network_type=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/+PSRAT: //g' | sed 's/\r//g')
+    network_type=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+PSRAT:" | sed 's/+PSRAT: //g' | sed 's/\r//g')
 
     # #CSQ
     # local at_command="AT+CSQ"
