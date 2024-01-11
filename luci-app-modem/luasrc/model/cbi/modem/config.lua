@@ -26,13 +26,13 @@ remarks = s:taboption("general", Value, "remarks", translate("Remarks"))
 remarks.rmempty = true
 
 -- 移动网络
--- network = s:taboption("general", Value, "network", translate("Moblie Network"))
-network = s:taboption("general", ListValue, "network", translate("Moblie Network"))
+-- network = s:taboption("general", Value, "network", translate("Mobile Network"))
+network = s:taboption("general", ListValue, "network", translate("Mobile Network"))
 -- network.default = ""
 network.rmempty = false
 
 -- 获取移动网络，并显示设备名
-function getMoblieNetwork()
+function getMobileNetwork()
 	local modem_number=uci:get('modem','global','modem_number')
 	if modem_number == "0" then
 		network:value("",translate("Mobile network not found"))
@@ -52,7 +52,7 @@ function getMoblieNetwork()
 	end
 end
 
-getMoblieNetwork()
+getMobileNetwork()
 
 -- 拨号模式
 -- mode = s:taboption("general", ListValue, "mode", translate("Mode"))

@@ -45,7 +45,7 @@ o.rmempty = false
 
 o = s:option(DummyValue, "remarks", translate("Remarks"))
 
-o = s:option(DummyValue, "network", translate("Moblie Network"))
+o = s:option(DummyValue, "network", translate("Mobile Network"))
 o.cfgvalue = function(t, n)
     -- 检测移动网络是否存在
     local network = (Value.cfgvalue(t, n) or "")
@@ -76,7 +76,7 @@ end
 
 o = s:option(DummyValue, "apn", translate("APN"))
 o.cfgvalue = function(t, n)
-    local apn = (Value.cfgvalue(t, n) or ""):gsub("_","/"):upper():gsub("V","v")
+    local apn = (Value.cfgvalue(t, n) or "")
     if apn == "" then
         apn=translate("Auto Choose")
     end

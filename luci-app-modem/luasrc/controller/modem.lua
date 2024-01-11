@@ -29,6 +29,8 @@ function index()
 	entry({"admin", "network", "modem", "send_at_command"}, call("sendATCommand"), nil).leaf = true
 	entry({"admin", "network", "modem", "user_at_command"}, call("userATCommand"), nil).leaf = true
 	entry({"admin", "network", "modem", "get_at_port"}, call("getATPort"), nil).leaf = true
+
+	entry({"admin", "network", "modem", "at"},template("modem/at"),translate("AT"),40).leaf = true
 end
 
 -- 判断字符串是否含有字母
