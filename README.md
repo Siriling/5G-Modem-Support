@@ -49,6 +49,10 @@
 - sendat
 - sms-tool
 
+### 短信工具
+
+- luci-app-sms-tool
+
 # 二、源代码地址
 
 - luci-app-hypermodem：https://github.com/momokind/luci-app-hypermodem
