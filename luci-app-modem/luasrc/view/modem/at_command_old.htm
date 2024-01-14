@@ -93,49 +93,63 @@
 	// 根据所选的模组改变AT命令
 	function afunction()
 	{
-		// var node = document.getElementById('odp');
+		// var node = document.getElementById('response');
 		// node.style.visibility = 'hidden';
 
 		// var x = document.getElementById("at_command").value;
 		// document.getElementById("code").value = x;
-		// document.getElementById("odp").innerHTML = "";
+		// document.getElementById("response").innerHTML = "";
 	}
 
 	//自动填写到命令输入框
 	function copyToSend()
 	{
-		var node = document.getElementById('odp');
+		var node = document.getElementById('response');
 		node.style.visibility = 'hidden';
 
 		var command_choose = document.getElementById("command_choose").value;
 		document.getElementById("at_command").value = command_choose;
-		document.getElementById("odp").innerHTML = "";
+		document.getElementById("response").innerHTML = "";
 	}
 
 	function postCommand(at_port,at_command)
 	{
-		(new XHR()).post('<%=luci.dispatcher.build_url("admin", "network", "modem", "send_at_command")%>', {"port":at_port,"command":at_command}, function(x) {
-			console.log(x.response)
-			console.log(x)
+		// (new XHR()).post('<%=luci.dispatcher.build_url("admin", "network", "modem", "send_at_command")%>', {"port":at_port,"command":at_command}, function(x) {
+		// 	console.log(x.response)
+		// 	console.log(x)
 
-			var aStr = x.response;
-			var myre = /^[\s\t]*(\r\n|\n|\r)/gm;
-			var bStr = aStr.replace(myre,"");
-				document.getElementById("odp").innerHTML = bStr;
-			var el = document.getElementsByName("odp")[0];
-			el.value.replace(/(\r\n|\n|\r)/gm, "");
-		});
+		// 	var aStr = x.response;
+		// 	var myre = /^[\s\t]*(\r\n|\n|\r)/gm;
+		// 	var bStr = aStr.replace(myre,"");
+		// 		document.getElementById("response").innerHTML = bStr;
+		// 	var el = document.getElementsByName("response")[0];
+		// 	el.value.replace(/(\r\n|\n|\r)/gm, "");
+		// });
+
+		XHR.post('<%=luci.dispatcher.build_url("admin", "network", "modem", "send_at_command")%>', {"port":at_port,"command":at_command},
+			function(x, data)
+			{
+				responseElement=document.getElementById("response");
+				if ("response" in data) {
+					//显示当前时间
+					// responseElement.value+=data["time"];
+					//显示返回值
+					responseElement.innerHTML+=data["response"];
+				}
+			}
+		);
 		return false;
 	}
 
-	document.addEventListener('DOMContentLoaded', function (ev) {var button = document.getElementById("sendcmd");
+	document.addEventListener('DOMContentLoaded', function (ev) {
+		var button = document.getElementById("sendcmd");
 			button.addEventListener("click", function () {
 			
 			//获取AT串口
 			var at_port = document.getElementById("modem_select").value;
 			if ( at_port.length == 0 )
 			{
-				document.getElementById("odp").innerHTML = "";
+				document.getElementById("response").innerHTML = "";
 				alert("<%:Please choose a Modem%>");
 				return false;
 			}
@@ -144,7 +158,7 @@
 			var at_command = document.getElementById("at_command").value;
 			if ( at_command.length == 0 )
 			{
-				document.getElementById("odp").innerHTML = "";
+				document.getElementById("response").innerHTML = "";
 				alert("<%:Please enter a AT Command%>");
 				return false;
 			}
@@ -153,7 +167,7 @@
 			postCommand(at_port,at_command);
 			at_command = "";
 
-			var node = document.getElementById('odp');
+			var node = document.getElementById('response');
 			if (node.style.visibility=='visible') {
 				node.style.visibility = 'hidden';
 			}
@@ -216,8 +230,9 @@
 		</div>
 
 		<div class="table" width="100%">
+
 			<div class="td left" style="width:25%;"><%:Response%>:
-				<pre id="odp" style="visibility: hidden; width:75%;"></pre>
+				<pre id="response" style="visibility: hidden; width:100%;"></pre>
 			</div>
 
 			<div class="tr cbi-rowstyle-2">

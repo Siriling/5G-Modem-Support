@@ -1,7 +1,9 @@
 quectel;rg200u-cn;usb;ecm,mbim,rndis,ncm
 quectel;rm500u-cn;usb;ecm,mbim,rndis,ncm
 quectel;rm500q-gl;usb;qmi,gobinet,ecm,mbim,rndis,ncm
-quectel;rm500q-gl;pcie;qmi,gobinet,ecm,mbim,rndis,ncm
+quectel;rm500q-gl;pcie;qmi,gobinet,mbim
+quectel;rm502q-gl;usb;qmi,gobinet,ecm,mbim,rndis,ncm
+quectel;rm502q-gl;pcie;qmi,gobinet,mbim
 fibocom;fm650-cn;usb;ecm,mbim,rndis,ncm
 fibocom;fm150-ae;usb;qmi,gobinet,ecm,mbim,rndis,ncm
 fibocom;fm150-ae;pcie;qmi

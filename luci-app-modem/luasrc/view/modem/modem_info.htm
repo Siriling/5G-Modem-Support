@@ -28,17 +28,17 @@ end
 		border: 0px;
 	}
 </style>
-<script type="text/javascript" src="<%=resource%>/xhr.js?v=git-23.159.15540-7154b89"></script>
+<script type="text/javascript" src="<%=resource%>/xhr.js"></script>
 <script type="text/javascript">//<![CDATA[
 
 	window.onload=function()
 	{
-		//获取模块选择框元素
+		//获取模组选择框元素
 		var modem_select = document.getElementById('modem_select');
 
-		// 更换模组（AT串口）时触发
+		//更换模组（AT串口）时触发
 		modem_select.addEventListener('change', function() {
-			// 更新数据
+			//更新数据
 			update();
 		});
 	}
@@ -329,7 +329,7 @@ end
 		);
 	}
 
-	//设置AT串口选项
+	// 设置AT串口选项
 	function set_at_port(port)
 	{
 		//获取模块选择框元素

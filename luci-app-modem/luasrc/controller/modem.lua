@@ -1,4 +1,4 @@
--- Copyright 2020 Lienol <lawlienol@gmail.com>
+-- Copyright 2024 Siriling <siriling@qq.com>
 module("luci.controller.modem", package.seeall)
 local http = require "luci.http"
 local fs = require "nixio.fs"
@@ -23,30 +23,47 @@ function index()
 	entry({"admin", "network", "modem", "get_modems"}, call("getModems"), nil).leaf = true
 	entry({"admin", "network", "modem", "status"}, call("act_status")).leaf = true
 
-	--AT命令
-	entry({"admin", "network", "modem", "at_commands"},template("modem/at_commands"),translate("AT Commands"),30).leaf = true
-	entry({"admin", "network", "modem", "mode_info"}, call("modeInfo"), nil).leaf = true
+	--模块调试
+	entry({"admin", "network", "modem", "modem_debug"},template("modem/modem_debug"),translate("Modem Debug"),30).leaf = true
+	entry({"admin", "network", "modem", "get_at_port"}, call("getATPort"), nil).leaf = true
+	entry({"admin", "network", "modem", "get_quick_commands"}, call("getQuickCommands"), nil).leaf = true
 	entry({"admin", "network", "modem", "send_at_command"}, call("sendATCommand"), nil).leaf = true
 	entry({"admin", "network", "modem", "user_at_command"}, call("userATCommand"), nil).leaf = true
-	entry({"admin", "network", "modem", "get_at_port"}, call("getATPort"), nil).leaf = true
+	entry({"admin", "network", "modem", "mode_info"}, call("modeInfo"), nil).leaf = true
+	
+	--AT命令旧界面
+	entry({"admin", "network", "modem", "at_command_old"},template("modem/at_command_old")).leaf = true
 end
 
--- 判断字符串是否含有字母
+--[[
+@Description 判断字符串是否含有字母
+@Params
+	str 字符串
+]]
 function hasLetters(str)
     local pattern = "%a" -- 匹配字母的正则表达式
     return string.find(str, pattern) ~= nil
 end
 
--- AT命令
+--[[
+@Description 执行AT命令
+@Params
+	at_port AT串口
+	at_command AT命令
+]]
 function at(at_port,at_command)
-	-- local odpall = io.popen("sh modem_at.sh "..at_port.." '"..at_command.."'")
-	local odpall = io.popen("sms_tool -d " .. at_port .. " at "  ..at_command:gsub("[$]", "\\\$"):gsub("\"", "\\\"").." 2>&1")
+	local odpall = io.popen("cd "..script_path.." && source "..script_path.."modem_debug.sh && at "..at_port.." "..at_command)
 	local odp =  odpall:read("*a")
 	odpall:close()
 	return odp
 end
 
--- 获取模组连接状态
+--[[
+@Description 获取模组连接状态
+@Params
+	at_port AT串口
+	manufacturer 制造商
+]]
 function getModemConnectStatus(at_port,manufacturer)
 
 	local connect_status="unknown"
@@ -61,7 +78,11 @@ function getModemConnectStatus(at_port,manufacturer)
 	return connect_status
 end
 
--- 获取模组基本信息
+--[[
+@Description 获取模组基本信息
+@Params
+	at_port AT串口
+]]
 function getModemDeviceInfo(at_port)
 	local modem_device_info={}
 
@@ -83,7 +104,12 @@ function getModemDeviceInfo(at_port)
 	return modem_device_info
 end
 
--- 获取模组更多信息
+--[[
+@Description 获取模组更多信息
+@Params
+	at_port AT串口
+	manufacturer 制造商
+]]
 function getModemMoreInfo(at_port,manufacturer)
 
 	--获取模组信息
@@ -96,7 +122,9 @@ function getModemMoreInfo(at_port,manufacturer)
 	return modem_more_info
 end
 
--- 模块状态获取
+--[[
+@Description 模块状态获取
+]]
 function getModemInfo()
 
 	--获取AT串口
@@ -166,7 +194,9 @@ function getModemInfo()
 	luci.http.write_json(data)
 end
 
--- 获取模组信息
+--[[
+@Description 获取模组信息
+]]
 function getModems()
 	
 	-- 获取所有模组
@@ -197,7 +227,9 @@ function getModems()
 	luci.http.write_json(data)
 end
 
--- 模块列表状态函数
+--[[
+@Description 模块列表状态函数
+]]
 function act_status()
 	local e = {}
 	e.index = luci.http.formvalue("index")
@@ -206,7 +238,9 @@ function act_status()
 	luci.http.write_json(e)
 end
 
--- 模式信息
+--[[
+@Description 模式信息
+]]
 function modeInfo()
 	-- 设置默认值
 	local modes={"qmi","gobinet","ecm","mbim","rndis","ncm"}
@@ -231,21 +265,27 @@ function modeInfo()
 	luci.http.write_json(modes)
 end
 
--- 发送AT命令
+--[[
+@Description 发送AT命令
+]]
 function sendATCommand()
     local at_port = http.formvalue("port")
 	local at_command = http.formvalue("command")
 
-	local response
+	local response={}
     if at_port and at_command then
-		response=at(at_port,at_command)
-        http.write(tostring(response))
-    else
-        http.write_json(http.formvalue())
+		response["response"]=at(at_port,at_command)
+		response["time"]=os.date("%Y-%m-%d %H:%M:%S")
     end
+
+	-- 写入Web界面
+	luci.http.prepare_content("application/json")
+	luci.http.write_json(response)
 end
 
--- 用户AT命令
+--[[
+@Description 用户AT命令
+]]
 function userATCommand()
 	local at_commands={}
 	-- 获取模块AT命令
@@ -273,8 +313,11 @@ function userATCommand()
 	luci.http.write_json(at_commands)
 end
 
--- 获取模组的备注
--- @Param network 移动网络
+--[[
+@Description 获取模组的备注
+@Params
+	network 移动网络
+]]
 function getModemRemarks(network)
 	local remarks=""
 	uci:foreach("modem", "config", function (config)
@@ -289,7 +332,9 @@ function getModemRemarks(network)
 	return remarks
 end
 
--- 获取AT串口
+--[[
+@Description 获取AT串口
+]]
 function getATPort()
 	local at_ports={}
 	uci:foreach("modem", "modem-device", function (modem_device)
@@ -313,4 +358,38 @@ function getATPort()
 	-- 写入Web界面
 	luci.http.prepare_content("application/json")
 	luci.http.write_json(at_ports)
+end
+
+--[[
+@Description 获取快捷命令
+]]
+function getQuickCommands()
+
+	--获取快捷命令选项
+	local quick_option = http.formvalue("option")
+	--获取AT串口
+	local at_port = http.formvalue("port")
+
+	--获取制造商
+	local manufacturer
+	uci:foreach("modem", "modem-device", function (modem_device)
+		--设置模组AT串口
+		if at_port == modem_device["at_port"] then
+			--获取制造商
+			manufacturer=modem_device["manufacturer"]
+		end
+	end)
+
+	--获取模组AT命令
+	local quick_commands={}
+	if quick_option and manufacturer then
+		local odpall = io.popen("cd "..script_path.." && source "..script_path.."modem_debug.sh && get_quick_commands "..quick_option.." "..manufacturer)
+		local opd = odpall:read("*a")
+		quick_commands=json.parse(opd)
+		odpall:close()
+	end
+
+	-- 写入Web界面
+	luci.http.prepare_content("application/json")
+	luci.http.write_json(quick_commands)
 end

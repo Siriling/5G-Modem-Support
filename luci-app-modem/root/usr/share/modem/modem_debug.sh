@@ -47,13 +47,27 @@ get_mode()
 {
 	local mode
 	case $1 in
-		"quectel") mode=$(get_quectel_mode "$2") ;;
-		"fibocom") mode=$(get_fibocom_mode "$2") ;;
-		"simcom") mode=$(get_simcom_mode "$2") ;;
+		"quectel") mode=$(get_$1_mode "$2") ;;
+		"fibocom") mode=$(get_$1_mode "$2") ;;
+		"simcom") mode=$(get_$1_mode "$2") ;;
 		*) 
 			debug "未适配该模块"
 			mode="unknown"
 		;;
 	esac
 	echo "$mode"
+}
+
+#获取快捷命令
+# $1:快捷选项
+# $2:制造商
+get_quick_commands()
+{
+	local quick_commands
+	case $1 in
+		"auto") quick_commands=$(cat $current_dir/$2_at_commands.json) ;;
+		"custom") quick_commands=$(cat $current_dir/custom_at_commands.json) ;;
+		*) quick_commands=$(cat $current_dir/$2_at_commands.json) ;;
+	esac
+	echo "$quick_commands"
 }

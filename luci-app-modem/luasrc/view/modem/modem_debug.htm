@@ -1,0 +1,337 @@
+<%+header%>
+<script type="text/javascript" src="<%=resource%>/xhr.js"></script>
+<script type="text/javascript">//<![CDATA[
+
+	window.onload=function()
+	{
+		//获取模组选择框元素
+		var modem_select = document.getElementById('modem_select');
+
+		//更换模组（AT串口）时触发
+		modem_select.addEventListener('change', function() {
+			//获取快捷命令
+			get_quick_commands();
+		});
+
+
+		//获取快捷选项父元素
+		var quick_option = document.getElementById('quick_option_td');
+		quick_option.addEventListener('change', function(event) {
+			var target = event.target;
+			if (target.matches('input[type="radio"]')) {
+				//获取快捷命令
+				get_quick_commands();
+			}
+		});
+	}
+
+	// 发送AT命令
+	function send(at_port,at_command)
+	{
+		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "send_at_command")%>', {"port":at_port,"command":at_command},
+			function(x, data)
+			{
+				responseElement=document.getElementById("response");
+				if ("response" in data) {
+					//显示当前时间
+					responseElement.value+=data["time"];
+					//显示返回值
+					responseElement.value+=data["response"];
+				}
+			}
+		);
+	}
+
+	// 发送AT命令前处理
+	function send_at_command(event)
+	{
+		//获取选中的模组（选中的AT串口）
+		var at_port = document.getElementById("modem_select").value;
+		if ( at_port.length == 0 )
+		{
+			// document.getElementById("odp").innerHTML = "";
+			alert("<%:Please choose a Modem%>");
+			return false;
+		}
+
+		//获取AT命令
+		var at_command = document.getElementById("at_command").value;
+		if ( at_command.length == 0 )
+		{
+			// document.getElementById("odp").innerHTML = "";
+			alert("<%:Please enter a AT Command%>");
+			return false;
+		}
+
+		//发送AT命令
+		send(at_port,at_command);
+		return true;
+	}
+
+	// 清除AT命令
+	function clean_at_command(event)
+	{
+		document.getElementById("at_command").value='';
+	}
+
+	// 清除AT响应
+	function clean_response(event)
+	{
+		document.getElementById("response").value='';
+	}
+
+	// 设置AT串口选项
+	function set_at_port(port)
+	{
+		// 获取模组选择框元素
+		var modem_select = document.getElementById('modem_select');
+		// 记录所选
+		var selected=modem_select.value;
+		// 删除原来的选项
+		modem_select.options.length=0;
+		// 更新（key：AT串口，value：模组名称）
+		for (var key in port)
+		{
+			var option = document.createElement('option');
+			option.value = key;
+			if (port[key].includes("unknown"))
+			{
+				option.text = port[key].replace("unknown", key);
+			}
+			else
+			{
+				option.text = port[key];
+			}
+			modem_select.appendChild(option);
+		}
+		// 恢复原来的选择
+		for (let i = 0; i < modem_select.options.length; i++)
+		{
+			if(modem_select.options[i].value == selected)
+			{
+				modem_select.selectedIndex=i;
+				break;
+			}
+		}
+	}
+
+	// 自动填写到命令输入框
+	function copyToSend()
+	{
+		var command_select = document.getElementById("command_select").value;
+		document.getElementById("at_command").value = command_select;
+	}
+
+	// 获取快捷命令
+	function get_quick_commands()
+	{
+		//获取快捷选项
+		var quick_option = document.querySelector('input[name="quick_option"]:checked').value;
+		//获取选中的模组
+		var at_port = document.getElementById("modem_select").value;
+
+		//获取AT命令
+		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "get_quick_commands")%>', {"option":quick_option,"port":at_port},
+			function(x, json)
+			{
+				console.log(json);
+
+				//获取模组选择框元素
+				var command_select = document.getElementById('command_select');
+				//记录所选
+				var selected=command_select.value;
+				//删除原来的选项
+				command_select.options.length=0;
+
+				//获取快捷命令
+				var quick_commands=json["quick_commands"];
+				//遍历每一条信息
+				for (var info of quick_commands)
+				{
+					//遍历每一条信息里的键
+					for (var key in info)
+					{
+						var option = document.createElement('option');
+						option.text = key;
+						option.value = info[key];
+						command_select.appendChild(option);
+					}
+				}
+				//恢复原来的选择
+				for (let i = 0; i < command_select.options.length; i++)
+				{
+					if(command_select.options[i].value == selected)
+					{
+						command_select.selectedIndex=i;
+						break;
+					}
+				}
+			}
+		);
+	};
+
+	// 无模组界面
+	function no_modems_view()
+	{
+		//更新提示信息
+		document.getElementById("info_message").innerHTML="<strong><%:No modems found%></strong>";
+		//显示提示信息
+		document.getElementById("cbi-info").style.display="block";
+		//隐藏AT命令界面
+		document.getElementById("cbi-at").style.display="none";
+	}
+
+	// 有模组界面
+	function modems_view()
+	{
+		//显示AT命令界面
+		document.getElementById("cbi-at").style.display="block";
+		//隐藏提示信息
+		document.getElementById("cbi-info").style.display="none";
+	}
+
+	// 定时触发更新AT串口
+	XHR.poll(5,'<%=luci.dispatcher.build_url("admin", "network", "modem", "get_at_port")%>', null,
+		function(x, port)
+		{
+			//设置AT串口选项
+			set_at_port(port);
+
+			//获取快捷命令
+			if (Object.keys(port).length==0)
+			{
+				//显示无模组界面
+				no_modems_view();
+			}
+			else
+			{
+				//获取快捷选项
+				var quick_option = document.querySelector('input[name="quick_option"]:checked').value;
+				if (quick_option=="auto") {
+					get_quick_commands();
+				}
+				//显示有模组界面
+				modems_view();
+			}
+		}
+	);
+
+//]]>
+</script>
+
+<div class="cbi-map" id="cbi-modem-debug">
+	<h2 id="content" name="content"><%:Modem Debug%></h2>
+	<div class="cbi-map-descr"><%:Debug Your Module%></div>
+	<head>
+		<style type="text/css">
+		table {
+			width: 100%;
+			border-spacing: 10px;
+			border: 0px;
+		}
+		/* input {
+			vertical-align: bottom;
+		} */
+		
+		#popup {
+			width:560px;
+			height:190px;
+			padding:20px;
+			background-color:gainsboro;  
+			border-style : solid;	
+			position:fixed;
+			top : 40%;
+			margin-left: auto;
+			margin-right: auto;
+			left: 0;
+			right: 0;
+			text-align: center;
+			display:none;
+		}
+		textarea {
+			background:#373737;
+			border:none;
+			color:#FFF;
+			width: 100%;
+		}
+		/* #command_select {
+			width: 100%;
+		} */
+		/* td {
+			width: 100%;
+		} */
+		</style>
+	</head>
+
+	<fieldset class="cbi-section" id="cbi-info" style="display: block;">
+		<h3><%:Message%></h3>
+		<table>
+			<tr>
+				<td width="10%"></td>
+				<td width="60%">
+					<div align="left" id="info_message" style="font-size:1.875em">
+						<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle"/>
+						<%:Loading modem information%>...
+					</div>
+				</td>
+				<td width="30%"></td>
+			</tr>
+		</table>
+	</fieldset>
+
+	<fieldset class="cbi-section" id="cbi-at" style="display: none;">
+		<!-- <legend><%:AT Command%></legend> -->
+		<h3><%:AT Command%></h3>
+		
+		<table id="at_command_info">
+			<tr>
+				<td style="width: 20%;"><div align="right"><%:Modem Select%></div></td>
+				<td><select name="modem_select" id="modem_select" class="cbi-input-select"></select></td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td style="width: 20%;"><div align="right"><%:Quick Option%></div></td>
+				<td id="quick_option_td">
+					<div align="left">
+						<input type="radio" name="quick_option" value="auto" checked="checked"><%:Auto%>
+						<input type="radio" name="quick_option" value="custom"><%:Custom%>
+					</div>
+				</td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td style="width: 20%;"><div align="right"><%:Quick Commands%></div></td>
+				<td><select name="command_select" id="command_select" class="cbi-input-select" onclick="copyToSend()"></select></td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td style="width: 20%;"><div align="right"><%:Enter Command%></div></td>
+				<td>
+					<input type="text" id="at_command" class="cbi-input-text"></input>
+				</td>
+				<td class="td cbi-section-table-cell nowrap cbi-section-actions" colspan="2">
+					<div>
+						<input class="cbi-button cbi-button-apply" type="button" value="<%:Send%>" onclick="send_at_command()" alt="<%:Send%>" title="<%:Send%>">
+						<input class="cbi-button cbi-button-reset" type="button" value="<%:Clean%>" onclick="clean_at_command()" alt="<%:Clean%>" title="<%:Clean%>">
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="6">
+					<div><%:Response%></div>
+					<div><textarea readonly="readonly" id="response" rows="20" maxlength="160"></textarea></div>
+					<div class="cbi-page-actions">
+						<input class="btn cbi-button cbi-button-link" type="button" value="<%:Return to old page%>" onclick="location.href='/cgi-bin/luci/admin/network/modem/at_command_old'">
+						<input class="cbi-button cbi-button-reset" type="button" value="<%:Clean%>" onclick="clean_response()" alt="<%:Clean%>" title="<%:Clean%>">
+					</div>
+				</td>
+			</tr>
+		</table>
+	</fieldset>
+	
+</div>
+
+<%+footer%>

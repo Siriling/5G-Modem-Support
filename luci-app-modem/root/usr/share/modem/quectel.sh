@@ -22,6 +22,42 @@ get_quectel_mode()
     echo "$mode"
 }
 
+#获取AT命令
+get_quectel_at_commands()
+{
+    local quick_commands="\"quick_commands\":[
+        {\"模组信息 > ATI\":\"ATI\"},
+        {\"查询SIM卡状态 > AT+CPIN?\":\"AT+CPIN?\"},
+        {\"查询此时信号强度 > AT+CSQ\":\"AT+CSQ\"},
+        {\"查询网络信息 > AT+COPS?\":\"AT+COPS?\"},
+        {\"查询PDP信息 > AT+CGDCONT?\":\"AT+CGDCONT?\"},
+        {\"最小功能模式 > AT+CFUN=0\":\"AT+CFUN=0\"},
+        {\"全功能模式 > AT+CFUN=1\":\"AT+CFUN=1\"},
+        {\"SIM卡状态上报 > AT+QSIMSTAT?\":\"AT+QSIMSTAT?\"},
+        {\"设置当前使用的为卡1 > AT+QUIMSLOT=1\":\"AT+QUIMSLOT=1\"},
+        {\"设置当前使用的为卡2 > AT+QUIMSLOT=2\":\"AT+QUIMSLOT=2\"},
+        {\"查询网络信息 > AT+QNWINFO\":\"AT+QNWINFO\"},
+        {\"查询载波聚合参数 > AT+QCAINFO\":\"AT+QCAINFO\"},
+        {\"查询当前拨号模式 > AT+QCFG=\\\"usbnet\\\"\":\"AT+QCFG=\\\"usbnet\\\"\"},
+        {\"QMI/GobiNet拨号 > AT+QCFG=\\\"usbnet\\\",0\":\"AT+QCFG=\\\"usbnet\\\",0\"},
+        {\"ECM拨号 > AT+QCFG=\\\"usbnet\\\",1\":\"AT+QCFG=\\\"usbnet\\\",1\"},
+        {\"MBIM拨号 > AT+QCFG=\\\"usbnet\\\",2\":\"AT+QCFG=\\\"usbnet\\\",2\"},
+        {\"RNDIS拨号 > AT+QCFG=\\\"usbnet\\\",3\":\"AT+QCFG=\\\"usbnet\\\",3\"},
+        {\"NCM拨号 > AT+QCFG=\\\"usbnet\\\",5\":\"AT+QCFG=\\\"usbnet\\\",5\"},
+        {\"锁4G > AT+QNWPREFCFG=\\\"mode_pref\\\",LTE\":\"AT+QNWPREFCFG=\\\"mode_pref\\\",LTE\"},
+        {\"锁5G > AT+QNWPREFCFG=\\\"mode_pref\\\",NR5G\":\"AT+QNWPREFCFG=\\\"mode_pref\\\",NR5G\"},
+        {\"恢复自动搜索网络 > AT+QNWPREFCFG=\\\"mode_pref\\\",AUTO\":\"AT+QNWPREFCFG=\\\"mode_pref\\\",AUTO\"},
+        {\"查询模组IMEI > AT+CGSN\":\"AT+CGSN\"},
+        {\"查询模组IMEI > AT+GSN\":\"AT+GSN\"},
+        {\"更改模组IMEI > AT+EGMR=1,7,\\\"IMEI\\\"\":\"AT+EGMR=1,7,\\\"在此设置IMEI\\\"\"},
+        {\"获取模组温度 > AT+QTEMP\":\"AT+QTEMP\"},
+        {\"切换为USB通信端口 > AT+QCFG=\\\"data_interface\\\",0,0\":\"AT+QCFG=\\\"data_interface\\\",0,0\"},
+        {\"切换为PCIE通信端口 > AT+QCFG=\\\"data_interface\\\",1,0\":\"AT+QCFG=\\\"data_interface\\\",1,0\"},
+        {\"重置模组 > AT+CFUN=1,1\":\"AT+CFUN=1,1\"}
+    ]"
+    echo "$quick_commands"
+}
+
 #获取连接状态
 # $1:AT串口
 get_connect_status()
@@ -310,7 +346,7 @@ quectel_cell_info()
         endc_lte_sinr=$(echo "$lte" | awk -F',' '{print $15}')
         endc_lte_cql=$(echo "$lte" | awk -F',' '{print $16}')
         endc_lte_tx_power=$(echo "$lte" | awk -F',' '{print $17}')
-        endc_lte_rxlev=$(echo "$lte" | awk -F',' '{print $18}')
+        endc_lte_rxlev=$(echo "$lte" | awk -F',' '{print $18}' | sed 's/\r//g')
         #NR5G-NSA
         endc_nr_mcc=$(echo "$nr5g_nsa" | awk -F',' '{print $2}')
         endc_nr_mnc=$(echo "$nr5g_nsa" | awk -F',' '{print $3}')
@@ -323,7 +359,7 @@ quectel_cell_info()
         endc_nr_band=$(get_band "NR" $endc_nr_band_num)
         nr_dl_bandwidth_num=$(echo "$nr5g_nsa" | awk -F',' '{print $10}')
         endc_nr_dl_bandwidth=$(get_nr_dl_bandwidth $nr_dl_bandwidth_num)
-        scs_num=$(echo "$nr5g_nsa" | awk -F',' '{print $16}')
+        scs_num=$(echo "$nr5g_nsa" | awk -F',' '{print $16}' | sed 's/\r//g')
         endc_nr_scs=$(get_scs $scs_num)
     else
         #SA，LTE，WCDMA模式
@@ -348,7 +384,7 @@ quectel_cell_info()
                 nr_sinr=$(echo "$response" | awk -F',' '{print $15}')
                 nr_scs_num=$(echo "$response" | awk -F',' '{print $16}')
                 nr_scs=$(get_scs $nr_scs_num)
-                nr_rxlev=$(echo "$response" | awk -F',' '{print $17}')
+                nr_rxlev=$(echo "$response" | awk -F',' '{print $17}' | sed 's/\r//g')
             ;;
             "LTE"|"CAT-M"|"CAT-NB")
                 network_mode="LTE Mode"
@@ -371,7 +407,7 @@ quectel_cell_info()
                 lte_sinr=$(echo "$response" | awk -F',' '{print $17}')
                 lte_cql=$(echo "$response" | awk -F',' '{print $18}')
                 lte_tx_power=$(echo "$response" | awk -F',' '{print $19}')
-                lte_rxlev=$(echo "$response" | awk -F',' '{print $20}')
+                lte_rxlev=$(echo "$response" | awk -F',' '{print $20}' | sed 's/\r//g')
             ;;
             "WCDMA")
                 network_mode="WCDMA Mode"
@@ -391,7 +427,7 @@ quectel_cell_info()
                 wcdma_slot_num=$(echo "$response" | awk -F',' '{print $15}')
                 wcdma_slot=$(get_slot $wcdma_slot_num)
                 wcdma_speech_code=$(echo "$response" | awk -F',' '{print $16}')
-                wcdma_com_mod=$(echo "$response" | awk -F',' '{print $17}')
+                wcdma_com_mod=$(echo "$response" | awk -F',' '{print $17}' | sed 's/\r//g')
             ;;
         esac
     fi
