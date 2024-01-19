@@ -14,10 +14,10 @@ msgid "Modem Name"
 msgstr "模组名称"
 
 msgid "Modem Debug"
-msgstr "模组名称"
+msgstr "模组调试"
 
 msgid "Modem Select"
-msgstr "选择模组"
+msgstr "模组选择"
 
 msgid "Check information about adapted modem on this page"
 msgstr "在此页面查看已适配模组的信息"
@@ -34,8 +34,11 @@ msgstr "正在加载模组状态"
 msgid "Loading modem"
 msgstr "正在加载模组"
 
-msgid "Configuration panel for Modem, Add configuration to all modems on this page"
-msgstr "通信模组服务配置界面，在此页面给所有模组添加配置"
+msgid "Dial Config"
+msgstr "拨号配置"
+
+msgid "Add dialing configuration to all modules on this page"
+msgstr "在此页面给所有模组添加拨号配置"
 
 msgid "Global Config"
 msgstr "全局配置"
@@ -63,6 +66,21 @@ msgstr "配置列表"
 
 msgid "Debug Your Module"
 msgstr "调试你的模组"
+
+msgid "Select a modem for debugging"
+msgstr "选择一个模组进行调试"
+
+msgid "Network Preferences"
+msgstr "网络偏好"
+
+msgid "Current"
+msgstr "当前"
+
+msgid "Option"
+msgstr "选项"
+
+msgid "Config"
+msgstr "配置"
 
 msgid "AT Command"
 msgstr "AT命令"

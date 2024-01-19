@@ -18,7 +18,7 @@ function index()
 	entry({"admin", "network", "modem", "get_modem_info"}, call("getModemInfo"))
 
 	--模块设置
-	entry({"admin", "network", "modem", "index"},cbi("modem/index"),translate("Modem Config"),20).leaf = true
+	entry({"admin", "network", "modem", "index"},cbi("modem/index"),translate("Dial Config"),20).leaf = true
 	entry({"admin", "network", "modem", "config"}, cbi("modem/config")).leaf = true
 	entry({"admin", "network", "modem", "get_modems"}, call("getModems"), nil).leaf = true
 	entry({"admin", "network", "modem", "status"}, call("act_status")).leaf = true
@@ -28,8 +28,10 @@ function index()
 	entry({"admin", "network", "modem", "get_at_port"}, call("getATPort"), nil).leaf = true
 	entry({"admin", "network", "modem", "get_quick_commands"}, call("getQuickCommands"), nil).leaf = true
 	entry({"admin", "network", "modem", "send_at_command"}, call("sendATCommand"), nil).leaf = true
-	entry({"admin", "network", "modem", "user_at_command"}, call("userATCommand"), nil).leaf = true
-	entry({"admin", "network", "modem", "mode_info"}, call("modeInfo"), nil).leaf = true
+	entry({"admin", "network", "modem", "get_network_prefer"}, call("getNetworkPrefer"), nil).leaf = true
+	entry({"admin", "network", "modem", "set_network_prefer"}, call("setNetworkPrefer"), nil).leaf = true
+	entry({"admin", "network", "modem", "get_mode"}, call("getMode"), nil).leaf = true
+	entry({"admin", "network", "modem", "set_mode"}, call("setMode"), nil).leaf = true
 	
 	--AT命令旧界面
 	entry({"admin", "network", "modem", "at_command_old"},template("modem/at_command_old")).leaf = true
@@ -55,6 +57,7 @@ function at(at_port,at_command)
 	local odpall = io.popen("cd "..script_path.." && source "..script_path.."modem_debug.sh && at "..at_port.." "..at_command)
 	local odp =  odpall:read("*a")
 	odpall:close()
+	odp=string.gsub(odp, "\r", "")
 	return odp
 end
 
@@ -71,7 +74,7 @@ function getModemConnectStatus(at_port,manufacturer)
 	if at_port and manufacturer then
 		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_connect_status "..at_port)
 		connect_status = odpall:read("*a")
-		connect_status=string.gsub(connect_status, "\n", "")
+		connect_status = string.gsub(connect_status, "\n", "")
 		odpall:close()
 	end
 
@@ -239,81 +242,6 @@ function act_status()
 end
 
 --[[
-@Description 模式信息
-]]
-function modeInfo()
-	-- 设置默认值
-	local modes={"qmi","gobinet","ecm","mbim","rndis","ncm"}
-	-- 获取移动网络
-	local network = http.formvalue("network")
-
-	local modem_number=uci:get('modem','global','modem_number')
-	for i=0,modem_number-1 do
-		local modem_network = uci:get('modem','modem'..i,'network')
-		if network == modem_network then
-			-- 清空表
-			modes={}
-			-- 把找到的模块存入表中
-			local modes_arr = uci:get_list('modem','modem'..i,'modes')
-			for i in ipairs(modes_arr) do
-				modes[i]=modes_arr[i]
-			end
-		end
-	end
-	-- 写入Web界面
-	luci.http.prepare_content("application/json")
-	luci.http.write_json(modes)
-end
-
---[[
-@Description 发送AT命令
-]]
-function sendATCommand()
-    local at_port = http.formvalue("port")
-	local at_command = http.formvalue("command")
-
-	local response={}
-    if at_port and at_command then
-		response["response"]=at(at_port,at_command)
-		response["time"]=os.date("%Y-%m-%d %H:%M:%S")
-    end
-
-	-- 写入Web界面
-	luci.http.prepare_content("application/json")
-	luci.http.write_json(response)
-end
-
---[[
-@Description 用户AT命令
-]]
-function userATCommand()
-	local at_commands={}
-	-- 获取模块AT命令
-	local command_file
-	if nixio.fs.access("/etc/config/modem_command.user") then
-		command_file=io.popen("cat /etc/config/modem_command.user")
-	end
-	if command_file then
-		local i=0
-		for line in command_file:lines() do
-			if line then
-				-- 分割为{key,value}
-				local command_table=string.split(line, ";")
-				-- 整合为{0:{key:value},1:{key:value}}
-				local at_command={}
-				at_command[command_table[1]]=command_table[2]
-				at_commands[tostring(i)]=at_command
-				i=i+1
-			end
-		end
-		command_file:close()
-	end
-	-- 写入Web界面
-	luci.http.prepare_content("application/json")
-	luci.http.write_json(at_commands)
-end
-
---[[
 @Description 获取模组的备注
 @Params
 	network 移动网络
@@ -392,4 +320,159 @@ function getQuickCommands()
 	-- 写入Web界面
 	luci.http.prepare_content("application/json")
 	luci.http.write_json(quick_commands)
+end
+
+--[[
+@Description 发送AT命令
+]]
+function sendATCommand()
+    local at_port = http.formvalue("port")
+	local at_command = http.formvalue("command")
+
+	local response={}
+    if at_port and at_command then
+		response["response"]=at(at_port,at_command)
+		response["time"]=os.date("%Y-%m-%d %H:%M:%S")
+    end
+
+	-- 写入Web界面
+	luci.http.prepare_content("application/json")
+	luci.http.write_json(response)
+end
+
+--[[
+@Description 获取网络偏好
+]]
+function getNetworkPrefer()
+    local at_port = http.formvalue("port")
+
+	--获取制造商
+	local manufacturer
+	uci:foreach("modem", "modem-device", function (modem_device)
+		--设置模组AT串口
+		if at_port == modem_device["at_port"] then
+			--获取制造商
+			manufacturer=modem_device["manufacturer"]
+		end
+	end)
+
+	--获取模组网络偏好
+	local network_prefer={}
+	if at_port and manufacturer and manufacturer~="unknown" then
+		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_network_prefer "..at_port)
+		local opd = odpall:read("*a")
+		network_prefer=json.parse(opd)
+		odpall:close()
+	end
+
+	-- 写入Web界面
+	luci.http.prepare_content("application/json")
+	luci.http.write_json(network_prefer)
+end
+
+--[[
+@Description 设置网络偏好
+]]
+function setNetworkPrefer()
+    local at_port = http.formvalue("port")
+	local network_prefer_config = json.stringify(http.formvalue("prefer_config"))
+
+	--获取制造商
+	local manufacturer
+	uci:foreach("modem", "modem-device", function (modem_device)
+		--设置模组AT串口
+		if at_port == modem_device["at_port"] then
+			--获取制造商
+			manufacturer=modem_device["manufacturer"]
+		end
+	end)
+
+	--设置模组网络偏好
+	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && set_network_prefer "..at_port.." "..network_prefer_config)
+	odpall:close()
+
+	--获取设置好后的模组网络偏好
+	local network_prefer={}
+	if at_port and manufacturer and manufacturer~="unknown" then
+		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_network_prefer "..at_port)
+		local opd = odpall:read("*a")
+		network_prefer=json.parse(opd)
+		odpall:close()
+	end
+
+	-- 写入Web界面
+	luci.http.prepare_content("application/json")
+	luci.http.write_json(network_prefer)
+end
+
+--[[
+@Description 获取拨号模式
+]]
+function getMode()
+	local at_port = http.formvalue("port")
+
+	--获取制造商和支持的拨号模式
+	local manufacturer
+	local modes
+	uci:foreach("modem", "modem-device", function (modem_device)
+		--设置模组AT串口
+		if at_port == modem_device["at_port"] then
+			--获取制造商
+			manufacturer=modem_device["manufacturer"]
+			modes=modem_device["modes"]
+		end
+	end)
+
+	--获取模组拨号模式
+	local mode
+	if at_port and manufacturer and manufacturer~="unknown" then
+		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_mode "..at_port)
+		mode = odpall:read("*a")
+		mode=string.gsub(mode, "\n", "")
+		odpall:close()
+	end
+
+	-- 设置值
+	local mode_info={}
+	mode_info["mode"]=mode
+	mode_info["modes"]=modes
+
+	-- 写入Web界面
+	luci.http.prepare_content("application/json")
+	luci.http.write_json(mode_info)
+end
+
+--[[
+@Description 设置拨号模式
+]]
+function setMode()
+    local at_port = http.formvalue("port")
+	local mode_config = http.formvalue("mode_config")
+
+	--获取制造商
+	local manufacturer
+	uci:foreach("modem", "modem-device", function (modem_device)
+		--设置模组AT串口
+		if at_port == modem_device["at_port"] then
+			--获取制造商
+			manufacturer=modem_device["manufacturer"]
+		end
+	end)
+
+	--设置模组拨号模式
+	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && set_mode "..at_port.." "..mode_config)
+	odpall:close()
+
+	--获取设置好后的模组拨号模式
+	local mode
+	if at_port and manufacturer and manufacturer~="unknown" then
+		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_mode "..at_port)
+		mode = odpall:read("*a")
+		mode=string.gsub(mode, "\n", "")
+		odpall:close()
+	end
+
+	-- 写入Web界面
+	luci.http.prepare_content("application/json")
+	luci.http.write_json(mode)
 end

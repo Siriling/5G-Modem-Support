@@ -2,7 +2,7 @@ local d = require "luci.dispatcher"
 local uci = luci.model.uci.cursor()
 
 m = Map("modem")
-m.title = translate("Modem Config")
+m.title = translate("Dial Config")
 m.description = translate("Configuration panel for Modem, Add configuration to all modems on this page")
 
 --全局配置

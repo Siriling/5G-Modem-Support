@@ -145,7 +145,7 @@ setModemInfoConfig()
                 uci set modem.modem$1.manufacturer="$manufacturer"
 
                 #设置当前的拨号模式
-                local mode=$(get_mode $manufacturer $2)
+                local mode=$(source $current_dir/$manufacturer.sh && get_mode $2)
                 uci set modem.modem$1.mode="$mode"
 
                 #设置支持的拨号模式
@@ -159,23 +159,6 @@ setModemInfoConfig()
                 done
                 break
             fi
-
-            # #数据库中没有此模块的信息，使用默认值
-            # if [ $i -ge $(($line_count-1)) ]; then
-
-            #     #设置模块名
-            #     uci set modem.modem$1.name="$modem_name" 
-            #     #设置制造商
-            #     local manufacturer=$(echo "$line_context" | cut -d ";" -f 1)
-            #     uci set modem.modem$1.manufacturer="$manufacturer"
-            #     #删除原来的拨号模式列表
-            #     uci -q del modem.modem$1.modes
-            #     #添加新的拨号模式列表
-            #     for mode in $modes; do
-            #         uci add_list modem.modem$1.modes="$mode"
-            #     done
-            #     break
-            # fi
         fi
     done
 }

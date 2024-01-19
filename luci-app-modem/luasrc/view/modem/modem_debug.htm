@@ -13,14 +13,36 @@
 			get_quick_commands();
 		});
 
-
 		//获取快捷选项父元素
-		var quick_option = document.getElementById('quick_option_td');
-		quick_option.addEventListener('change', function(event) {
+		var quick_option_element = document.getElementById('quick_option_td');
+		//更换快捷选项时触发
+		quick_option_element.addEventListener('change', function(event) {
 			var target = event.target;
 			if (target.matches('input[type="radio"]')) {
 				//获取快捷命令
 				get_quick_commands();
+			}
+		});
+
+		//获取网络偏好选项元素
+		var prefer_option_auto = document.getElementById('prefer_option_auto');
+		var prefer_option_custom = document.getElementById('prefer_option_custom');
+		//网络偏好选项为自动时触发
+		prefer_option_auto.addEventListener('change', function() {
+			if (prefer_option_auto.checked)
+			{
+				//禁用偏好复选框
+				disabled_prefer_custom_config(true);
+				//全选偏好复选框
+				all_choose_prefer_custom_config(true);
+			}
+		});
+		//网络偏好选项为自定义时触发
+		prefer_option_custom.addEventListener('change', function() {
+			if (prefer_option_custom.checked)
+			{
+				//禁用偏好复选框
+				disabled_prefer_custom_config(false);
 			}
 		});
 	}
@@ -37,6 +59,8 @@
 					responseElement.value+=data["time"];
 					//显示返回值
 					responseElement.value+=data["response"];
+					//滚动到底部
+					responseElement.scrollTop = responseElement.scrollHeight;
 				}
 			}
 		);
@@ -49,7 +73,6 @@
 		var at_port = document.getElementById("modem_select").value;
 		if ( at_port.length == 0 )
 		{
-			// document.getElementById("odp").innerHTML = "";
 			alert("<%:Please choose a Modem%>");
 			return false;
 		}
@@ -58,10 +81,12 @@
 		var at_command = document.getElementById("at_command").value;
 		if ( at_command.length == 0 )
 		{
-			// document.getElementById("odp").innerHTML = "";
 			alert("<%:Please enter a AT Command%>");
 			return false;
 		}
+
+		//对双引号进行特殊处理
+		at_command=at_command.replaceAll("\"","\\\"");
 
 		//发送AT命令
 		send(at_port,at_command);
@@ -116,10 +141,89 @@
 	}
 
 	// 自动填写到命令输入框
-	function copyToSend()
+	function copy_to_input()
 	{
 		var command_select = document.getElementById("command_select").value;
 		document.getElementById("at_command").value = command_select;
+	}
+
+	// 无模组界面
+	function no_modems_view()
+	{
+		//更新提示信息
+		document.getElementById("info_message").innerHTML="<strong><%:No modems found%></strong>";
+		//显示提示信息
+		document.getElementById("cbi-info").style.display="block";
+		//隐藏模组选择界面
+		document.getElementById("cbi-modem").style.display="none";
+		//隐藏网络偏好界面
+		document.getElementById("cbi-mode").style.display="none";
+		//隐藏网络偏好界面
+		document.getElementById("cbi-network-prefer").style.display="none";
+		//隐藏AT界面
+		document.getElementById("cbi-at").style.display="none";
+	}
+
+	// 有模组界面
+	function modems_view()
+	{
+		//显示模组选择界面
+		document.getElementById("cbi-modem").style.display="block";
+		//显示网络偏好界面
+		document.getElementById("cbi-mode").style.display="block";
+		//显示网络偏好界面
+		document.getElementById("cbi-network-prefer").style.display="block";
+		//显示AT命令界面
+		document.getElementById("cbi-at").style.display="block";
+		//隐藏提示信息
+		document.getElementById("cbi-info").style.display="none";
+	}
+
+	// 更新选项
+	function update_option(select_element,data,order)
+	{
+		//记录所选
+		var selected=select_element.value;
+		//删除原来的选项
+		select_element.options.length=0;
+
+		//是否有顺序
+		if (order)
+		{
+			//遍历每一条信息
+			for (var info of data)
+			{
+				//遍历每一条信息里的键
+				for (var key in info)
+				{
+					var option = document.createElement('option');
+					option.text = key;
+					option.value = info[key];
+					select_element.appendChild(option);
+				}
+			}
+		}
+		else
+		{
+			//遍历每一条信息里的键
+			for (var key of data)
+			{
+				var option = document.createElement('option');
+				option.text = key;
+				option.value = info[key];
+				select_element.appendChild(option);
+			}
+		}
+
+		//恢复原来的选择
+		for (let i = 0; i < select_element.options.length; i++)
+		{
+			if(select_element.options[i].value == selected)
+			{
+				select_element.selectedIndex=i;
+				break;
+			}
+		}
 	}
 
 	// 获取快捷命令
@@ -132,62 +236,287 @@
 
 		//获取AT命令
 		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "get_quick_commands")%>', {"option":quick_option,"port":at_port},
-			function(x, json)
+			function(x, data)
 			{
-				console.log(json);
-
 				//获取模组选择框元素
 				var command_select = document.getElementById('command_select');
-				//记录所选
-				var selected=command_select.value;
-				//删除原来的选项
-				command_select.options.length=0;
+				//更新选项
+				update_option(command_select,data["quick_commands"],true);
 
-				//获取快捷命令
-				var quick_commands=json["quick_commands"];
-				//遍历每一条信息
-				for (var info of quick_commands)
-				{
-					//遍历每一条信息里的键
-					for (var key in info)
-					{
-						var option = document.createElement('option');
-						option.text = key;
-						option.value = info[key];
-						command_select.appendChild(option);
-					}
-				}
-				//恢复原来的选择
-				for (let i = 0; i < command_select.options.length; i++)
-				{
-					if(command_select.options[i].value == selected)
-					{
-						command_select.selectedIndex=i;
-						break;
-					}
-				}
+				//显示有模组界面
+				modems_view();
 			}
 		);
-	};
-
-	// 无模组界面
-	function no_modems_view()
-	{
-		//更新提示信息
-		document.getElementById("info_message").innerHTML="<strong><%:No modems found%></strong>";
-		//显示提示信息
-		document.getElementById("cbi-info").style.display="block";
-		//隐藏AT命令界面
-		document.getElementById("cbi-at").style.display="none";
 	}
 
-	// 有模组界面
-	function modems_view()
+	// 全选网络偏好复选框
+	function all_choose_prefer_custom_config(status)
 	{
-		//显示AT命令界面
-		document.getElementById("cbi-at").style.display="block";
-		//隐藏提示信息
-		document.getElementById("cbi-info").style.display="none";
+		var checkboxes=document.getElementById('prefer_custom_config').querySelectorAll('input[type="checkbox"]');
+		for(checkbox of checkboxes)
+		{
+			//设置网络偏好复选框状态
+			checkbox.checked=status;
+		}
+	}
+
+	// 禁用网络偏好复选框
+	function disabled_prefer_custom_config(status)
+	{
+		var checkboxes=document.getElementById('prefer_custom_config').querySelectorAll('input[type="checkbox"]');
+		for(checkbox of checkboxes)
+		{
+			//禁用
+			checkbox.disabled=status;
+		}
+	}
+
+	// 禁用功能
+	function disabled_function(function_name,status)
+	{
+		//拨号模式
+		if (function_name=="mode")
+		{
+			//模式选项
+			document.getElementById('mode_option_qmi').disabled=status;
+			document.getElementById('mode_option_ecm').disabled=status;
+			document.getElementById('mode_option_mbim').disabled=status;
+			document.getElementById('mode_option_rndis').disabled=status;
+			document.getElementById('mode_option_ncm').disabled=status;
+
+			//模式按钮
+			document.getElementById('mode_button').disabled=status;
+		}
+		//网络偏好
+		else if (function_name=="network_prefer")
+		{
+			//偏好选项
+			document.getElementById('prefer_option_auto').disabled=status;
+			document.getElementById('prefer_option_custom').disabled=status;
+			
+			//网络偏好为自动则不启用
+			var prefer_option_auto = document.getElementById('prefer_option_auto');
+			if (!prefer_option_auto.checked)
+			{
+				//偏好复选框
+				disabled_prefer_custom_config(status);
+			}
+
+			//偏好按钮
+			document.getElementById('network_prefer_button').disabled=status;
+		}
+	}
+
+	// 获取拨号模式
+	function get_mode()
+	{
+		//获取选中的模组
+		var at_port = document.getElementById("modem_select").value;
+
+		//获取偏好
+		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "get_mode")%>', {"port":at_port},
+			function(x, data)
+			{
+				//获取当前拨号模式
+				var current_mode=data["mode"];
+				//获取支持的拨号模式
+				var modes=data["modes"];
+
+				//获取模式视图
+				var current_mode_view=current_mode.toUpperCase();
+
+				//设置当前拨号模式
+				document.getElementById('current_mode').innerHTML=current_mode_view;
+
+				var mode_first_element=document.getElementById('mode-first-checked');
+				if (mode_first_element.value=="true")
+				{
+					//设置支持的拨号模式
+					var mode_option_view='';
+					for(mode of modes)
+					{
+						if (mode=="gobinet")
+						{
+							mode_option_view=mode_option_view.replace("QMI","QMI/GobiNet");
+						}
+						else
+						{
+							mode_option_view+='<span class="cbi-radio"><input type="radio" name="mode_option" id="mode_option_'+mode+'" value="'+mode+'"><span>'+mode.toUpperCase()+'</span></span>&nbsp;&nbsp;';
+						}
+					}
+					document.getElementById('mode_option').innerHTML=mode_option_view;
+
+					//设置拨号模式选项
+					document.getElementById('mode_option_'+current_mode).checked=true;
+
+					mode_first_element.value="false";
+				}
+
+				//显示有模组界面
+				// modems_view();
+			}
+		);
+	}
+
+	// 设置拨号模式
+	function set_mode()
+	{
+		//禁用功能
+		disabled_function("mode",true);
+
+		//获取模式选项
+		var mode_config = document.querySelector('input[name="mode_option"]:checked').value;
+		//获取选中的模组
+		var at_port = document.getElementById("modem_select").value;
+
+		//设置偏好
+		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "set_mode")%>', {"port":at_port,"mode_config":mode_config},
+			function(x, data)
+			{
+				console.log(data);
+
+				//获取模组拨号模式
+				var current_mode=data;
+
+				//获取模式视图
+				var current_mode_view=current_mode.toUpperCase();
+
+				//设置当前拨号模式
+				document.getElementById('current_mode').innerHTML=current_mode_view;
+
+				//启用功能
+				disabled_function("mode",false);
+			}
+		);
+	}
+
+	// 获取当前网络视图
+	function get_current_prefer_view(network_prefer)
+	{
+		var current_prefer_view="";
+
+		//自动状态判断（全部选中为自动）
+		if (network_prefer["3G"]&&network_prefer["4G"]&&network_prefer["5G"])
+		{
+			//更新当前偏好
+			current_prefer_view="AUTO";
+		}
+		else
+		{
+			//更新当前偏好
+			for(key in network_prefer)
+			{
+				if (network_prefer[key]) {
+					current_prefer_view+=key+" ";
+				}
+			}
+		}
+		
+		return current_prefer_view;
+	}
+
+	// 获取网络偏好
+	function get_network_prefer()
+	{
+		//获取选中的模组
+		var at_port = document.getElementById("modem_select").value;
+
+		//获取偏好
+		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "get_network_prefer")%>', {"port":at_port},
+			function(x, data)
+			{
+				//获取模组网络偏好
+				var network_prefer=data["network_prefer"];
+
+				//获取偏好视图
+				var current_prefer_view=get_current_prefer_view(network_prefer);
+
+				//设置当前网络偏好
+				document.getElementById('current_prefer').innerHTML=current_prefer_view;
+
+				//设置偏好选项和复选框
+				var prefer_first_element=document.getElementById('prefer-first-checked');
+				if (prefer_first_element.value=="true")
+				{
+					if (network_prefer["3G"]&&network_prefer["4G"]&&network_prefer["5G"])
+					{
+						//设置偏好选项
+						document.getElementById('prefer_option_auto').checked=true;
+						//更新偏好配置
+						all_choose_prefer_custom_config(true);
+						//禁用用偏好复选框
+						disabled_prefer_custom_config(true);
+					}
+					else
+					{
+						//设置偏好选项
+						document.getElementById('prefer_option_custom').checked=true;
+						//更新偏好配置
+						for (key in network_prefer)
+						{
+							//设置偏好配置
+							var prefer_config_element=document.getElementById('prefer_config_'+key.toLowerCase());
+							if (prefer_config_element!=null) {
+								prefer_config_element.checked=network_prefer[key];
+							}
+						}
+						//启用偏好复选框
+						disabled_prefer_custom_config(false);
+					}
+					prefer_first_element.value="false";
+				}
+
+				//显示有模组界面
+				// modems_view();
+			}
+		);
+	}
+
+	// 设置网络偏好
+	function set_network_prefer()
+	{
+		//禁用功能
+		disabled_function("network_prefer",true);
+
+		//获取偏好选项
+		var prefer_option = document.querySelector('input[name="prefer_option"]:checked').value;
+		//获取选中的模组
+		var at_port = document.getElementById("modem_select").value;
+
+		//获取偏好配置
+		var network_prefer_config={};
+		if (prefer_option=="auto")
+		{
+			network_prefer_config["3G"]=1;
+			network_prefer_config["4G"]=1;
+			network_prefer_config["5G"]=1;
+		}
+		else
+		{
+			var checkboxes=document.getElementById('prefer_custom_config').querySelectorAll('input[type="checkbox"]');
+			for(checkbox of checkboxes)
+			{
+				network_prefer_config[checkbox.value.toUpperCase()]=Number(checkbox.checked);
+			}
+		}
+
+		//设置偏好
+		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "set_network_prefer")%>', {"port":at_port,"prefer_config":network_prefer_config},
+			function(x, data)
+			{
+				//获取模组网络偏好
+				var network_prefer=data["network_prefer"];
+
+				//获取当前偏好视图
+				var current_prefer_view=get_current_prefer_view(network_prefer);
+				
+				//设置模组当前网络偏好
+				document.getElementById('current_prefer').innerHTML=current_prefer_view;
+
+				//启用功能
+				disabled_function("network_prefer",false);
+			}
+		);
 	}
 
 	// 定时触发更新AT串口
@@ -210,8 +539,11 @@
 				if (quick_option=="auto") {
 					get_quick_commands();
 				}
-				//显示有模组界面
-				modems_view();
+				//获取拨号模式
+				get_mode();
+
+				//获取网络偏好
+				get_network_prefer();
 			}
 		}
 	);
@@ -224,15 +556,34 @@
 	<div class="cbi-map-descr"><%:Debug Your Module%></div>
 	<head>
 		<style type="text/css">
-		table {
+		/* table {
 			width: 100%;
 			border-spacing: 10px;
 			border: 0px;
-		}
-		/* input {
-			vertical-align: bottom;
 		} */
 		
+		tr td:first-child {
+			width: 33%;
+		}
+
+		/* AT命令响应 */
+		/* #response_label {
+			font-size: 15px;
+		} */
+
+		/* 网络偏好第一次复选框 */
+		[name="first-checked"] {
+			display: none;
+		}
+
+		/* 终端 */
+		textarea {
+			background:#373737;
+			border:none;
+			color:#FFF;
+			width: 100%;
+		}
+
 		#popup {
 			width:560px;
 			height:190px;
@@ -248,88 +599,208 @@
 			text-align: center;
 			display:none;
 		}
-		textarea {
-			background:#373737;
-			border:none;
-			color:#FFF;
-			width: 100%;
-		}
-		/* #command_select {
-			width: 100%;
-		} */
-		/* td {
-			width: 100%;
-		} */
 		</style>
 	</head>
 
 	<fieldset class="cbi-section" id="cbi-info" style="display: block;">
-		<h3><%:Message%></h3>
-		<table>
-			<tr>
-				<td width="10%"></td>
-				<td width="60%">
-					<div align="left" id="info_message" style="font-size:1.875em">
-						<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle"/>
-						<%:Loading modem information%>...
+		<div class="cbi-section fade-in">
+			<h3><%:Message%></h3>
+			<table class="table" id="message">
+				<tr class="tr">
+					<td colspan="2" class="td left">
+						<div align="left" id="info_message" style="font-size:1.875em">
+							<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle"/>
+							<%:Loading modem%>...
+						</div>
+					</td>
+				</tr>
+			</table>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section" id="cbi-modem" style="display: none;">
+		<div class="cbi-section fade-in">
+			<h3><%:Modem Select%></h3>
+			<div class="cbi-section-node">
+				<div class="cbi-value cbi-value-last">
+					<label class="cbi-value-title"><%:Modem Name%></label>
+					<div class="cbi-value-field">
+						<div class="cbi-checkbox">
+							<select name="modem_select" id="modem_select" class="cbi-input-select"></select>
+						</div>
+						<div class="cbi-value-description">
+							<%:Select a modem for debugging%>
+						</div>
 					</div>
-				</td>
-				<td width="30%"></td>
-			</tr>
-		</table>
+				</div>
+			</div>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section" id="cbi-mode" style="display: none;">	
+		<div class="cbi-section cbi-tblsection">
+			<!-- <legend><%:AT Command%></legend> -->
+			<h3><%:Mode%></h3>
+			<table class="table cbi-section-table">
+				<tbody>
+					<tr class="tr cbi-section-table-titles anonymous">
+						<th class="th cbi-section-table-cell"><%:Current%></th>
+						<th class="th cbi-section-table-cell"><%:Config%></th>
+						<th class="th cbi-section-table-cell cbi-section-actions"></th>
+					</tr>
+					<tr class="tr cbi-section-table-row cbi-rowstyle-1">
+						<td class="td cbi-value-field" data-title="<%:Current%>" id="current_mode"></td>
+						<td class="td cbi-value-field" data-title="<%:Config%>" id="mode_option">
+							<!-- <div name="first-checked">
+								<input type="hidden" id="mode-first-checked" value="true">
+							</div>
+							<div>
+								<span class="cbi-radio">
+									<input type="radio" name="mode_option" id="mode_option_qmi" value="qmi" checked="true">
+									<span>QMI</span>
+								</span>&nbsp;
+								<span class="cbi-radio">
+									<input type="radio" name="mode_option" id="mode_option_ecm" value="ecm">
+									<span>ECM</span>
+								</span>&nbsp;
+								<span class="cbi-radio">
+									<input type="radio" name="mode_option" id="mode_option_mbim" value="mbim">
+									<span>MBIM</span>
+								</span>&nbsp;
+								<span class="cbi-radio">
+									<input type="radio" name="mode_option" id="mode_option_rndis" value="rndis">
+									<span>RNDIS</span>
+								</span>&nbsp;
+								<span class="cbi-radio">
+									<input type="radio" name="mode_option" id="mode_option_ncm" value="ncm">
+									<span>NCM</span>
+								</span>
+							</div> -->
+						</td>
+						<td class="td">
+							<div name="first-checked">
+								<input type="hidden" id="mode-first-checked" value="true">
+							</div>
+							<div>
+								<button class="btn cbi-button cbi-button-apply" id="mode_button" onclick="set_mode()" alt="<%:Apply%>" title="<%:Apply%>"><%:Apply%></button>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section" id="cbi-network-prefer" style="display: none;">	
+		<div class="cbi-section cbi-tblsection">
+			<!-- <legend><%:AT Command%></legend> -->
+			<h3><%:Network Preferences%></h3>
+			<table class="table cbi-section-table">
+				<tbody>
+					<tr class="tr cbi-section-table-titles anonymous">
+						<th class="th cbi-section-table-cell"><%:Current%></th>
+						<th class="th cbi-section-table-cell"><%:Option%></th>
+						<th class="th cbi-section-table-cell"><%:Config%></th>
+						<th class="th cbi-section-table-cell cbi-section-actions"></th>
+					</tr>
+					<tr class="tr cbi-section-table-row cbi-rowstyle-1">
+						<td class="td cbi-value-field" data-title="<%:Current%>" id="current_prefer"></td>
+						<td class="td cbi-value-field" data-title="<%:Option%>" id="prefer_option">
+							<div>
+								<span class="cbi-radio">
+									<input type="radio" name="prefer_option" id="prefer_option_auto" value="auto" checked="true">
+									<span><%:Auto%></span>
+								</span>&nbsp;
+								<span class="cbi-radio">
+									<input type="radio" name="prefer_option" id="prefer_option_custom" value="custom">
+									<span><%:Custom%></span>
+								</span>
+							</div>
+						</td>
+						<td class="td cbi-value-field" data-title="<%:Config%>" id="prefer_custom_config">
+							<div name="first-checked">
+								<input type="hidden" id="prefer-first-checked" value="true">
+							</div>
+							<div>
+								<span class="cbi-checkbox">
+									<input id="prefer_config_3g" type="checkbox" class="cbi-input-checkbox" value="3g">
+									<span><%:3G%></span>
+								</span> &nbsp;
+								<span class="cbi-checkbox">
+									<input id="prefer_config_4g" type="checkbox" class="cbi-input-checkbox" value="4g">
+									<span><%:4G%></span>
+								</span> &nbsp;
+								<span class="cbi-checkbox">
+									<input id="prefer_config_5g" type="checkbox" class="cbi-input-checkbox" value="5g">
+									<span><%:5G%></span>
+								</span>
+							</div>
+						</td>
+						<td class="td">
+							<div>
+								<button class="btn cbi-button cbi-button-apply" id="network_prefer_button" onclick="set_network_prefer()" alt="<%:Apply%>" title="<%:Apply%>"><%:Apply%></button>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 	</fieldset>
 
 	<fieldset class="cbi-section" id="cbi-at" style="display: none;">
-		<!-- <legend><%:AT Command%></legend> -->
-		<h3><%:AT Command%></h3>
-		
-		<table id="at_command_info">
-			<tr>
-				<td style="width: 20%;"><div align="right"><%:Modem Select%></div></td>
-				<td><select name="modem_select" id="modem_select" class="cbi-input-select"></select></td>
-				<td></td>
-				<td></td>
-			</tr>
-			<tr>
-				<td style="width: 20%;"><div align="right"><%:Quick Option%></div></td>
-				<td id="quick_option_td">
-					<div align="left">
-						<input type="radio" name="quick_option" value="auto" checked="checked"><%:Auto%>
-						<input type="radio" name="quick_option" value="custom"><%:Custom%>
-					</div>
-				</td>
-				<td></td>
-				<td></td>
-			</tr>
-			<tr>
-				<td style="width: 20%;"><div align="right"><%:Quick Commands%></div></td>
-				<td><select name="command_select" id="command_select" class="cbi-input-select" onclick="copyToSend()"></select></td>
-				<td></td>
-				<td></td>
-			</tr>
-			<tr>
-				<td style="width: 20%;"><div align="right"><%:Enter Command%></div></td>
-				<td>
-					<input type="text" id="at_command" class="cbi-input-text"></input>
-				</td>
-				<td class="td cbi-section-table-cell nowrap cbi-section-actions" colspan="2">
-					<div>
-						<input class="cbi-button cbi-button-apply" type="button" value="<%:Send%>" onclick="send_at_command()" alt="<%:Send%>" title="<%:Send%>">
-						<input class="cbi-button cbi-button-reset" type="button" value="<%:Clean%>" onclick="clean_at_command()" alt="<%:Clean%>" title="<%:Clean%>">
-					</div>
-				</td>
-			</tr>
-			<tr>
-				<td colspan="6">
-					<div><%:Response%></div>
-					<div><textarea readonly="readonly" id="response" rows="20" maxlength="160"></textarea></div>
-					<div class="cbi-page-actions">
-						<input class="btn cbi-button cbi-button-link" type="button" value="<%:Return to old page%>" onclick="location.href='/cgi-bin/luci/admin/network/modem/at_command_old'">
-						<input class="cbi-button cbi-button-reset" type="button" value="<%:Clean%>" onclick="clean_response()" alt="<%:Clean%>" title="<%:Clean%>">
-					</div>
-				</td>
-			</tr>
-		</table>
+		<div class="cbi-section fade-in">
+			<!-- <legend><%:AT Command%></legend> -->
+			<h3><%:AT Command%></h3>
+			<table class="table" id="at_command_info">
+				<tbody>
+					<!-- <tr class="tr">
+						<td class="td left"><%:Modem Select%></td>
+						<td class="td left"><select name="modem_select" id="modem_select" class="cbi-input-select"></select></td>
+					</tr> -->
+					<tr class="tr">
+						<td class="td left"><%:Quick Option%></td>
+						<td class="td left" id="quick_option_td">
+							<div>
+								<span class="cbi-radio">
+									<input type="radio" name="quick_option" value="auto" checked="true">
+									<span><%:Auto%></span>
+								</span>&nbsp;
+								<span class="cbi-radio">
+									<input type="radio" name="quick_option" value="custom">
+									<span><%:Custom%></span>
+								</span>
+							</div>
+						</td>
+					</tr>
+					<tr class="tr">
+						<td class="td left"><%:Quick Commands%></td>
+						<td class="td left"><select name="command_select" id="command_select" class="cbi-input-select" onclick="copy_to_input()"></select></td>
+					</tr>
+					<tr class="tr">
+						<td class="td left"><%:Enter Command%></td>
+						<td class="td left">
+							<div>
+								<input type="text" id="at_command" class="cbi-input-text"></input>
+							</div>
+							<div>
+								<input class="cbi-button cbi-button-apply" type="button" value="<%:Send%>" onclick="send_at_command()" alt="<%:Send%>" title="<%:Send%>">
+								<input class="cbi-button cbi-button-reset" type="button" value="<%:Clean%>" onclick="clean_at_command()" alt="<%:Clean%>" title="<%:Clean%>">
+							</div>
+						</td>
+					</tr>
+					<tr class="tr">
+						<td colspan="2" class="td left">
+							<div id="response_label"><%:Response%></div><br/>
+							<div><textarea readonly="readonly" id="response" rows="20" maxlength="160"></textarea></div>
+							<div class="cbi-page-actions">
+								<input class="btn cbi-button cbi-button-link" type="button" value="<%:Return to old page%>" onclick="location.href='/cgi-bin/luci/admin/network/modem/at_command_old'">
+								<input class="cbi-button cbi-button-reset" type="button" value="<%:Clean%>" onclick="clean_response()" alt="<%:Clean%>" title="<%:Clean%>">
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 	</fieldset>
 	
 </div>

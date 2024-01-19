@@ -16,17 +16,26 @@ end
 	g {color:grey; font-size:75%; vertical-align: super;}
 	
 	/*移动端显示优化*/
-	@media (max-width: 768px) {
+	/* @media (max-width: 768px) {
 		tr td:first-child {
 			width: 30%;
 		}
-	}
+	} */
 
 	table {
 		width: 100%;
   		border-spacing: 10px;
 		border: 0px;
 	}
+
+	tr td:first-child {
+		width: 33%;
+	}
+
+	/* 清除表格标题的样式 */
+	/* caption {
+		all: unset;
+	} */
 </style>
 <script type="text/javascript" src="<%=resource%>/xhr.js"></script>
 <script type="text/javascript">//<![CDATA[
@@ -69,7 +78,7 @@ end
 							value=translation[value];
 						}
 					}
-					sim_info_view+='<tr><td width="20%" title="'+full_name+'">'+translation[key]+'</td><td id="'+key+'">'+value+'</td><td></td></tr>';
+					sim_info_view+='<tr class="tr"><td class="td left" title="'+full_name+'">'+translation[key]+'</td><td class="td left" id="'+key+'">'+value+'</td></tr>';
 					break;
 				}
 			}
@@ -132,7 +141,7 @@ end
 					else if (key=="SCS") {
 						value=value+" KHz"
 					}
-					cell_info_view+='<tr><td width="20%" title="'+full_name+'">'+translation[key]+'</td><td id="'+key+'">'+value+'</td><td></td></tr>';
+					cell_info_view+='<tr class="tr"><td class="td left" title="'+full_name+'">'+translation[key]+'</td><td class="td left" id="'+key+'">'+value+'</td></tr>';
 					break;
 				}
  			}
@@ -147,16 +156,16 @@ end
 		var network_mode=Object.keys(cell_info)[0];
 		//获取视图
 		var cell_info_view='<caption>'+translation[network_mode]+'</caption>'; //网络模式视图
+		// var cell_info_view='<tr class="tr"><td class="td center" colspan="2">'+translation[network_mode]+'</td></tr>'; //网络模式视图
 		//获取网络模式下的信息
 		var network_mode_info=cell_info[network_mode];
 		if (network_mode=="EN-DC Mode")
 		{
-			console.log(aaa);
 			var lte=network_mode_info[0]["LTE"];
-			cell_info_view+='<tr><td colspan="3">LTE</td></tr>';
+			cell_info_view+='<tr class="tr"><td class="td left" colspan="2">LTE</td></tr>';
 			cell_info_view+=get_cell_info_view(lte,"LTE",translation);
 			var nsa=network_mode_info[1]["NR5G-NSA"];
-			cell_info_view+='<tr><td colspan="3">NR5G-NSA</td></tr>';
+			cell_info_view+='<tr class="tr"><td class="td left" colspan="2">NR5G-NSA</td></tr>';
 			cell_info_view+=get_cell_info_view(nsa,"NR",translation);
 		}
 		else
@@ -396,97 +405,77 @@ end
 
 <div class="cbi-map" id="cbi-modem">
 	<h2 name="content"><%:Modem Information%></h2>
-	<div class="cbi-map-descr"><%:%></div>
-
-<!-- <fieldset class="cbi-section" id="simwarn" style="display:none;">
-	<legend><%:SIM警告%></legend>
-	<table width="550"  border="0">
-		<tr>
-			<td width="10%"></td>
-    		<td width="60%"><div align="left" id="simsg" style="font-size:1.875em"><strong></strong></div></td>
-			<td width="30%"></td>
-		</tr>
-	</table>
-</fieldset> -->
+	<div class="cbi-map-descr"><%:Check information about adapted modem on this page%></div>
 
 	<fieldset class="cbi-section" id="cbi-info" style="display: block;">
-		<h3><%:Message%></h3>
-		<table>
-			<tr>
-				<td width="10%"></td>
-				<td width="60%">
-					<div align="left" id="info_message" style="font-size:1.875em">
-						<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle"/>
-						<%:Loading modem information%>...
-					</div>
-				</td>
-				<td width="30%"></td>
-			</tr>
-		</table>
+		<div class="cbi-section fade-in">
+			<h3><%:Message%></h3>
+			<table class="table">
+				<tbody id="message">
+					<tr class="tr">
+						<td class="td left">
+							<div align="left" id="info_message" style="font-size:1.875em">
+								<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle"/>
+								<%:Loading modem information%>...
+							</div>
+						</td>
+						<td class="td left"></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 	</fieldset>
 
 	<fieldset class="cbi-section" id="cbi-baseinfo" style="display: none;">
-		<h3><%:Base Information%></h3>
-		<table id="base_info">
-			<tr>
-				<td width="20%"><%:Modem%></td><td id="modem_name">
-					<select name="modem_select" id="modem_select"></select>
-				</td>
-				<td></td>
-			</tr>
-			<tr><td width="20%"><%:Manufacturer%></td><td id="manufacturer"></td><td></td></tr>
-			<tr><td width="20%"><%:Revision%></td><td id="revision"></td><td></td></tr>
-			<tr><td width="20%"><%:Data Interface%></td><td id="data_interface"></td><td></td></tr>
-			<tr><td width="20%"><%:Mode%></td><td id="mode"></td><td></td></tr>
-			<tr><td width="20%"><%:AT Port%></td><td id="at_port"></td><td></td></tr>
-			<tr><td width="20%"><%:Mobile Network%></td><td id="network"></td><td></td></tr>
-			<tr><td width="20%"><%:Temperature%></td><td id="temperature"></td><td></td></tr>
-			<tr><td width="20%"><%:Update Time%></td><td id="update_time"></td><td></td></tr>
-		</table>
+		<div class="cbi-section fade-in">
+			<h3><%:Base Information%></h3>
+			<table class="table" id="base_info">
+				<tbody>
+					<tr class="tr">
+						<td class="td left"><%:Modem%></td>
+						<td class="td left" id="modem_name">
+							<select name="modem_select" id="modem_select"></select>
+						</td>
+					</tr>
+					<tr class="tr"><td class="td left"><%:Manufacturer%></td><td class="td left" id="manufacturer"></td></tr>
+					<tr class="tr"><td class="td left"><%:Revision%></td><td class="td left" id="revision"></td></tr>
+					<tr class="tr"><td class="td left"><%:Data Interface%></td><td class="td left" id="data_interface"></td></tr>
+					<tr class="tr"><td class="td left"><%:Mode%></td><td class="td left" id="mode"></td></tr>
+					<tr class="tr"><td class="td left"><%:AT Port%></td><td class="td left" id="at_port"></td></tr>
+					<tr class="tr"><td class="td left"><%:Mobile Network%></td><td class="td left" id="network"></td></tr>
+					<tr class="tr"><td class="td left"><%:Temperature%></td><td class="td left" id="temperature"></td></tr>
+					<tr class="tr"><td class="td left"><%:Update Time%></td><td class="td left" id="update_time"></td></tr>
+				</tbody>
+			</table>
+		</div>
 	</fieldset>
 
 	<% if nosms == 0 then %>
 	<% end %>
 
 	<fieldset class="cbi-section" id="cbi-siminfo" style="display: none;">
-		<h3><%:SIM Information%></h3>
-		<table id="sim_info">
-			<!-- <tr><td width="20%"><%:SIM Status%> :</td><td id="sim_status"></td><td></td></tr>
-			<tr><td width="20%"><%:ISP%> :</td><td id="isp"></td><td></td></tr>
-			<tr><td width="20%"><%:SIM Slot%> :</td><td id="sim_slot"></td><td></td></tr>
-			<tr><td width="20%"><%:SIM Number%> :</td><td id="sim_number"></td><td></td></tr>
-			<tr><td width="20%"><%:IMEI%> :</td><td id="imei"></td><td></td></tr>
-			<tr><td width="20%"><%:IMSI%> :</td><td id="imsi"></td><td></td></tr>
-			<tr><td width="20%"><%:ICCID%> :</td><td id="iccid"></td><td></td></tr> -->
-		</table>
+		<div class="cbi-section fade-in">
+			<h3><%:SIM Information%></h3>
+			<table class="table" id="sim_info"></table>
+		</div>
 	</fieldset>
 
 	<fieldset class="cbi-section" id="cbi-networkinfo" style="display: none;">
-		<h3><%:Network Information%></h3>
-		<table>
-			<tr><td width="20%"><%:Network Type%></td><td id="network_type"></td><td></td></tr>
-		</table>
+		<div class="cbi-section fade-in">
+			<h3><%:Network Information%></h3>
+			<table id="network_info" class="table">
+				<tbody>
+					<tr class="tr"><td class="td left"><%:Network Type%></td><td class="td left" id="network_type"></td></tr>
+				</tbody>
+			</table>
+		</div>
 	</fieldset>
 
 	<fieldset class="cbi-section" id="cbi-cellinfo" style="display: none;">
-		<h3><%:Cell Information%></h3>
-		<table id="cell_info">
-			<!-- <tr><td width="20%"><%:MCC/MNC 国家码/网络码 %> :</td><td id="nr_mcc"></td><td id="nr_mnc"></td></tr>
-			<tr><td width="20%"><%:Duplex Mode 双工模式 %> :</td><td id="nr_duplex_mode"></td><td></td></tr>
-			<tr><td width="20%"><%:Cell ID 小区ID %> :</td><td><ul><span id="nr_cell_id" class="r"></span><span id="cidn" class="r"></span></ul></td><td></td></tr>
-			<tr><td width="20%"><%:Physical Cell ID 物理小区ID %> :</td><td id="nr_physical_cell_id"></td><td></td></tr>
-			<tr><td width="20%"><%:TAC 跟踪区编码 %> :</td><td id="nr_tac"></td><td></td></tr>
-			<tr><td width="20%" title="<%:Absolute Radio-Frequency Channel Number%>"><%:ARFCN 绝对射频信道号 : %></td><td id="nr_arfcn"></td><td></td></tr>
-			<tr><td width="20%"><%:Band 频段 : %></td><td id="nr_band"></td><td></td></tr>
-			<tr><td width="20%"><%:UL Bandwidth 上行带宽 %> :</td><td id="nr_ul_bandwidth"></td><td></td></tr>
-			<tr><td width="20%"><%:DL Bandwidth 下行带宽 %> :</td><td id="nr_dl_bandwidth"></td><td></td></tr>
-			<tr><td width="20%" title="<%:Reference Signal Received Power%>"><%:RSRP 参考信号接收功率 %> :</td><td id="nr_rsrp"></td><td></td></tr>
-			<tr><td width="20%" title="<%:Reference Signal Received Quality%>"><%:RSRQ 参考信号接收质量 %> :</td><td id="nr_rsrq"></td><td></td></tr>
-			<tr><td width="20%" title="<%:Signal to Interference plus Noise Ratio Bandwidth%>"><%:SINR 信号与干扰加噪声比 %> :</td><td id="nr_sinr"></td><td></td></tr>
-			<tr><td width="20%"><%:SCS NR子载波间隔 %> :</td><td id="nr_scs"></td><td></td></tr>
-			<tr><td width="20%"title="<%:Received Signal Level%>"><%:RxLev 接收信号电平 %> :</td><td id="nr_rxlev"></td><td></td></tr> -->
-		</table>
-
+		<div class="cbi-section fade-in">
+			<h3><%:Cell Information%></h3>
+			<table class="table" id="cell_info"></table>
+		</div>
 	</fieldset>
 
 	<!-- <fieldset class="cbi-section" id="cbi-networkinfo" style="display: none;">

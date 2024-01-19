@@ -106,7 +106,7 @@ set_firewall()
 set_ipv4_interface()
 {
 	#配置中不存在这个网络接口配置，或这个网络接口配置的设备不同
-	[ "$(uci -q get network.$1.device)" != "$2" ] && {
+	if [ "$(uci -q get network.$1.device)" != "$2" ] && [ "$(uci -q get network.$1.ifname)" != "$2" ]; then
 		uci set network.$1='interface'
 		uci set network.$1.proto='dhcp'
 		uci set network.$1.device="$2"
@@ -118,7 +118,7 @@ set_ipv4_interface()
 
 		#启动网络接口
 		ifup $1
-	}
+	fi
 }
 
 #设置IPv6网络接口
@@ -126,7 +126,7 @@ set_ipv4_interface()
 # $2:网络接口
 set_ipv6_interface()
 {
-	if [ "$(uci -q get network.$1.device)" != "$2" ]; then
+	if [ "$(uci -q get network.$1.device)" != "$2" ] && [ "$(uci -q get network.$1.ifname)" != "$2" ] ; then
 		uci set network.$1='interface'
 		uci set network.$1.proto='dhcpv6'
 		uci set network.$1.extendprefix='1'

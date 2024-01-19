@@ -3,7 +3,7 @@ current_dir="$(dirname "$0")"
 
 #获取拨号模式
 # $1:AT串口
-get_quectel_mode()
+get_mode()
 {
     local at_port="$1"
     at_command='AT+QCFG="usbnet"'
@@ -22,40 +22,117 @@ get_quectel_mode()
     echo "$mode"
 }
 
-#获取AT命令
-get_quectel_at_commands()
+#设置拨号模式
+# $1:AT串口
+# $2:拨号模式配置
+set_mode()
 {
-    local quick_commands="\"quick_commands\":[
-        {\"模组信息 > ATI\":\"ATI\"},
-        {\"查询SIM卡状态 > AT+CPIN?\":\"AT+CPIN?\"},
-        {\"查询此时信号强度 > AT+CSQ\":\"AT+CSQ\"},
-        {\"查询网络信息 > AT+COPS?\":\"AT+COPS?\"},
-        {\"查询PDP信息 > AT+CGDCONT?\":\"AT+CGDCONT?\"},
-        {\"最小功能模式 > AT+CFUN=0\":\"AT+CFUN=0\"},
-        {\"全功能模式 > AT+CFUN=1\":\"AT+CFUN=1\"},
-        {\"SIM卡状态上报 > AT+QSIMSTAT?\":\"AT+QSIMSTAT?\"},
-        {\"设置当前使用的为卡1 > AT+QUIMSLOT=1\":\"AT+QUIMSLOT=1\"},
-        {\"设置当前使用的为卡2 > AT+QUIMSLOT=2\":\"AT+QUIMSLOT=2\"},
-        {\"查询网络信息 > AT+QNWINFO\":\"AT+QNWINFO\"},
-        {\"查询载波聚合参数 > AT+QCAINFO\":\"AT+QCAINFO\"},
-        {\"查询当前拨号模式 > AT+QCFG=\\\"usbnet\\\"\":\"AT+QCFG=\\\"usbnet\\\"\"},
-        {\"QMI/GobiNet拨号 > AT+QCFG=\\\"usbnet\\\",0\":\"AT+QCFG=\\\"usbnet\\\",0\"},
-        {\"ECM拨号 > AT+QCFG=\\\"usbnet\\\",1\":\"AT+QCFG=\\\"usbnet\\\",1\"},
-        {\"MBIM拨号 > AT+QCFG=\\\"usbnet\\\",2\":\"AT+QCFG=\\\"usbnet\\\",2\"},
-        {\"RNDIS拨号 > AT+QCFG=\\\"usbnet\\\",3\":\"AT+QCFG=\\\"usbnet\\\",3\"},
-        {\"NCM拨号 > AT+QCFG=\\\"usbnet\\\",5\":\"AT+QCFG=\\\"usbnet\\\",5\"},
-        {\"锁4G > AT+QNWPREFCFG=\\\"mode_pref\\\",LTE\":\"AT+QNWPREFCFG=\\\"mode_pref\\\",LTE\"},
-        {\"锁5G > AT+QNWPREFCFG=\\\"mode_pref\\\",NR5G\":\"AT+QNWPREFCFG=\\\"mode_pref\\\",NR5G\"},
-        {\"恢复自动搜索网络 > AT+QNWPREFCFG=\\\"mode_pref\\\",AUTO\":\"AT+QNWPREFCFG=\\\"mode_pref\\\",AUTO\"},
-        {\"查询模组IMEI > AT+CGSN\":\"AT+CGSN\"},
-        {\"查询模组IMEI > AT+GSN\":\"AT+GSN\"},
-        {\"更改模组IMEI > AT+EGMR=1,7,\\\"IMEI\\\"\":\"AT+EGMR=1,7,\\\"在此设置IMEI\\\"\"},
-        {\"获取模组温度 > AT+QTEMP\":\"AT+QTEMP\"},
-        {\"切换为USB通信端口 > AT+QCFG=\\\"data_interface\\\",0,0\":\"AT+QCFG=\\\"data_interface\\\",0,0\"},
-        {\"切换为PCIE通信端口 > AT+QCFG=\\\"data_interface\\\",1,0\":\"AT+QCFG=\\\"data_interface\\\",1,0\"},
-        {\"重置模组 > AT+CFUN=1,1\":\"AT+CFUN=1,1\"}
-    ]"
-    echo "$quick_commands"
+    #获取拨号模式配置
+    local mode_num
+
+    case "$2" in
+        "qmi") mode_num="0" ;;
+        # "gobinet")  mode_num="0" ;;
+        "ecm") mode_num="1" ;;
+        "mbim") mode_num="2" ;;
+        "rndis") mode_num="3" ;;
+        "ncm") mode_num="5" ;;
+        *) mode_num="0" ;;
+    esac
+
+    #设置模组
+    local at_port="$1"
+    at_command='AT+QCFG="usbnet",'$mode_num
+    sh $current_dir/modem_at.sh $at_port "$at_command"
+}
+
+#获取网络偏好
+# $1:AT串口
+get_network_prefer()
+{
+    local at_port="$1"
+    at_command='AT+QNWPREFCFG="mode_pref"'
+    local response=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+QNWPREFCFG:" | awk -F',' '{print $2}' | sed 's/\r//g')
+    
+    local network_prefer_3g="0";
+    local network_prefer_4g="0";
+    local network_prefer_5g="0";
+
+    #匹配不同的网络类型
+    local auto=$(echo $response | grep "AUTO")
+    if [ -n "$auto" ]; then
+        network_prefer_3g="1"
+        network_prefer_4g="1"
+        network_prefer_5g="1"
+    else
+        local wcdma=$(echo $response | grep "WCDMA")
+        local lte=$(echo $response | grep "LTE")
+        local nr=$(echo $response | grep "NR5G")
+        if [ -n "$wcdma" ]; then
+            network_prefer_3g="1"
+        fi  
+        if [ -n "$lte" ]; then
+            network_prefer_4g="1"
+        fi
+        if [ -n "$nr" ]; then
+            network_prefer_5g="1"
+        fi
+    fi
+
+    local network_prefer="{
+        \"network_prefer\":{
+            \"3G\":$network_prefer_3g,
+            \"4G\":$network_prefer_4g,
+            \"5G\":$network_prefer_5g
+        }
+    }"
+    echo "$network_prefer"
+}
+
+#设置网络偏好
+# $1:AT串口
+# $2:网络偏好配置
+set_network_prefer()
+{
+    local network_prefer="$2"
+
+    #获取网络偏好配置
+    local network_prefer_config
+
+    #获取选中的数量
+    local count=$(echo "$network_prefer" | grep -o "1" | wc -l)
+    #获取每个偏好的值
+    local network_prefer_3g=$(echo "$network_prefer" | jq -r '.["3G"]')
+    local network_prefer_4g=$(echo "$network_prefer" | jq -r '.["4G"]')
+    local network_prefer_5g=$(echo "$network_prefer" | jq -r '.["5G"]')
+
+    case "$count" in
+        "1")
+            if [ "$network_prefer_3g" = "1" ]; then
+                network_prefer_config="WCDMA"
+            elif [ "$network_prefer_4g" = "1" ]; then
+                network_prefer_config="LTE"
+            elif [ "$network_prefer_5g" = "1" ]; then
+                network_prefer_config="NR5G"
+            fi
+        ;;
+        "2")
+            if [ "$network_prefer_3g" = "1" ] && [ "$network_prefer_4g" = "1" ]; then
+                network_prefer_config="WCDMA:LTE"
+            elif [ "$network_prefer_3g" = "1" ] && [ "$network_prefer_5g" = "1" ]; then
+                network_prefer_config="WCDMA:NR5G"
+            elif [ "$network_prefer_4g" = "1" ] && [ "$network_prefer_5g" = "1" ]; then
+                network_prefer_config="LTE:NR5G"
+            fi
+        ;;
+        "3") network_prefer_config="AUTO" ;;
+        *) network_prefer_config="AUTO" ;;
+    esac
+
+    #设置模组
+    local at_port="$1"
+    at_command='AT+QNWPREFCFG="mode_pref",'$network_prefer_config
+    sh $current_dir/modem_at.sh $at_port "$at_command"
 }
 
 #获取连接状态

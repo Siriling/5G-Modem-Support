@@ -3,7 +3,7 @@ current_dir="$(dirname "$0")"
 
 #获取拨号模式
 # $1:AT串口
-get_fibocom_mode()
+get_mode()
 {
     local at_port="$1"
     at_command="AT+GTUSBMODE?"
@@ -27,41 +27,130 @@ get_fibocom_mode()
     echo "$mode"
 }
 
-#获取AT命令
-get_fibocom_at_commands()
+#设置拨号模式
+# $1:AT串口
+# $2:拨号模式配置
+set_mode()
 {
-    local quick_commands="{\"quick_commands\":
-        [
-            {\"模组信息 > ATI\":\"ATI\"},
-            {\"查询SIM卡状态 > AT+CPIN?\":\"AT+CPIN?\"},
-            {\"查询此时信号强度 > AT+CSQ\":\"AT+CSQ\"},
-            {\"查询网络信息 > AT+COPS?\":\"AT+COPS?\"},
-            {\"查询PDP信息 > AT+CGDCONT?\":\"AT+CGDCONT?\"},
-            {\"最小功能模式 > AT+CFUN=0\":\"AT+CFUN=0\"},
-            {\"全功能模式 > AT+CFUN=1\":\"AT+CFUN=1\"},
-            {\"设置当前使用的为卡1 > AT+GTDUALSIM=0\":\"AT+GTDUALSIM=0\"},
-            {\"设置当前使用的为卡2 > AT+GTDUALSIM=1\":\"AT+GTDUALSIM=1\"},
-            {\"ECM手动拨号 > AT+GTRNDIS=1,1\":\"AT+GTRNDIS=1,1\"},
-            {\"ECM拨号断开 > AT+GTRNDIS=0,1\":\"AT+GTRNDIS=0,1\"},
-            {\"查询当前端口模式 > AT+GTUSBMODE?\":\"AT+GTUSBMODE?\"},
-            {\"QMI/GobiNet拨号 > AT+GTUSBMODE=32\":\"AT+GTUSBMODE=32\"},
-            {\"ECM拨号 > AT+GTUSBMODE=18\":\"AT+GTUSBMODE=18\"},
-            {\"MBIM拨号 > AT+GTUSBMODE=30\":\"AT+GTUSBMODE=30\"},
-            {\"RNDIS拨号 > AT+GTUSBMODE=24\":\"AT+GTUSBMODE=24\"},
-            {\"NCM拨号 > AT+GTUSBMODE=18\":\"AT+GTUSBMODE=18\"},
-            {\"锁4G > AT+GTACT=2\":\"AT+GTACT=2\"},
-            {\"锁5G > AT+GTACT=14\":\"AT+GTACT=14\"},
-            {\"恢复自动搜索网络 > AT+GTACT=20\":\"AT+GTACT=20\"},
-            {\"查询当前连接的网络类型 > AT+PSRAT?\":\"AT+PSRAT?\"},
-            {\"查询模组IMEI > AT+CGSN?\":\"AT+CGSN?\"},
-            {\"查询模组IMEI > AT+GSN?\":\"AT+GSN?\"},
-            {\"更改模组IMEI > AT+GTSN=1,7,\\\"IMEI\\\"\":\"AT+GTSN=1,7,\\\"在此设置IMEI\\\"\"},
-            {\"报告一次当前BBIC的温度 > AT+MTSM=1,6\":\"AT+MTSM=1,6\"},
-            {\"报告一次当前射频的温度 > AT+MTSM=1,7\":\"AT+MTSM=1,7\"},
-            {\"重置模组 > AT+CFUN=15\":\"AT+CFUN=15\"}
-        ]
+    #获取拨号模式配置
+    local mode_num
+
+    case "$2" in
+        "qmi") mode_num="32" ;;
+        # "gobinet")  mode_num="32" ;;
+        "ecm") mode_num="18" ;;
+        "mbim") mode_num="30" ;;
+        "rndis") mode_num="24" ;;
+        "ncm") mode_num="18" ;;
+        *) mode_num="32" ;;
+    esac
+
+    #设置模组
+    local at_port="$1"
+    at_command="AT+GTUSBMODE=$mode_num"
+    sh $current_dir/modem_at.sh $at_port "$at_command"
+}
+
+#获取网络偏好
+# $1:AT串口
+get_network_prefer()
+{
+    local at_port="$1"
+    at_command="AT+GTACT?"
+    local network_prefer_num=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+GTACT:" | awk -F',' '{print $1}' | sed 's/+GTACT: //g')
+    
+    local network_prefer_3g="0";
+    local network_prefer_4g="0";
+    local network_prefer_5g="0";
+
+    #匹配不同的网络类型
+    case "$network_prefer_num" in
+        "1") network_prefer_3g="1" ;;
+        "2") network_prefer_4g="1" ;;
+        "4")
+            network_prefer_3g="1"
+            network_prefer_4g="1"
+        ;;
+        "10")
+            network_prefer_3g="1"
+            network_prefer_4g="1"
+            network_prefer_5g="1"
+        ;;
+        "14") network_prefer_5g="1" ;;
+        "16")
+            network_prefer_3g="1"
+            network_prefer_5g="1"
+        ;;
+        "17")
+            network_prefer_4g="1"
+            network_prefer_5g="1"
+        ;;
+        "20")
+            network_prefer_3g="1"
+            network_prefer_4g="1"
+            network_prefer_5g="1"
+        ;;
+        *)
+            network_prefer_3g="1"
+            network_prefer_4g="1"
+            network_prefer_5g="1"
+        ;;
+    esac
+
+    local network_prefer="{
+        \"network_prefer\":{
+            \"3G\":$network_prefer_3g,
+            \"4G\":$network_prefer_4g,
+            \"5G\":$network_prefer_5g
+        }
     }"
-    echo "$quick_commands"
+    echo "$network_prefer"
+}
+
+#设置网络偏好
+# $1:AT串口
+# $2:网络偏好配置
+set_network_prefer()
+{
+    local network_prefer="$2"
+
+    #获取网络偏好数字
+    local network_prefer_num
+
+    #获取选中的数量
+    local count=$(echo "$network_prefer" | grep -o "1" | wc -l)
+    #获取每个偏好的值
+    local network_prefer_3g=$(echo "$network_prefer" | jq -r '.["3G"]')
+    local network_prefer_4g=$(echo "$network_prefer" | jq -r '.["4G"]')
+    local network_prefer_5g=$(echo "$network_prefer" | jq -r '.["5G"]')
+
+    case "$count" in
+        "1")
+            if [ "$network_prefer_3g" = "1" ]; then
+                network_prefer_num="1"
+            elif [ "$network_prefer_4g" = "1" ]; then
+                network_prefer_num="2"
+            elif [ "$network_prefer_5g" = "1" ]; then
+                network_prefer_num="14"
+            fi
+        ;;
+        "2")
+            if [ "$network_prefer_3g" = "1" ] && [ "$network_prefer_4g" = "1" ]; then
+                network_prefer_num="4"
+            elif [ "$network_prefer_3g" = "1" ] && [ "$network_prefer_5g" = "1" ]; then
+                network_prefer_num="16"
+            elif [ "$network_prefer_4g" = "1" ] && [ "$network_prefer_5g" = "1" ]; then
+                network_prefer_num="17"
+            fi
+        ;;
+        "3") network_prefer_num="20" ;;
+        *) network_prefer_num="10" ;;
+    esac
+
+    #设置模组
+    local at_port="$1"
+    at_command="AT+GTACT=$network_prefer_num"
+    sh $current_dir/modem_at.sh $at_port "$at_command"
 }
 
 #获取连接状态
