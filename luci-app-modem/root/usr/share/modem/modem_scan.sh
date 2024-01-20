@@ -145,7 +145,12 @@ setModemInfoConfig()
                 uci set modem.modem$1.manufacturer="$manufacturer"
 
                 #设置当前的拨号模式
-                local mode=$(source $current_dir/$manufacturer.sh && get_mode $2)
+                local mode
+                if [ "$manufacturer" = "unknown" ]; then
+                    mode="unknown"
+                else
+                    mode=$(source $current_dir/$manufacturer.sh && get_mode $2)
+                fi
                 uci set modem.modem$1.mode="$mode"
 
                 #设置支持的拨号模式
