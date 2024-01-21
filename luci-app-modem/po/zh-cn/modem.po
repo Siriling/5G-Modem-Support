@@ -100,6 +100,9 @@ msgstr "快捷命令"
 msgid "Enter Command"
 msgstr "输入命令"
 
+msgid "Apply"
+msgstr "应用"
+
 msgid "Send"
 msgstr "发送"
 

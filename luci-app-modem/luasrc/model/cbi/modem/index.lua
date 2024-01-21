@@ -3,7 +3,7 @@ local uci = luci.model.uci.cursor()
 
 m = Map("modem")
 m.title = translate("Dial Config")
-m.description = translate("Configuration panel for Modem, Add configuration to all modems on this page")
+m.description = translate("Add dialing configuration to all modules on this page")
 
 --全局配置
 s = m:section(NamedSection, "global", "global", translate("Global Config"))
