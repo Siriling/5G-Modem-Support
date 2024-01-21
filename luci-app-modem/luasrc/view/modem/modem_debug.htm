@@ -11,6 +11,8 @@
 		modem_select.addEventListener('change', function() {
 			//获取快捷命令
 			get_quick_commands();
+			//获取模组调试信息
+			get_modem_debug_info();
 		});
 
 		//获取快捷选项父元素
@@ -106,7 +108,7 @@
 	}
 
 	// 设置AT串口选项
-	function set_at_port(port)
+	function set_at_port(at_ports,translation)
 	{
 		// 获取模组选择框元素
 		var modem_select = document.getElementById('modem_select');
@@ -114,20 +116,25 @@
 		var selected=modem_select.value;
 		// 删除原来的选项
 		modem_select.options.length=0;
-		// 更新（key：AT串口，value：模组名称）
-		for (var key in port)
+		//遍历每一个AT串口
+		for (var port of at_ports)
 		{
-			var option = document.createElement('option');
-			option.value = key;
-			if (port[key].includes("unknown"))
+			//更新（key：AT串口，value：模块名称）
+			for (var key in port)
 			{
-				option.text = port[key].replace("unknown", key);
+				var option = document.createElement('option');
+				option.value = key;
+				var language=navigator.language;
+				if (port[key].includes("unknown"))
+				{
+					option.text = port[key].replace("unknown", key);
+				}
+				else
+				{
+					option.text = port[key];
+				}
+				modem_select.appendChild(option);
 			}
-			else
-			{
-				option.text = port[key];
-			}
-			modem_select.appendChild(option);
 		}
 		// 恢复原来的选择
 		for (let i = 0; i < modem_select.options.length; i++)
@@ -549,13 +556,16 @@
 
 	// 定时触发更新AT串口
 	XHR.poll(5,'<%=luci.dispatcher.build_url("admin", "network", "modem", "get_at_port")%>', null,
-		function(x, port)
+		function(x, data)
 		{
+			var at_ports=data["at_ports"];
+			var translation=data["translation"];
+
 			//设置AT串口选项
-			set_at_port(port);
+			set_at_port(at_ports,translation);
 
 			//获取快捷命令
-			if (Object.keys(port).length==0)
+			if (Object.keys(at_ports).length==0)
 			{
 				//显示无模组界面
 				no_modems_view();

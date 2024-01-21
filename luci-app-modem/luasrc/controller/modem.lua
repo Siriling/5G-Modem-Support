@@ -147,9 +147,30 @@ function getModemInfo()
 
 	--设置翻译
 	local translation={}
+	--设备信息翻译
+	if modem_device_info then
+		-- local name=modem_device_info["name"]
+		-- translation[name]=luci.i18n.translate(name)
+		-- local manufacturer=modem_device_info["manufacturer"]
+		-- translation[manufacturer]=luci.i18n.translate(manufacturer)
+		-- local mode=modem_device_info["mode"]
+		-- translation[mode]=luci.i18n.translate(mode)
+		local data_interface=modem_device_info["data_interface"]
+		translation[data_interface]=luci.i18n.translate(data_interface)
+		local network=modem_device_info["network"]
+		translation[network]=luci.i18n.translate(network)
+	end
+
+	--基本信息翻译
+	if modem_more_info["base_info"] then
+		for key in pairs(modem_more_info["base_info"]) do
+			local value=modem_more_info["base_info"][key]
+			--翻译值
+			translation[value]=luci.i18n.translate(value)
+		end
+	end
 	--SIM卡信息翻译
 	if modem_more_info["sim_info"] then
-
 		local sim_info=modem_more_info["sim_info"]
 		for i = 1, #sim_info do
 			local info = sim_info[i]
@@ -165,9 +186,11 @@ function getModemInfo()
 	--网络信息翻译
 	if modem_more_info["network_info"] then
 		for key in pairs(modem_more_info["network_info"]) do
+			--翻译键
 			translation[key]=luci.i18n.translate(key)
 			local value=modem_more_info["network_info"][key]
 			if hasLetters(value) then
+				--翻译值
 				translation[value]=luci.i18n.translate(value)
 			end
 		end
@@ -216,7 +239,10 @@ function getModems()
 		-- 设置值
 		local modem=modem_device
 		modem["connect_status"]=connect_status
-		modems[modem_device[".name"]]=modem
+
+		local modem_tmp={}
+		modem_tmp[modem_device[".name"]]=modem
+		table.insert(modems,modem_tmp)
 	end)
 	
 	-- 设置值
@@ -252,6 +278,7 @@ function getModemRemarks(network)
 		if network == config["network"] and config["enable"] == "1" then
 			if config["remarks"] then
 				remarks=" ("..config["remarks"]..")" --" (备注)"
+				
 				return true --跳出循环
 			end
 		end
@@ -263,7 +290,10 @@ end
 @Description 获取AT串口
 ]]
 function getATPort()
+
 	local at_ports={}
+	local translation={}
+
 	uci:foreach("modem", "modem-device", function (modem_device)
 		--获取模组的备注
 		local network=modem_device["network"]
@@ -274,17 +304,26 @@ function getATPort()
 			
 			local name=modem_device["name"]:upper()..remarks
 			if modem_device["name"] == "unknown" then
-				-- name=modem_device["at_port"]..remarks
+				translation[modem_device["name"]]=luci.i18n.translate(modem_device["name"])
 				name=modem_device["name"]..remarks
 			end
 
 			local at_port = modem_device["at_port"]
-			at_ports[at_port]=name
+			--排序插入
+			at_port_tmp={}
+			at_port_tmp[at_port]=name
+			table.insert(at_ports, at_port_tmp)
 		end
 	end)
+
+	-- 设置值
+	local data={}
+	data["at_ports"]=at_ports
+	data["translation"]=translation
+
 	-- 写入Web界面
 	luci.http.prepare_content("application/json")
-	luci.http.write_json(at_ports)
+	luci.http.write_json(data)
 end
 
 --[[
@@ -304,6 +343,7 @@ function getQuickCommands()
 		if at_port == modem_device["at_port"] then
 			--获取制造商
 			manufacturer=modem_device["manufacturer"]
+			return true --跳出循环
 		end
 	end)
 
@@ -355,6 +395,7 @@ function setNetworkPrefer()
 		if at_port == modem_device["at_port"] then
 			--获取制造商
 			manufacturer=modem_device["manufacturer"]
+			return true --跳出循环
 		end
 	end)
 
@@ -390,6 +431,7 @@ function setMode()
 		if at_port == modem_device["at_port"] then
 			--获取制造商
 			manufacturer=modem_device["manufacturer"]
+			return true --跳出循环
 		end
 	end)
 
@@ -425,7 +467,7 @@ function getModeInfo(at_port,manufacturer)
 		--设置模组AT串口
 		if at_port == modem_device["at_port"] then
 			modes=modem_device["modes"]
-			return
+			return true --跳出循环
 		end
 	end)
 
@@ -473,6 +515,7 @@ function getModemDebugInfo()
 		if at_port == modem_device["at_port"] then
 			--获取制造商
 			manufacturer=modem_device["manufacturer"]
+			return true --跳出循环
 		end
 	end)
 

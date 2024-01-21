@@ -180,14 +180,14 @@ end
 	}
 
 	//显示信息
-	function set_info(info)
+	function set_info(info,translation)
 	{
 		for (var key in info)
-		{
+		{	
 			var info_Element=document.getElementById(key);
 			if (info_Element!=null)
 			{
-				info_Element.innerHTML=info[key];
+				info_Element.innerHTML=translation[info[key]];
 			}
 		}
 	}
@@ -208,6 +208,8 @@ end
 			document.getElementById("info_message").innerHTML="<strong><%:Not adapted to this modem%></strong>";
 			// 显示提示信息
 			document.getElementById("cbi-info").style.display="block";
+			// 显示基本信息
+			document.getElementById("cbi-baseinfo").style.display="block";
 			// 隐藏SIM卡信息
 			document.getElementById("cbi-siminfo").style.display="none";
 			// 隐藏网络信息
@@ -297,13 +299,13 @@ end
 
 				// 设备信息
 				var device_info=modem_info["device_info"];
-				set_info(device_info);
+				set_info(device_info,translation);
 
 				// 更多信息
 				var more_info=modem_info["more_info"];
 				//基本信息
 				var base_info=more_info["base_info"];
-				set_info(base_info);
+				set_info(base_info,translation);
 
 				//基本信息界面控制
 				base_info_view(base_info["manufacturer"]);
@@ -326,7 +328,7 @@ end
 
 				//网络信息
 				var network_info=more_info["network_info"];
-				set_info(network_info);
+				set_info(network_info,translation);
 
 				//小区信息
 				var cell_info=more_info["cell_info"];
@@ -339,7 +341,7 @@ end
 	}
 
 	// 设置AT串口选项
-	function set_at_port(port)
+	function set_at_port(at_ports,translation)
 	{
 		//获取模块选择框元素
 		var modem_select = document.getElementById('modem_select');
@@ -347,13 +349,25 @@ end
 		var selected=modem_select.value;
 		// 删除原来的选项
 		modem_select.options.length=0;
-		// 更新（key：AT串口，value：模块名称）
-		for (var key in port)
+		//遍历每一个AT串口
+		for (var port of at_ports)
 		{
-			var option = document.createElement('option');
-			option.text = port[key].trim();
-			option.value = key;
-			modem_select.appendChild(option);
+			//更新（key：AT串口，value：模块名称）
+			for (var key in port)
+			{
+				var option = document.createElement('option');
+				option.value = key;
+				var language=navigator.language;
+				if (port[key].includes("unknown"))
+				{
+					option.text = translation[port[key]];
+				}
+				else
+				{
+					option.text = port[key];
+				}
+				modem_select.appendChild(option);
+			}
 		}
 		// 恢复原来的选择
 		for (let i = 0; i < modem_select.options.length; i++)
@@ -368,12 +382,15 @@ end
 
 	// 定时触发更新AT串口和模组数据
 	XHR.poll(5,'<%=luci.dispatcher.build_url("admin", "network", "modem", "get_at_port")%>', null,
-		function(x, port)
+		function(x, data)
 		{
+			var at_ports=data["at_ports"];
+			var translation=data["translation"];
+
 			//设置AT串口选项
-			set_at_port(port);
+			set_at_port(at_ports,translation);
 			//更新模组信息
-			if (Object.keys(port).length==0)
+			if (Object.keys(at_ports).length==0)
 			{
 				no_modems_view();
 			}
@@ -432,7 +449,7 @@ end
 			<table class="table" id="base_info">
 				<tbody>
 					<tr class="tr">
-						<td class="td left"><%:Modem%></td>
+						<td class="td left"><%:Modem Name%></td>
 						<td class="td left" id="modem_name">
 							<select name="modem_select" id="modem_select"></select>
 						</td>

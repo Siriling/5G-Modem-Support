@@ -189,7 +189,7 @@ fibocom_base_info()
     revision=$(echo "$response" | sed -n '4p' | sed 's/Revision: //g' | sed 's/\r//g')
 
     #Mode（拨号模式）
-    mode=$(get_fibocom_mode $at_port | tr 'a-z' 'A-Z')
+    mode=$(get_mode $at_port | tr 'a-z' 'A-Z')
 
     #Temperature（温度）
     at_command="AT+MTSM=1,6"

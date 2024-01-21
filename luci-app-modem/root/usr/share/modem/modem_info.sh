@@ -9,13 +9,13 @@ source "$current_dir/simcom.sh"
 init_modem_info()
 {
 	#基本信息
-	name='' 		#名称
-	manufacturer='' #制造商
-	revision='-'	#固件版本
-	at_port='-'		#AT串口
-	mode='unknown'	#拨号模式
+	name='unknown' 			#名称
+	manufacturer='unknown'	#制造商
+	revision='-'			#固件版本
+	at_port='-'				#AT串口
+	mode='unknown'			#拨号模式
 	temperature="NaN $(printf "\xc2\xb0")C"	#温度
-    update_time='-'	#更新时间
+    update_time='-'			#更新时间
 
 	#SIM卡信息
 	sim_status="miss"	#SIM卡状态
@@ -305,9 +305,13 @@ info_to_json()
 	#设置基本信息
 	set_base_info
 
-	#设置SIM卡信息
-	set_sim_info
+	#判断是否适配
+	if [ "$manufacturer" != "unknown" ]; then
+		#设置SIM卡信息
+		set_sim_info
+	fi
 
+	#判断插卡和连接状态
 	if [ "$sim_status" = "ready" ] && [ "$connect_status" = "connect" ]; then
 		#设置网络信息
 		set_network_info
