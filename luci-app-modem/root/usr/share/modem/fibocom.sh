@@ -9,20 +9,53 @@ get_mode()
     at_command="AT+GTUSBMODE?"
     local mode_num=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+GTUSBMODE:" | sed 's/+GTUSBMODE: //g' | sed 's/\r//g')
     
+    #获取芯片平台
+    local platform
+    local modem_number=$(uci -q get modem.global.modem_number)
+    for i in $(seq 0 $((modem_number-1))); do
+        local at_port_tmp=$(uci -q get modem.modem$i.at_port)
+        if [ "$at_port" = "$at_port_tmp" ]; then
+            platform=$(uci -q get modem.modem$i.platform)
+            break
+        fi
+    done
+
     local mode
-    case "$mode_num" in
-        "17") mode="qmi" ;; #-
-        "31") mode="qmi" ;; #-
-        "32") mode="qmi" ;;
-        # "32") mode="gobinet" ;;
-        "18") mode="ecm" ;;
-        "23") mode="ecm" ;; #-
-        "33") mode="ecm" ;; #-
-        "29") mode="mbim" ;; #-
-        "30") mode="mbim" ;;
-        "24") mode="rndis" ;;
-        "18") mode='ncm' ;;
-        *) mode="$mode_num" ;;
+    case "$platform" in
+        "qualcomm")
+            case "$mode_num" in
+                "17") mode="qmi" ;; #-
+                "31") mode="qmi" ;; #-
+                "32") mode="qmi" ;;
+                "34") mode="qmi" ;;
+                # "32") mode="gobinet" ;;
+                "18") mode="ecm" ;;
+                "23") mode="ecm" ;; #-
+                "33") mode="ecm" ;; #-
+                "35") mode="ecm" ;; #-
+                "29") mode="mbim" ;; #-
+                "30") mode="mbim" ;;
+                "24") mode="rndis" ;;
+                "18") mode='ncm' ;;
+                *) mode="$mode_num" ;;
+            esac
+        ;;
+        "unisoc")
+            case "$mode_num" in
+                "34") mode="ecm" ;;
+                "35") mode="ecm" ;; #-
+                "40") mode="mbim" ;;
+                "41") mode="mbim" ;; #-
+                "38") mode="rndis" ;;
+                "39") mode="rndis" ;; #-
+                "36") mode='ncm' ;;
+                "37") mode='ncm' ;; #-
+                *) mode="$mode_num" ;;
+            esac
+        ;;
+        *)
+            mode="$mode_num"
+        ;;
     esac
     echo "$mode"
 }

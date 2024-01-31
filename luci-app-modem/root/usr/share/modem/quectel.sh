@@ -9,15 +9,42 @@ get_mode()
     at_command='AT+QCFG="usbnet"'
     local mode_num=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+QCFG:" | sed 's/+QCFG: "usbnet",//g' | sed 's/\r//g')
 
+    #获取芯片平台
+    local platform
+    local modem_number=$(uci -q get modem.global.modem_number)
+    for i in $(seq 0 $((modem_number-1))); do
+        local at_port_tmp=$(uci -q get modem.modem$i.at_port)
+        if [ "$at_port" = "$at_port_tmp" ]; then
+            platform=$(uci -q get modem.modem$i.platform)
+            break
+        fi
+    done
+    
     local mode
-    case "$mode_num" in
-        "0") mode="qmi" ;;
-        # "0") mode="gobinet" ;;
-        "1") mode="ecm" ;;
-        "2") mode="mbim" ;;
-        "3") mode="rndis" ;;
-        "5") mode='ncm' ;;
-        *) mode="$mode_num" ;;
+    case "$platform" in
+        "qualcomm")
+            case "$mode_num" in
+                "0") mode="qmi" ;;
+                # "0") mode="gobinet" ;;
+                "1") mode="ecm" ;;
+                "2") mode="mbim" ;;
+                "3") mode="rndis" ;;
+                "5") mode='ncm' ;;
+                *) mode="$mode_num" ;;
+            esac
+        ;;
+        "unisoc")
+            case "$mode_num" in
+                "1") mode="ecm" ;;
+                "2") mode="mbim" ;;
+                "3") mode="rndis" ;;
+                "5") mode='ncm' ;;
+                *) mode="$mode_num" ;;
+            esac
+        ;;
+        *)
+            mode="$mode_num"
+        ;;
     esac
     echo "$mode"
 }

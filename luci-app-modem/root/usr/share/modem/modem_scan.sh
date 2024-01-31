@@ -101,6 +101,7 @@ setPortConfig()
                 uci set modem.modem$i.at_port="$2"
                 setModemInfoConfig $i $2
             fi
+            break
 	    fi
     done
 }
@@ -122,7 +123,7 @@ setModemInfoConfig()
         #获取一行的内容
         local line_context=$(sed -n $i'p' "$modem_support_file")
         #获取数据接口内容
-        local data_interface_info=$(echo "$line_context" | cut -d ";" -f 3)
+        local data_interface_info=$(echo "$line_context" | cut -d ";" -f 4)
         if [ "$data_interface" = "$data_interface_info" ]; then
             #获取模块名
             local modem_name=$(echo "$line_context" | cut -d ";" -f 2)
@@ -144,17 +145,21 @@ setModemInfoConfig()
                 local manufacturer=$(echo "$line_context" | cut -d ";" -f 1)
                 uci set modem.modem$1.manufacturer="$manufacturer"
 
+                #设置平台
+                local platform=$(echo "$line_context" | cut -d ";" -f 3)
+                uci set modem.modem$1.platform="$platform"
+
                 #设置当前的拨号模式
                 local mode
                 if [ "$manufacturer" = "unknown" ]; then
                     mode="unknown"
                 else
-                    mode=$(source $current_dir/$manufacturer.sh && get_mode $2)
+                    mode=$(source $current_dir/$manufacturer.sh && get_mode $2 $platform)
                 fi
                 uci set modem.modem$1.mode="$mode"
 
                 #设置支持的拨号模式
-                local modes=$(echo "$line_context" | cut -d ";" -f 4 | tr ',' ' ')
+                local modes=$(echo "$line_context" | cut -d ";" -f 5 | tr ',' ' ')
 
                 #删除原来的拨号模式列表
                 uci -q del modem.modem$1.modes
