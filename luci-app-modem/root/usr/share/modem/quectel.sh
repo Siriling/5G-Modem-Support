@@ -54,21 +54,48 @@ get_mode()
 # $2:拨号模式配置
 set_mode()
 {
+    local at_port="$1"
+
+    #获取芯片平台
+    local platform
+    local modem_number=$(uci -q get modem.global.modem_number)
+    for i in $(seq 0 $((modem_number-1))); do
+        local at_port_tmp=$(uci -q get modem.modem$i.at_port)
+        if [ "$at_port" = "$at_port_tmp" ]; then
+            platform=$(uci -q get modem.modem$i.platform)
+            break
+        fi
+    done
+
     #获取拨号模式配置
     local mode_num
-
-    case "$2" in
-        "qmi") mode_num="0" ;;
-        # "gobinet")  mode_num="0" ;;
-        "ecm") mode_num="1" ;;
-        "mbim") mode_num="2" ;;
-        "rndis") mode_num="3" ;;
-        "ncm") mode_num="5" ;;
-        *) mode_num="0" ;;
+    case "$platform" in
+        "qualcomm")
+            case "$2" in
+                "qmi") mode_num="0" ;;
+                # "gobinet")  mode_num="0" ;;
+                "ecm") mode_num="1" ;;
+                "mbim") mode_num="2" ;;
+                "rndis") mode_num="3" ;;
+                "ncm") mode_num="5" ;;
+                *) mode_num="0" ;;
+            esac
+        ;;
+        "unisoc")
+            case "$2" in
+                "ecm") mode_num="1" ;;
+                "mbim") mode_num="2" ;;
+                "rndis") mode_num="3" ;;
+                "ncm") mode_num="5" ;;
+                *) mode_num="0" ;;
+            esac
+        ;;
+        *)
+            mode_num="0"
+        ;;
     esac
 
     #设置模组
-    local at_port="$1"
     at_command='AT+QCFG="usbnet",'$mode_num
     sh $current_dir/modem_at.sh $at_port "$at_command"
 }
