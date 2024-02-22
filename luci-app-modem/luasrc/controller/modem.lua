@@ -34,9 +34,6 @@ function index()
 
 	--AT命令旧界面
 	entry({"admin", "network", "modem", "at_command_old"},template("modem/at_command_old")).leaf = true
-
-	--AT快捷命令配置
-	--entry({"admin", "network", "modem", "quick_commands_config"},cbi("modem/quick_commands_config"),translate("自定义快捷命令配置"),40).leaf = true
 end
 
 --[[

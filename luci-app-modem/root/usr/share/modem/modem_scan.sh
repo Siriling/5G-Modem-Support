@@ -93,10 +93,10 @@ setPortConfig()
             #添加新的串口
             uci add_list modem.modem$i.ports="$2"
             #判断是不是AT串口
-            local result=$(sh $current_dir/modem_at.sh $2 "ATI")
+            local response=$(sh $current_dir/modem_at.sh $2 "ATI")
             local str1="No" #No response from modem.
             local str2="failed"
-            if [[ "$result" != *"$str1"* ]] && [[ "$result" != *"$str2"* ]]; then
+            if [[ "$response" != *"$str1"* ]] && [[ "$response" != *"$str2"* ]]; then
                 #原先的AT串口会被覆盖掉（是否需要加判断）
                 uci set modem.modem$i.at_port="$2"
                 setModemInfoConfig $i $2

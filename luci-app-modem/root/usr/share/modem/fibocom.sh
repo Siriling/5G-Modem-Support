@@ -275,13 +275,26 @@ fibocom_sim_info()
     #SIM Status（SIM状态）
     at_command="AT+CPIN?"
 	response=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p')
-    if [[ "$response" = *"READY"* ]]; then
-        sim_status="ready"
-    elif [[ "$response" = *"ERROR"* ]]; then
-        sim_status="miss"
-	else
-        sim_status="locked"
-    fi
+    case "$response" in
+        *"ERROR"*) sim_status="miss" ;;
+        *"READY"*) sim_status="ready" ;;
+        *"SIM PIN"*) sim_status="MT is waiting SIM PIN to be given" ;;
+        *"SIM PUK"*) sim_status="MT is waiting SIM PUK to be given" ;;
+        *"PH-FSIM PIN"*) sim_status="MT is waiting phone-to-SIM card password to be given" ;;
+        *"PH-FSIM PIN"*) sim_status="MT is waiting phone-to-very first SIM card password to be given" ;;
+        *"PH-FSIM PUK"*) sim_status="MT is waiting phone-to-very first SIM card unblocking password to be given" ;;
+        *"SIM PIN2"*) sim_status="MT is waiting SIM PIN2 to be given" ;;
+        *"SIM PUK2"*) sim_status="MT is waiting SIM PUK2 to be given" ;;
+        *"PH-NET PIN"*) sim_status="MT is waiting network personalization password to be given" ;;
+        *"PH-NET PUK"*) sim_status="MT is waiting network personalization unblocking password to be given" ;;
+        *"PH-NETSUB PIN"*) sim_status="MT is waiting network subset personalization password to be given" ;;
+        *"PH-NETSUB PUK"*) sim_status="MT is waiting network subset personalization unblocking password to be given" ;;
+        *"PH-SP PIN"*) sim_status="MT is waiting service provider personalization password to be given" ;;
+        *"PH-SP PUK"*) sim_status="MT is waiting service provider personalization unblocking password to be given" ;;
+        *"PH-CORP PIN"*) sim_status="MT is waiting corporate personalization password to be given" ;;
+        *"PH-CORP PUK"*) sim_status="MT is waiting corporate personalization unblocking password to be given" ;;
+        *) sim_status="unknown" ;;
+    esac
 
     if [ "$sim_status" != "ready" ]; then
         return

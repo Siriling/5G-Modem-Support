@@ -71,13 +71,9 @@ end
 				}
 				//写入视图（不显示空的信息）
 				var value=info[key];
-				if (key!="full_name"&&value!="-"&&value!="")
+				if (key!="full_name"&&value!="-"&&value!=""&&value!="ready")
 				{
-					if (key=="SIM Status") {
-						if (value!="ready") {
-							value=translation[value];
-						}
-					}
+					// value=translation[value]; //是否翻译
 					sim_info_view+='<tr class="tr"><td class="td left" title="'+full_name+'">'+translation[key]+'</td><td class="td left" id="'+key+'">'+value+'</td></tr>';
 					break;
 				}
@@ -222,8 +218,18 @@ end
 	//SIM卡信息界面
 	function sim_info_view(sim_status,connect_status)
 	{
+		//SIM卡状态未知
+		if (sim_status=="unknown")
+		{
+			// 更新提示信息
+			document.getElementById("info_message").innerHTML="<strong><%:Unknown SIM card status%></strong>";
+			// 显示提示信息
+			document.getElementById("cbi-info").style.display="block";
+			// 显示SIM卡信息
+			document.getElementById("cbi-siminfo").style.display="block";
+		}
 		//未插入SIM卡
-		if (sim_status=="miss")
+		else if (sim_status=="miss")
 		{
 			// 更新提示信息
 			document.getElementById("info_message").innerHTML="<strong><%:SIM card not inserted%></strong>";
@@ -232,27 +238,27 @@ end
 			// 显示SIM卡信息
 			document.getElementById("cbi-siminfo").style.display="block";
 		}
-		//SIM卡被锁定
-		else if (sim_status=="locked")
-		{
-			// 更新提示信息
-			document.getElementById("info_message").innerHTML="<strong><%:SIM card locked%></strong>";
-			// 显示提示信息
-			document.getElementById("cbi-info").style.display="block";
-			// 显示SIM卡信息
-			document.getElementById("cbi-siminfo").style.display="block";
-		}
-		//SIM卡已准备
-		else
+		//SIM卡就绪
+		else if (sim_status=="ready")
 		{
 			// 隐藏提示信息
 			document.getElementById("cbi-info").style.display="none";
 			// 显示SIM卡信息
 			document.getElementById("cbi-siminfo").style.display="block";
 		}
+		//SIM卡其他状态（锁定等）
+		else
+		{
+			// 更新提示信息
+			document.getElementById("info_message").innerHTML="<strong>"+sim_status+"</strong>";
+			// 显示提示信息
+			document.getElementById("cbi-info").style.display="block";
+			// 显示SIM卡信息
+			document.getElementById("cbi-siminfo").style.display="block";
+		}
 
 		//SIM卡未准备或网络未连接
-		if (sim_status!=null||connect_status!="connect")
+		if (sim_status!="ready"||connect_status!="connect")
 		{
 			// 隐藏网络信息
 			document.getElementById("cbi-networkinfo").style.display="none";
@@ -322,7 +328,7 @@ end
 				var sim_status=sim_info[0]["SIM Status"];
 				sim_info_view(sim_status,device_info["connect_status"]);
 				//SIM卡未插入或SIM卡被锁定
-				if (sim_status!=null||device_info["connect_status"]!="connect") {
+				if (sim_status!="ready"||device_info["connect_status"]!="connect") {
 					return
 				}
 

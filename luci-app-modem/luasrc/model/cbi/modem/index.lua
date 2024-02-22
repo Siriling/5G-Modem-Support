@@ -55,7 +55,7 @@ o.cfgvalue = function(t, n)
     if odp ~= "0" then
         return network
     else
-        return "The network device was not found"
+        return translate("The network device was not found")
     end
 end
 

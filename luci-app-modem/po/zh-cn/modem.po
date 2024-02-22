@@ -217,11 +217,14 @@ msgstr "更新时间"
 msgid "SIM Information"
 msgstr "SIM卡信息"
 
+msgid "Unknown SIM card status"
+msgstr "未知SIM卡状态"
+
+msgid "SIM card not inserted"
+msgstr "SIM卡未插入"
+
 msgid "ISP"
 msgstr "运营商"
-
-msgid "SIM Slot"
-msgstr "SIM卡卡槽"
 
 msgid "SIM Status"
 msgstr "SIM卡状态"
@@ -231,6 +234,9 @@ msgstr "未插入"
 
 msgid "locked"
 msgstr "锁定"
+
+msgid "SIM Slot"
+msgstr "SIM卡卡槽"
 
 msgid "SIM Number"
 msgstr "SIM卡号码"

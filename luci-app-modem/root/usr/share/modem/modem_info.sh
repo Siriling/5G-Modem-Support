@@ -18,13 +18,13 @@ init_modem_info()
     update_time='-'			#更新时间
 
 	#SIM卡信息
-	sim_status="miss"	#SIM卡状态
-	sim_slot="-"		#SIM卡卡槽
-	isp="-"				#运营商（互联网服务提供商）
-	sim_number='-'		#SIM卡号码（手机号）
-	imei='-'			#IMEI
-	imsi='-'			#IMSI
-	iccid='-'			#ICCID
+	sim_status="unknown"	#SIM卡状态
+	sim_slot="-"			#SIM卡卡槽
+	isp="-"					#运营商（互联网服务提供商）
+	sim_number='-'			#SIM卡号码（手机号）
+	imei='-'				#IMEI
+	imsi='-'				#IMSI
+	iccid='-'				#ICCID
 
 	#网络信息
 	connect_status="disconnect"	#SIM卡状态
@@ -151,6 +151,7 @@ set_sim_info()
 {
 	if [ "$sim_status" = "ready" ]; then
 		sim_info="\"sim_info\":[
+			{\"SIM Status\":\"$sim_status\", \"full_name\":\"SIM Status\"},
 			{\"ISP\":\"$isp\", \"full_name\":\"Internet Service Provider\"},
 			{\"SIM Slot\":\"$sim_slot\", \"full_name\":\"SIM Slot\"},
 			{\"SIM Number\":\"$sim_number\", \"full_name\":\"SIM Number\"},
@@ -163,7 +164,11 @@ set_sim_info()
 			{\"SIM Status\":\"$sim_status\", \"full_name\":\"SIM Status\"},
 			{\"IMEI\":\"$imei\", \"full_name\":\"International Mobile Equipment Identity\"}
 		],"
-	elif [ "$sim_status" = "locked" ]; then
+	elif [ "$sim_status" = "unknown" ]; then
+		sim_info="\"sim_info\":[
+			{\"SIM Status\":\"$sim_status\", \"full_name\":\"SIM Status\"}
+		],"
+	else
 		sim_info="\"sim_info\":[
 			{\"SIM Status\":\"$sim_status\", \"full_name\":\"SIM Status\"},
 			{\"SIM Slot\":\"$sim_slot\", \"full_name\":\"SIM Slot\"},
@@ -352,6 +357,14 @@ get_modem_info()
 	#获取模块AT串口
 	if [ -z "$at_port" ]; then
 		debug "模组没有AT串口"
+		return
+	fi
+
+	#检查模块状态（是否处于重启，重置，串口异常状态）
+    local at_command="ATI"
+	local response=$(sh $current_dir/modem_at.sh $at_port $at_command)
+	if [[ "$response" = *"failed"* ]] || [[ "$response" = *"$at_port"* ]]; then
+		debug "模组AT串口未就绪"
 		return
 	fi
 
