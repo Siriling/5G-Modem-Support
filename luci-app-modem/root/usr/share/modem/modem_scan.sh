@@ -106,70 +106,60 @@ setPortConfig()
     done
 }
 
-#设置模块信息（名称、制造商、拨号模式）
-# $modem_count:模块计数
-# $1:模块序号
+#设置模组信息（名称、制造商、拨号模式）
+# $modem_count:模组计数
+# $1:模组序号
 # $2:AT串口
 setModemInfoConfig()
 {
     #获取数据接口
     local data_interface=$(uci -q get modem.modem$1.data_interface)
     
-    #遍历模块信息文件
-    local line_count=$(wc -l < "$modem_support_file")
-    local line_context
-    for i in $(seq 1 $(($line_count))); do
+    #获取支持的模组
+    local modem_support=$(cat $current_dir/modem_support.json)
 
-        #获取一行的内容
-        local line_context=$(sed -n $i'p' "$modem_support_file")
-        #获取数据接口内容
-        local data_interface_info=$(echo "$line_context" | cut -d ";" -f 4)
-        if [ "$data_interface" = "$data_interface_info" ]; then
-            #获取模块名
-            local modem_name=$(echo "$line_context" | cut -d ";" -f 2)
-            
-            local at_result
-            if [ "$modem_name" != "unknown" ]; then
-                #获取AT命令返回的内容
-                at_result=$(echo `sh $current_dir/modem_at.sh $2 "ATI" | sed -n '3p' | tr 'A-Z' 'a-z'`)
-            else
-                #数据库中没有此模块的信息，使用默认值
-                at_result="unknown"
-            fi
+    #获取模组名
+    local at_response=$(sh $current_dir/modem_at.sh $2 "AT+CGMM" | sed -n '2p' | sed 's/\r//g' | tr 'A-Z' 'a-z')
 
-            if [[ "$at_result" = *"$modem_name"* ]]; then
-                #设置模块名
-                uci set modem.modem$1.name="$modem_name"
+    #获取模组信息
+    local modem_info=$(echo $modem_support | jq '.modem_support.'$data_interface'."'$at_response'"')
 
-                #设置制造商
-                local manufacturer=$(echo "$line_context" | cut -d ";" -f 1)
-                uci set modem.modem$1.manufacturer="$manufacturer"
+    local modem_name
+    local manufacturer
+    local platform
+    local mode
+    local modes
+    if [ "$modem_info" = "null" ]; then
+        modem_name="unknown"
+        manufacturer="unknown"
+        platform="unknown"
+        mode="unknown"
+        modes="qmi gobinet ecm mbim rndis ncm"
+    else
+        #获取模组名
+        modem_name="$at_response"
+        #获取制造商
+        manufacturer=$(echo $modem_info | jq -r '.manufacturer')
+        #获取平台
+        platform=$(echo $modem_info | jq -r '.platform')
+        #获取当前的拨号模式
+        mode=$(source $current_dir/$manufacturer.sh && get_mode $2 $platform)
+        #获取支持的拨号模式
+        modes=$(echo $modem_info | jq -r '.modes[]')
+    fi
 
-                #设置平台
-                local platform=$(echo "$line_context" | cut -d ";" -f 3)
-                uci set modem.modem$1.platform="$platform"
-
-                #设置当前的拨号模式
-                local mode
-                if [ "$manufacturer" = "unknown" ]; then
-                    mode="unknown"
-                else
-                    mode=$(source $current_dir/$manufacturer.sh && get_mode $2 $platform)
-                fi
-                uci set modem.modem$1.mode="$mode"
-
-                #设置支持的拨号模式
-                local modes=$(echo "$line_context" | cut -d ";" -f 5 | tr ',' ' ')
-
-                #删除原来的拨号模式列表
-                uci -q del modem.modem$1.modes
-                #添加新的拨号模式列表
-                for mode in $modes; do
-                    uci add_list modem.modem$1.modes="$mode"
-                done
-                break
-            fi
-        fi
+    #设置模组名
+    uci set modem.modem$1.name="$modem_name"
+    #设置制造商
+    uci set modem.modem$1.manufacturer="$manufacturer"
+    #设置平台
+    uci set modem.modem$1.platform="$platform"
+    #设置当前的拨号模式
+    uci set modem.modem$1.mode="$mode"
+    #设置支持的拨号模式
+    uci -q del modem.modem$1.modes #删除原来的拨号模式列表
+    for mode in $modes; do
+        uci add_list modem.modem$1.modes="$mode"
     done
 }
 

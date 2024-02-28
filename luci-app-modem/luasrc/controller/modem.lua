@@ -34,6 +34,9 @@ function index()
 
 	--AT命令旧界面
 	entry({"admin", "network", "modem", "at_command_old"},template("modem/at_command_old")).leaf = true
+
+	--AT快捷命令配置
+	--entry({"admin", "network", "modem", "quick_commands_config"},cbi("modem/quick_commands_config"),translate("自定义快捷命令配置"),40).leaf = true
 end
 
 --[[
@@ -148,38 +151,40 @@ function getModemInfo()
 	--设置翻译
 	local translation={}
 	--设备信息翻译
-	if modem_device_info then
-		-- local name=modem_device_info["name"]
-		-- translation[name]=luci.i18n.translate(name)
-		-- local manufacturer=modem_device_info["manufacturer"]
-		-- translation[manufacturer]=luci.i18n.translate(manufacturer)
-		-- local mode=modem_device_info["mode"]
-		-- translation[mode]=luci.i18n.translate(mode)
-		local data_interface=modem_device_info["data_interface"]
-		translation[data_interface]=luci.i18n.translate(data_interface)
-		local network=modem_device_info["network"]
-		translation[network]=luci.i18n.translate(network)
-	end
+	-- if modem_device_info then
+	-- 	local name=modem_device_info["name"]
+	-- 	translation[name]=luci.i18n.translate(name)
+	-- 	local manufacturer=modem_device_info["manufacturer"]
+	-- 	translation[manufacturer]=luci.i18n.translate(manufacturer)
+	-- 	local mode=modem_device_info["mode"]
+	-- 	translation[mode]=luci.i18n.translate(mode)
+	-- 	local data_interface=modem_device_info["data_interface"]
+	-- 	translation[data_interface]=luci.i18n.translate(data_interface)
+	-- 	local network=modem_device_info["network"]
+	-- 	translation[network]=luci.i18n.translate(network)
+	-- end
 
 	--基本信息翻译
-	if modem_more_info["base_info"] then
-		for key in pairs(modem_more_info["base_info"]) do
-			local value=modem_more_info["base_info"][key]
-			--翻译值
-			translation[value]=luci.i18n.translate(value)
-		end
-	end
+	-- if modem_more_info["base_info"] then
+	-- 	for key in pairs(modem_more_info["base_info"]) do
+	-- 		local value=modem_more_info["base_info"][key]
+	-- 		--翻译值
+	-- 		translation[value]=luci.i18n.translate(value)
+	-- 	end
+	-- end
 	--SIM卡信息翻译
 	if modem_more_info["sim_info"] then
 		local sim_info=modem_more_info["sim_info"]
 		for i = 1, #sim_info do
 			local info = sim_info[i]
 			for key in pairs(info) do
+				--翻译键
 				translation[key]=luci.i18n.translate(key)
-				local value=info[key]
-				if hasLetters(value) then
-					translation[value]=luci.i18n.translate(value)
-				end
+				-- local value=info[key]
+				-- if hasLetters(value) then
+				-- 	--翻译值
+				-- 	translation[value]=luci.i18n.translate(value)
+				-- end
 			end
 		end
 	end
@@ -188,11 +193,11 @@ function getModemInfo()
 		for key in pairs(modem_more_info["network_info"]) do
 			--翻译键
 			translation[key]=luci.i18n.translate(key)
-			local value=modem_more_info["network_info"][key]
-			if hasLetters(value) then
-				--翻译值
-				translation[value]=luci.i18n.translate(value)
-			end
+			-- local value=modem_more_info["network_info"][key]
+			-- if hasLetters(value) then
+			-- 	--翻译值
+			-- 	translation[value]=luci.i18n.translate(value)
+			-- end
 		end
 	end
 	--小区信息翻译

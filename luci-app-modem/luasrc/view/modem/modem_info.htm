@@ -176,14 +176,14 @@ end
 	}
 
 	//显示信息
-	function set_info(info,translation)
+	function set_info(info)
 	{
 		for (var key in info)
 		{	
 			var info_Element=document.getElementById(key);
 			if (info_Element!=null)
 			{
-				info_Element.innerHTML=translation[info[key]];
+				info_Element.innerHTML=info[key];
 			}
 		}
 	}
@@ -305,13 +305,13 @@ end
 
 				// 设备信息
 				var device_info=modem_info["device_info"];
-				set_info(device_info,translation);
+				set_info(device_info);
 
 				// 更多信息
 				var more_info=modem_info["more_info"];
 				//基本信息
 				var base_info=more_info["base_info"];
-				set_info(base_info,translation);
+				set_info(base_info);
 
 				//基本信息界面控制
 				base_info_view(base_info["manufacturer"]);
@@ -334,7 +334,7 @@ end
 
 				//网络信息
 				var network_info=more_info["network_info"];
-				set_info(network_info,translation);
+				set_info(network_info);
 
 				//小区信息
 				var cell_info=more_info["cell_info"];
