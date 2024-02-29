@@ -31,12 +31,10 @@ function index()
 	entry({"admin", "network", "modem", "get_modem_debug_info"}, call("getModemDebugInfo"), nil).leaf = true
 	entry({"admin", "network", "modem", "set_mode"}, call("setMode"), nil).leaf = true
 	entry({"admin", "network", "modem", "set_network_prefer"}, call("setNetworkPrefer"), nil).leaf = true
+	entry({"admin", "network", "modem", "quick_commands_config"}, cbi("modem/quick_commands_config")).leaf = true
 
 	--AT命令旧界面
 	entry({"admin", "network", "modem", "at_command_old"},template("modem/at_command_old")).leaf = true
-
-	--AT快捷命令配置
-	--entry({"admin", "network", "modem", "quick_commands_config"},cbi("modem/quick_commands_config"),translate("自定义快捷命令配置"),40).leaf = true
 end
 
 --[[
@@ -357,12 +355,24 @@ function getQuickCommands()
 		quick_option="custom"
 	end
 
-	--获取模组AT命令
-	local odpall = io.popen("cd "..script_path.." && source "..script_path.."modem_debug.sh && get_quick_commands "..quick_option.." "..manufacturer)
-	local opd = odpall:read("*a")
-	odpall:close()
-	local quick_commands=json.parse(opd)
-	
+	local quick_commands={}
+	local commands={}
+	if quick_option=="auto" then
+		--获取模组AT命令
+		-- local odpall = io.popen("cd "..script_path.." && source "..script_path.."modem_debug.sh && get_quick_commands "..quick_option.." "..manufacturer)
+		local odpall = io.popen("cat "..script_path..manufacturer.."_at_commands.json")
+		local opd = odpall:read("*a")
+		odpall:close()
+		quick_commands=json.parse(opd)
+	else
+		uci:foreach("modem", "custom-commands", function (custom_commands)
+			local command={}
+			command[custom_commands["description"]]=custom_commands["command"]
+			table.insert(commands,command)
+		end)
+		quick_commands["quick_commands"]=commands
+	end
+
 	-- 写入Web界面
 	luci.http.prepare_content("application/json")
 	luci.http.write_json(quick_commands)

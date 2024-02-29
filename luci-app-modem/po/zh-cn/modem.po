@@ -115,6 +115,15 @@ msgstr "响应"
 msgid "Return to old page"
 msgstr "返回旧界面"
 
+msgid "Custom quick commands"
+msgstr "自定义快捷命令"
+
+msgid "Customize your quick commands"
+msgstr "自定义你的快捷命令"
+
+msgid "Custom Commands"
+msgstr "自定义命令"
+
 msgid "Modem Information"
 msgstr "模组信息"
 

@@ -1,9 +1,9 @@
-local d = require "luci.dispatcher"
+local dispatcher = require "luci.dispatcher"
 local uci = require "luci.model.uci".cursor()
 local http = require "luci.http"
 
 m = Map("modem", translate("Modem Config"))
-m.redirect = d.build_url("admin", "network", "modem","index")
+m.redirect = dispatcher.build_url("admin", "network", "modem","index")
 
 s = m:section(NamedSection, arg[1], "config", "")
 s.addremove = false
