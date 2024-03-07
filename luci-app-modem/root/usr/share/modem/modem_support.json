@@ -25,6 +25,18 @@
                 "network_interface":"usb",
                 "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
             },
+            "rm520n-cn":{
+                "manufacturer":"quectel",
+                "platform":"qualcomm",
+                "network_interface":"usb",
+                "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
+            },
+            "rm520n-gl":{
+                "manufacturer":"quectel",
+                "platform":"qualcomm",
+                "network_interface":"usb",
+                "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
+            },
             "fm650-cn":{
                 "manufacturer":"fibocom",
                 "platform":"unisoc",

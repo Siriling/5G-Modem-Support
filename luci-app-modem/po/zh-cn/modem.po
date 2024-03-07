@@ -124,6 +124,15 @@ msgstr "自定义你的快捷命令"
 msgid "Custom Commands"
 msgstr "自定义命令"
 
+msgid "Serial Number"
+msgstr "序号"
+
+msgid "Description"
+msgstr "描述"
+
+msgid "Command"
+msgstr "命令"
+
 msgid "Modem Information"
 msgstr "模组信息"
 

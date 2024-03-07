@@ -120,6 +120,22 @@ config custom-commands
 	option command 'AT+QCFG="data_interface",1,0'
 
 config custom-commands
+	option description '查看当前USB速率 > AT+QCFG="usbspeed"'
+	option command 'AT+QCFG="usbspeed"'
+
+config custom-commands
+	option description '切换为USB2.0 > AT+QCFG="usbspeed","20"'
+	option command 'AT+QCFG="usbspeed","20"'
+
+config custom-commands
+	option description '切换为USB3.1 Gen1（5Gbps） > AT+QCFG="usbspeed","311"'
+	option command 'AT+QCFG="usbspeed","311"'
+
+config custom-commands
+	option description '切换为USB3.1 Gen1（10Gbps） > AT+QCFG="usbspeed","312"'
+	option command 'AT+QCFG="usbspeed","312"'
+
+config custom-commands
 	option description '重置模组 > AT+CFUN=1,1'
 	option command 'AT+CFUN=1,1'
 

@@ -20,7 +20,7 @@ m:append(Template("modem/modem_status"))
 s = m:section(TypedSection, "config", translate("Config List"))
 s.anonymous = true
 s.addremove = true
-s.template = "cbi/tblsection"
+s.template = "modem/tblsection"
 s.extedit = d.build_url("admin", "network", "modem", "config", "%s")
 
 function s.create(uci, t)

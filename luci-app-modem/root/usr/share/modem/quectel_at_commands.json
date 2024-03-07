@@ -27,6 +27,10 @@
         {"获取模组温度 > AT+QTEMP":"AT+QTEMP"},
         {"切换为USB通信端口 > AT+QCFG=\"data_interface\",0,0":"AT+QCFG=\"data_interface\",0,0"},
         {"切换为PCIE通信端口 > AT+QCFG=\"data_interface\",1,0":"AT+QCFG=\"data_interface\",1,0"},
+        {"查看当前USB速率 > AT+QCFG=\"usbspeed\"":"AT+QCFG=\"usbspeed\""},
+        {"切换为USB2.0 > AT+QCFG=\"usbspeed\",\"20\"":"AT+QCFG=\"usbspeed\",\"20\""},
+        {"切换为USB3.1 Gen1（5Gbps） > AT+QCFG=\"usbspeed\",\"311\"":"AT+QCFG=\"usbspeed\",\"311\""},
+        {"切换为USB3.1 Gen1（10Gbps） > AT+QCFG=\"usbspeed\",\"312\"":"AT+QCFG=\"usbspeed\",\"312\""},
         {"重置模组 > AT+CFUN=1,1":"AT+CFUN=1,1"}
 	]
 }

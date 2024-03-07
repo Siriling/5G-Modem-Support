@@ -15,7 +15,7 @@ s = m:section(TypedSection, "custom-commands", translate("Custom Commands"))
 s.anonymous = true
 s.addremove = true
 s.sortable = true
-s.template = "cbi/tblsection"
+s.template = "modem/tblsection_command"
 
 description = s:option(Value, "description", translate("Description"))
 description.placeholder = translate("Not Null")

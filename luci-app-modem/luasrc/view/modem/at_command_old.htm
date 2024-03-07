@@ -50,28 +50,35 @@
 
 	// 定时触发更新AT串口
 	XHR.poll(5,'<%=luci.dispatcher.build_url("admin", "network", "modem", "get_at_port")%>', null,
-		function(x, port)
+		function(x, data)
 		{
+			var at_ports=data["at_ports"];
+
 			//获取模块选择框元素
 			var modem_select = document.getElementById('modem_select');
 			// 记录所选
 			var selected=modem_select.value;
 			// 删除原来的选项
 			modem_select.options.length=0;
-			// 更新（key：AT串口，value：模块名称）
-			for (var key in port)
+			//遍历每一个AT串口
+			for (var port of at_ports)
 			{
-				var option = document.createElement('option');
-				option.value = key;
-				if (port[key].includes("unknown"))
+				//更新（key：AT串口，value：模块名称）
+				for (var key in port)
 				{
-					option.text = port[key].replace("unknown", key);
+					var option = document.createElement('option');
+					option.value = key;
+					var language=navigator.language;
+					if (port[key].includes("unknown"))
+					{
+						option.text = port[key].replace("unknown", key);
+					}
+					else
+					{
+						option.text = port[key];
+					}
+					modem_select.appendChild(option);
 				}
-				else
-				{
-					option.text = port[key];
-				}
-				modem_select.appendChild(option);
 			}
 			// 恢复原来的选择
 			for (let i = 0; i < modem_select.options.length; i++)
@@ -84,7 +91,7 @@
 			}
 
 			// 界面显示控制
-			if (Object.keys(port).length==0)
+			if (Object.keys(at_ports).length==0)
 			{
 				// 更新提示信息
 				document.getElementById("info_message").innerHTML="<strong><%:No modems found%></strong>";
@@ -235,7 +242,10 @@
 			<div class="tr cbi-rowstyle-2">
 				<div class="td right"><input type="button" style="margin-right: 26%"; id="sendcmd" class="btn cbi-button cbi-button-neutral" value="<%:Send Command%>" /></div>
 			</div>
+		</div>
 
+		<div class="cbi-page-actions">
+			<input class="btn cbi-button cbi-button-link" type="button" value="<%:Return to modem debug%>" onclick="location.href='/cgi-bin/luci/admin/network/modem/modem_debug'">
 		</div>
 	</div>
 
