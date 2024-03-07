@@ -188,14 +188,18 @@ function getModemInfo()
 	end
 	--网络信息翻译
 	if modem_more_info["network_info"] then
-		for key in pairs(modem_more_info["network_info"]) do
-			--翻译键
-			translation[key]=luci.i18n.translate(key)
-			-- local value=modem_more_info["network_info"][key]
-			-- if hasLetters(value) then
-			-- 	--翻译值
-			-- 	translation[value]=luci.i18n.translate(value)
-			-- end
+		local network_info=modem_more_info["network_info"]
+		for i = 1, #network_info do
+			local info = network_info[i]
+			for key in pairs(info) do
+				--翻译键
+				translation[key]=luci.i18n.translate(key)
+				-- local value=info[key]
+				-- if hasLetters(value) then
+				-- 	--翻译值
+				-- 	translation[value]=luci.i18n.translate(value)
+				-- end
+			end
 		end
 	end
 	--小区信息翻译

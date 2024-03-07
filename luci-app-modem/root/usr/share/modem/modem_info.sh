@@ -28,7 +28,11 @@ init_modem_info()
 
 	#网络信息
 	connect_status="disconnect"	#SIM卡状态
-	network_type="-" #蜂窝网络类型
+	network_type="-" 			#蜂窝网络类型
+	rssi="" 					#RSSI
+	ber=""  					#BER
+	tx_rate="-"  				#上传速率
+	rx_rate="-"  				#下载速率
 
 	#小区信息
 	network_mode="-" #网络模式
@@ -109,28 +113,6 @@ init_modem_info()
 	wcdma_slot=''
 	wcdma_speech_code=''
 	wcdma_com_mod=''
-
-	#信号信息
-	csq=""			#CSQ
-	per=""			#信号强度
-	rssi="" 		#信号接收强度 RSSI
-	ecio="-"		#参考信号接收质量 RSRQ ecio
-	ecio1=" "		#参考信号接收质量 RSRQ ecio1
-	RSCP="-"		#参考信号接收功率 RSRP rscp0
-	RSCP1=" "		#参考信号接收功率 RSRP rscp1
-	SINR="-"		#信噪比 SINR  rv["sinr"]
-	NETMODE="-"		#连接状态监控 rv["netmode"]
-
-	#基站信息
-	mcc="-"
-	mnc="-"
-	eNBID=""
-	TAC=""
-	cell_id=""
-	LBAND="-" #频段
-	channel="-" #频点
-	PCI="-" #物理小区标识
-	qos="" #最大Qos级别
 }
 
 #设置基本信息
@@ -182,9 +164,13 @@ set_sim_info()
 #设置网络信息
 set_network_info()
 {
-	network_info="\"network_info\":{
-		\"network_type\":\"$network_type\"
-	},"
+	network_info="\"network_info\":[
+		{\"Network Type\":\"$network_type\", \"full_name\":\"Network Type\"},
+		{\"Tx Rate\":\"$tx_rate\", \"full_name\":\"Transmit Rate\"},
+		{\"Rx Rate\":\"$rx_rate\", \"full_name\":\"Receive Rate\"},
+		{\"RSSI\":\"$rssi\", \"full_name\":\"Received Signal Strength Indicator\"},
+		{\"BER\":\"$ber\", \"full_name\":\"Bit Error Rate\"}
+	],"
 }
 
 #设置信号信息

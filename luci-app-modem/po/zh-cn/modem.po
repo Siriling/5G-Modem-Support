@@ -274,6 +274,18 @@ msgstr "网络信息"
 msgid "Network Type"
 msgstr "网络类型"
 
+msgid "Tx Rate"
+msgstr "上传速率"
+
+msgid "Rx Rate"
+msgstr "下载速率"
+
+msgid "RSSI"
+msgstr "接收信号强度指示"
+
+msgid "BER"
+msgstr "信道误码率"
+
 msgid "Cell Information"
 msgstr "小区信息"
 

@@ -238,15 +238,15 @@ fibocom_base_info()
 {
     debug "Fibocom base info"
 
-    at_command="ATI"
-    response=$(sh $current_dir/modem_at.sh $at_port $at_command)
-
     #Name（名称）
-    name=$(echo "$response" | sed -n '3p' | sed 's/Model: //g' | sed 's/\r//g')
+    at_command="AT+CGMM"
+    name=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
     #Manufacturer（制造商）
-    manufacturer=$(echo "$response" | sed -n '2p' | sed 's/Manufacturer: //g' | sed 's/\r//g')
+    at_command="AT+CGMI"
+    manufacturer=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
     #Revision（固件版本）
-    revision=$(echo "$response" | sed -n '4p' | sed 's/Revision: //g' | sed 's/\r//g')
+    at_command="AT+CGMR"
+    revision=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
 
     #Mode（拨号模式）
     mode=$(get_mode $at_port | tr 'a-z' 'A-Z')
@@ -259,23 +259,12 @@ fibocom_base_info()
 	fi
 }
 
-#SIM卡信息
-fibocom_sim_info()
+#获取SIM卡状态
+# $1:SIM卡状态标志
+get_sim_status()
 {
-    debug "Fibocom sim info"
-    
-    #SIM Slot（SIM卡卡槽）
-    at_command="AT+GTDUALSIM"
-	sim_slot=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+GTDUALSIM:" | awk -F'"' '{print $2}' | sed 's/SUB//g')
-
-    #IMEI（国际移动设备识别码）
-    at_command="AT+CGSN"
-	imei=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
-
-    #SIM Status（SIM状态）
-    at_command="AT+CPIN?"
-	response=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p')
-    case "$response" in
+    local sim_status
+    case $1 in
         *"ERROR"*) sim_status="miss" ;;
         *"READY"*) sim_status="ready" ;;
         *"SIM PIN"*) sim_status="MT is waiting SIM PIN to be given" ;;
@@ -295,6 +284,26 @@ fibocom_sim_info()
         *"PH-CORP PUK"*) sim_status="MT is waiting corporate personalization unblocking password to be given" ;;
         *) sim_status="unknown" ;;
     esac
+    echo "$sim_status"
+}
+
+#SIM卡信息
+fibocom_sim_info()
+{
+    debug "Fibocom sim info"
+    
+    #SIM Slot（SIM卡卡槽）
+    at_command="AT+GTDUALSIM"
+	sim_slot=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+GTDUALSIM:" | awk -F'"' '{print $2}' | sed 's/SUB//g')
+
+    #IMEI（国际移动设备识别码）
+    at_command="AT+CGSN"
+	imei=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+
+    #SIM Status（SIM状态）
+    at_command="AT+CPIN?"
+	sim_status_flag=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p')
+    sim_status=$(get_sim_status "$sim_status_flag")
 
     if [ "$sim_status" != "ready" ]; then
         return
@@ -324,6 +333,18 @@ fibocom_sim_info()
 	iccid=$(sh $current_dir/modem_at.sh $at_port $at_command | grep -o "+ICCID:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}")
 }
 
+#获取信号强度指示
+# $1:信号强度指示数字
+get_rssi()
+{
+    local rssi
+    case $1 in
+		"99") rssi="unknown" ;;
+		* )  rssi=$((2 * $1 - 113)) ;;
+	esac
+    echo "$rssi"
+}
+
 #网络信息
 fibocom_network_info()
 {
@@ -339,22 +360,34 @@ fibocom_network_info()
     at_command="AT+PSRAT?"
     network_type=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+PSRAT:" | sed 's/+PSRAT: //g' | sed 's/\r//g')
 
-    # #CSQ
-    # local at_command="AT+CSQ"
-    # csq=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'[ ,]+' '{print $2}')
-    # if [ $CSQ = "99" ]; then
-    #     csq=""
-    # fi
+    #设置网络类型为5G时，信号强度指示用RSRP代替
+    # at_command="AT+GTCSQNREN=1"
+    # sh $current_dir/modem_at.sh $at_port $at_command
+
+    #CSQ（信号强度）
+    at_command="AT+CSQ"
+    response=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+CSQ:" | sed 's/+CSQ: //g' | sed 's/\r//g')
+
+    #RSSI（信号强度指示）
+    rssi_num=$(echo $response | awk -F',' '{print $1}')
+    rssi=$(get_rssi $rssi_num)
+    #BER（信道误码率）
+    ber=$(echo $response | awk -F',' '{print $2}')
 
     # #PER（信号强度）
     # if [ -n "$csq" ]; then
     #     per=$(($csq * 100/31))"%"
     # fi
 
-    # #RSSI（信号接收强度）
-    # if [ -n "$csq" ]; then
-    #     rssi=$((2 * $csq - 113))" dBm"
-    # fi
+    #速率统计
+    at_command="AT+GTSTATIS?"
+    response=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+GTSTATIS:" | sed 's/+GTSTATIS: //g' | sed 's/\r//g')
+
+    #当前上传速率（单位，Byte/s）
+    tx_rate=$(echo $response | awk -F',' '{print $2}')
+
+    #当前下载速率（单位，Byte/s）
+    rx_rate=$(echo $response | awk -F',' '{print $1}')
 }
 
 #获取频段

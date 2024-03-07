@@ -53,6 +53,28 @@ end
 	}
 
 	//获取SIM卡信息视图
+	function get_rate_view(rate)
+	{
+		const b=parseFloat(rate);
+		const kb=b/1024;
+		const mb=kb/1024;
+
+		var rate_view;
+		if (mb>=1) {
+			console.log(mb);
+			rate_view=mb.toFixed(2)+" MB/s";
+		}
+		else if (kb>=1) {
+			rate_view=kb.toFixed(2)+" KB/s";
+		}
+		else {
+			rate_view=b+" B/s";
+		}
+
+		return rate_view;
+	}
+
+	//获取SIM卡信息视图
 	function get_sim_info_view(sim_info,translation)
 	{
 		//初始化视图
@@ -63,6 +85,12 @@ end
 			//遍历每一条信息里的键
 			for (var key in info)
 			{
+				//跳过全名
+				if (key=="full_name")
+				{
+					continue;
+				}
+
 				//获取全名
 				var full_name=info["full_name"];
 				if (full_name==null)
@@ -71,7 +99,7 @@ end
 				}
 				//写入视图（不显示空的信息）
 				var value=info[key];
-				if (key!="full_name"&&value!="-"&&value!=""&&value!="ready")
+				if (value!="-"&&value!=""&&value!="ready")
 				{
 					// value=translation[value]; //是否翻译
 					sim_info_view+='<tr class="tr"><td class="td left" title="'+full_name+'">'+translation[key]+'</td><td class="td left" id="'+key+'">'+value+'</td></tr>';
@@ -92,6 +120,60 @@ end
 		sim_info_Element.innerHTML=sim_info_view;
 	}
 
+	//获取网络信息视图
+	function get_network_info_view(network_info,translation)
+	{
+		//初始化视图
+		var network_info_view='';
+		//遍历每一条信息
+		for (var info of network_info)
+		{
+			//遍历每一条信息里的键
+			for (var key in info)
+			{
+				//跳过全名
+				if (key=="full_name")
+				{
+					continue;
+				}
+
+				//获取全名
+				var full_name=info["full_name"];
+				if (full_name==null)
+				{
+					full_name='';
+				}
+				//写入视图（不显示空的信息）
+				var value=info[key];
+				if (value!="-"&&value!="")
+				{
+					//添加单位
+					if (key=="RSSI") {
+						value=value+" dBm";
+					}
+					else if (key=="Tx Rate"||key=="Rx Rate")
+					{
+						value=get_rate_view(value);
+					}
+					// value=translation[value]; //是否翻译
+					network_info_view+='<tr class="tr"><td class="td left" title="'+full_name+'">'+translation[key]+'</td><td class="td left" id="'+key+'">'+value+'</td></tr>';
+					break;
+				}
+			}
+		}
+		return network_info_view;
+	}
+
+	//设置网络信息
+	function set_network_info(network_info,translation)
+	{
+		//获取网络信息视图
+		var network_info_view=get_network_info_view(network_info,translation);
+		//获取网络信息表格
+		var network_info_Element=document.getElementById("network_info");
+		network_info_Element.innerHTML=network_info_view;
+	}
+
 	//获取小区信息视图
 	function get_cell_info_view(network_mode_info,network_type,translation)
 	{
@@ -103,6 +185,12 @@ end
 			//遍历每一条信息里的键
 			for (var key in info)
 			{
+				//跳过全名
+				if (key=="full_name")
+				{
+					continue;
+				}
+
 				//获取全名
 				var full_name=info["full_name"];
 				if (full_name==null)
@@ -111,7 +199,7 @@ end
 				}
 				//写入视图（不显示空的信息）
 				var value=info[key];
-				if (key!="full_name"&&value!="-"&&value!="")
+				if (value!="-"&&value!="")
 				{
 					//添加单位
 					if (key=="Band") {
@@ -145,7 +233,7 @@ end
 		return cell_info_view;
 	}
 
-	//获取小区信息
+	//设置小区信息
 	function set_cell_info(cell_info,translation)
 	{
 		//获取网络模式
@@ -334,7 +422,7 @@ end
 
 				//网络信息
 				var network_info=more_info["network_info"];
-				set_info(network_info);
+				set_network_info(network_info,translation);
 
 				//小区信息
 				var cell_info=more_info["cell_info"];
@@ -486,11 +574,7 @@ end
 	<fieldset class="cbi-section" id="cbi-networkinfo" style="display: none;">
 		<div class="cbi-section fade-in">
 			<h3><%:Network Information%></h3>
-			<table id="network_info" class="table">
-				<tbody>
-					<tr class="tr"><td class="td left"><%:Network Type%></td><td class="td left" id="network_type"></td></tr>
-				</tbody>
-			</table>
+			<table id="network_info" class="table"></table>
 		</div>
 	</fieldset>
 
@@ -501,22 +585,7 @@ end
 		</div>
 	</fieldset>
 
-	<!-- <fieldset class="cbi-section" id="cbi-networkinfo" style="display: none;">
-		<h3><%:网络信息%></h3>
-		<table width="100%" cellspacing="10">
-			<tr><td width="20%"><%:Network Type 网络类型 %> :</td><td id="network_type"></td><td></td></tr>
-			<tr><td width="20%"><%:CSQ : %></td><td id="csq"></td><td></td></tr>
-			<tr><td width="20%"><%:信号强度 : %></td><td id="per"></td><td></td></tr>
-			<tr><td width="20%"><%:RSSI 信号接收强度 : %></td><td id="rssi"></td><td></td></tr>
-			<tr><td width="20%"><%:RSRQ 参考信号接收质量 : %></td><td><ul><span id="ecio" class="r"></span><span id="ecio1" class="r"></span></ul></td><td></td></tr>
-			<tr><td width="20%"><%:RSRP 参考信号接收功率 : %></td><td><ul><span id="rscp" class="r"></span><span id="rscp1" class="r"></span></ul></td><td></td></tr>
-			<tr><td width="20%"><%:SINR 信噪比 : %></td><td id="sinr"></td><td></td></tr>
-			<tr><td width="20%"><%:连接状态监控 : %></td><td id="conmon"></td><td></td></tr>
-
-		</table>
-	</fieldset>
-
-	<fieldset class="cbi-section" id="cbi-stationinfo" style="display: none;">
+	<!-- <fieldset class="cbi-section" id="cbi-stationinfo" style="display: none;">
 		<h3><%:基站信息%></h3>
 		<table width="100%" cellspacing="10">
 			<tr><td width="20%"><%:MCC/MNC 国家码/网络码  %> :</td><td id="mcc"></td><td id="mnc"></td></tr>
