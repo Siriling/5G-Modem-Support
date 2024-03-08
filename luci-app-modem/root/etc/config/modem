@@ -56,6 +56,10 @@ config custom-commands
 	option command 'AT+QNWINFO'
 
 config custom-commands
+	option description '查询SIM卡签约速率 > AT+QNWCFG="nr5g_ambr"'
+	option command 'AT+QNWCFG="nr5g_ambr"'
+
+config custom-commands
 	option description '查询载波聚合参数 > AT+QCAINFO'
 	option command 'AT+QCAINFO'
 

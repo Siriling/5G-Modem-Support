@@ -11,6 +11,7 @@
         {"设置当前使用的为卡1 > AT+QUIMSLOT=1":"AT+QUIMSLOT=1"},
         {"设置当前使用的为卡2 > AT+QUIMSLOT=2":"AT+QUIMSLOT=2"},
         {"查询网络信息 > AT+QNWINFO":"AT+QNWINFO"},
+        {"查询SIM卡签约速率 > AT+QNWCFG=\"nr5g_ambr\"":"AT+QNWCFG=\"nr5g_ambr\""},
         {"查询载波聚合参数 > AT+QCAINFO":"AT+QCAINFO"},
         {"查询当前拨号模式 > AT+QCFG=\"usbnet\"":"AT+QCFG=\"usbnet\""},
         {"QMI/GobiNet拨号 > AT+QCFG=\"usbnet\",0":"AT+QCFG=\"usbnet\",0"},
