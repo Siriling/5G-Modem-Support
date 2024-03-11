@@ -92,6 +92,8 @@ setPortConfig()
     	if [ "$substr" = "$path" ]; then
             #添加新的串口
             uci add_list modem.modem$i.ports="$2"
+            #写入到配置中（解决老版本luci问题）
+            uci commit modem
             #判断是不是AT串口
             local response=$(sh $current_dir/modem_at.sh $2 "ATI")
             local str1="No" #No response from modem.
