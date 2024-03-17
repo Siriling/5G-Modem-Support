@@ -3,7 +3,7 @@ current_dir="$(dirname "$0")"
 
 #获取拨号模式
 # $1:AT串口
-get_mode()
+get_quectel_mode()
 {
     local at_port="$1"
     at_command='AT+QCFG="usbnet"'
@@ -29,7 +29,7 @@ get_mode()
                 "1") mode="ecm" ;;
                 "2") mode="mbim" ;;
                 "3") mode="rndis" ;;
-                "5") mode='ncm' ;;
+                "5") mode="ncm" ;;
                 *) mode="$mode_num" ;;
             esac
         ;;
@@ -38,7 +38,7 @@ get_mode()
                 "1") mode="ecm" ;;
                 "2") mode="mbim" ;;
                 "3") mode="rndis" ;;
-                "5") mode='ncm' ;;
+                "5") mode="ncm" ;;
                 *) mode="$mode_num" ;;
             esac
         ;;
@@ -52,7 +52,7 @@ get_mode()
 #设置拨号模式
 # $1:AT串口
 # $2:拨号模式配置
-set_mode()
+set_quectel_mode()
 {
     local at_port="$1"
 
@@ -222,11 +222,13 @@ quectel_base_info()
     at_command="AT+CGMI"
     manufacturer=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
     #Revision（固件版本）
-    at_command="AT+CGMR"
-    revision=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+    at_command="ATI"
+    revision=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "Revision:" | sed 's/Revision: //g' | sed 's/\r//g')
+    # at_command="AT+CGMR"
+    # revision=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
 
     #Mode（拨号模式）
-    mode=$(get_mode $at_port | tr 'a-z' 'A-Z')
+    mode=$(get_quectel_mode $at_port | tr 'a-z' 'A-Z')
 
     #Temperature（温度）
     at_command="AT+QTEMP"

@@ -58,7 +58,7 @@
 				responseElement=document.getElementById("response");
 				if ("response" in data) {
 					//显示当前时间
-					responseElement.value+=data["time"];
+					responseElement.value+=data["time"]+"\n";
 					//显示返回值
 					responseElement.value+=data["response"];
 					//滚动到底部

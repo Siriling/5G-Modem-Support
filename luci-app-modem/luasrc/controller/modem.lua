@@ -455,13 +455,13 @@ function setMode()
 	end)
 
 	--设置模组拨号模式
-	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && set_mode "..at_port.." "..mode_config)
+	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && set_"..manufacturer.."_mode "..at_port.." "..mode_config)
 	odpall:close()
 
 	--获取设置好后的模组拨号模式
 	local mode
 	if at_port and manufacturer and manufacturer~="unknown" then
-		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_mode "..at_port)
+		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_"..manufacturer.."_mode "..at_port)
 		mode = odpall:read("*a")
 		mode=string.gsub(mode, "\n", "")
 		odpall:close()
@@ -491,7 +491,7 @@ function getModeInfo(at_port,manufacturer)
 	end)
 
 	--获取模组拨号模式
-	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_mode "..at_port)
+	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_"..manufacturer.."_mode "..at_port)
 	local opd = odpall:read("*a")
 	odpall:close()
 	local mode=string.gsub(opd, "\n", "")

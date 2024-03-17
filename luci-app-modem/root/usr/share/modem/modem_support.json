@@ -25,6 +25,12 @@
                 "network_interface":"usb",
                 "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
             },
+            "rm502q-ae":{
+                "manufacturer":"quectel",
+                "platform":"qualcomm",
+                "network_interface":"usb",
+                "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
+            },
             "rm520n-cn":{
                 "manufacturer":"quectel",
                 "platform":"qualcomm",

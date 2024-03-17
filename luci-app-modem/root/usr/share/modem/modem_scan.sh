@@ -145,7 +145,7 @@ setModemInfoConfig()
         #获取平台
         platform=$(echo $modem_info | jq -r '.platform')
         #获取当前的拨号模式
-        mode=$(source $current_dir/$manufacturer.sh && get_mode $2 $platform)
+        mode=$(source $current_dir/$manufacturer.sh && get_$manufacturer.sh_mode $2 $platform)
         #获取支持的拨号模式
         modes=$(echo $modem_info | jq -r '.modes[]')
     fi

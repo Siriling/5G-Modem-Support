@@ -36,6 +36,10 @@ config custom-commands
 	option command 'AT+CFUN=1'
 
 config custom-commands
+	option description '重启模组 > AT+CFUN=1,1'
+	option command 'AT+CFUN=1,1'
+
+config custom-commands
 	option description '****************移远****************'
 	option command 'ATI'
 
@@ -140,8 +144,8 @@ config custom-commands
 	option command 'AT+QCFG="usbspeed","312"'
 
 config custom-commands
-	option description '重置模组 > AT+CFUN=1,1'
-	option command 'AT+CFUN=1,1'
+	option description '重置模组 > AT+QCFG="ResetFactory"'
+	option command 'AT+QCFG="ResetFactory"'
 
 config custom-commands
 	option description '****************广和通****************'

@@ -3,7 +3,7 @@ current_dir="$(dirname "$0")"
 
 #获取拨号模式
 # $1:AT串口
-get_mode()
+get_fibocom_mode()
 {
     local at_port="$1"
     at_command="AT+GTUSBMODE?"
@@ -36,7 +36,7 @@ get_mode()
                 "29") mode="mbim" ;; #-
                 "30") mode="mbim" ;;
                 "24") mode="rndis" ;;
-                "18") mode='ncm' ;;
+                "18") mode="ncm" ;;
                 *) mode="$mode_num" ;;
             esac
         ;;
@@ -48,8 +48,8 @@ get_mode()
                 "41") mode="mbim" ;; #-
                 "38") mode="rndis" ;;
                 "39") mode="rndis" ;; #-
-                "36") mode='ncm' ;;
-                "37") mode='ncm' ;; #-
+                "36") mode="ncm" ;;
+                "37") mode="ncm" ;; #-
                 *) mode="$mode_num" ;;
             esac
         ;;
@@ -63,7 +63,7 @@ get_mode()
 #设置拨号模式
 # $1:AT串口
 # $2:拨号模式配置
-set_mode()
+set_fibocom_mode()
 {
     local at_port="$1"
 
@@ -249,7 +249,7 @@ fibocom_base_info()
     revision=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
 
     #Mode（拨号模式）
-    mode=$(get_mode $at_port | tr 'a-z' 'A-Z')
+    mode=$(get_fibocom_mode $at_port | tr 'a-z' 'A-Z')
 
     #Temperature（温度）
     at_command="AT+MTSM=1,6"

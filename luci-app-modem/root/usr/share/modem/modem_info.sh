@@ -3,7 +3,7 @@ current_dir="$(dirname "$0")"
 source "$current_dir/modem_debug.sh"
 source "$current_dir/quectel.sh"
 source "$current_dir/fibocom.sh"
-source "$current_dir/simcom.sh"
+# source "$current_dir/simcom.sh"
 
 #初值化数据结构
 init_modem_info()

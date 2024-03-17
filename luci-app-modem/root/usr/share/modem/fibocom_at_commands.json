@@ -26,6 +26,7 @@
 		{"更改模组IMEI > AT+GTSN=1,7,\"IMEI\"":"AT+GTSN=1,7,\"在此设置IMEI\""},
 		{"报告一次当前BBIC的温度 > AT+MTSM=1,6":"AT+MTSM=1,6"},
 		{"报告一次当前射频的温度 > AT+MTSM=1,7":"AT+MTSM=1,7"},
+        {"重启模组 > AT+CFUN=1,1":"AT+CFUN=1,1"},
 		{"重置模组 > AT+CFUN=15":"AT+CFUN=15"}
 	]
 }
