@@ -3,6 +3,7 @@ current_dir="$(dirname "$0")"
 
 #获取拨号模式
 # $1:AT串口
+# $2:平台
 quectel_get_mode()
 {
     local at_port="$1"
@@ -10,15 +11,17 @@ quectel_get_mode()
     local mode_num=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+QCFG:" | sed 's/+QCFG: "usbnet",//g' | sed 's/\r//g')
 
     #获取芯片平台
-    local platform
-    local modem_number=$(uci -q get modem.global.modem_number)
-    for i in $(seq 0 $((modem_number-1))); do
-        local at_port_tmp=$(uci -q get modem.modem$i.at_port)
-        if [ "$at_port" = "$at_port_tmp" ]; then
-            platform=$(uci -q get modem.modem$i.platform)
-            break
-        fi
-    done
+    local platform="$2"
+	if [ -z "$platform" ]; then
+		local modem_number=$(uci -q get modem.global.modem_number)
+        for i in $(seq 0 $((modem_number-1))); do
+            local at_port_tmp=$(uci -q get modem.modem$i.at_port)
+            if [ "$at_port" = "$at_port_tmp" ]; then
+                platform=$(uci -q get modem.modem$i.platform)
+                break
+            fi
+        done
+	fi
     
     local mode
     case "$platform" in
