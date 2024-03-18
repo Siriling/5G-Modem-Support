@@ -3,7 +3,7 @@ current_dir="$(dirname "$0")"
 
 #获取拨号模式
 # $1:AT串口
-get_quectel_mode()
+quectel_get_mode()
 {
     local at_port="$1"
     at_command='AT+QCFG="usbnet"'
@@ -52,7 +52,7 @@ get_quectel_mode()
 #设置拨号模式
 # $1:AT串口
 # $2:拨号模式配置
-set_quectel_mode()
+quectel_set_mode()
 {
     local at_port="$1"
 
@@ -102,7 +102,7 @@ set_quectel_mode()
 
 #获取网络偏好
 # $1:AT串口
-get_network_prefer()
+quectel_get_network_prefer()
 {
     local at_port="$1"
     at_command='AT+QNWPREFCFG="mode_pref"'
@@ -146,7 +146,7 @@ get_network_prefer()
 #设置网络偏好
 # $1:AT串口
 # $2:网络偏好配置
-set_network_prefer()
+quectel_set_network_prefer()
 {
     local network_prefer="$2"
 
@@ -191,7 +191,7 @@ set_network_prefer()
 
 #获取连接状态
 # $1:AT串口
-get_connect_status()
+quectel_get_connect_status()
 {
     local at_port="$1"
     at_command="AT+QNWINFO"
@@ -228,7 +228,7 @@ quectel_base_info()
     # revision=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
 
     #Mode（拨号模式）
-    mode=$(get_quectel_mode $at_port | tr 'a-z' 'A-Z')
+    mode=$(quectel_get_mode $at_port | tr 'a-z' 'A-Z')
 
     #Temperature（温度）
     at_command="AT+QTEMP"
@@ -254,7 +254,7 @@ quectel_base_info()
 
 #获取SIM卡状态
 # $1:SIM卡状态标志
-get_sim_status()
+quectel_get_sim_status()
 {
     local sim_status
     case $1 in
@@ -296,7 +296,7 @@ quectel_sim_info()
     #SIM Status（SIM状态）
     at_command="AT+CPIN?"
 	sim_status_flag=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p')
-    sim_status=$(get_sim_status "$sim_status_flag")
+    sim_status=$(quectel_get_sim_status "$sim_status_flag")
 
     if [ "$sim_status" != "ready" ]; then
         return
@@ -330,7 +330,7 @@ quectel_sim_info()
 
 #获取信号强度指示
 # $1:信号强度指示数字
-get_rssi()
+quectel_get_rssi()
 {
     local rssi
     case $1 in
@@ -346,7 +346,7 @@ quectel_network_info()
     debug "Quectel network info"
 
     #Connect Status（连接状态）
-    connect_status=$(get_connect_status $at_port)
+    connect_status=$(quectel_get_connect_status $at_port)
     if [ "$connect_status" != "connect" ]; then
         return
     fi
@@ -362,7 +362,7 @@ quectel_network_info()
 
     #RSSI（信号强度指示）
     rssi_num=$(echo $response | awk -F',' '{print $1}')
-    rssi=$(get_rssi $rssi_num)
+    rssi=$(quectel_get_rssi $rssi_num)
     #Ber（信道误码率）
     ber=$(echo $response | awk -F',' '{print $2}')
 
@@ -385,7 +385,7 @@ quectel_network_info()
 #获取频段
 # $1:网络类型
 # $2:频段数字
-get_band()
+quectel_get_band()
 {
     local band
     case $1 in
@@ -398,7 +398,7 @@ get_band()
 
 #UL_bandwidth
 # $1:上行带宽数字
-get_lte_ul_bandwidth()
+quectel_get_lte_ul_bandwidth()
 {
     local ul_bandwidth
 	case $1 in
@@ -411,7 +411,7 @@ get_lte_ul_bandwidth()
 
 #DL_bandwidth
 # $1:下行带宽数字
-get_lte_dl_bandwidth()
+quectel_get_lte_dl_bandwidth()
 {
     local dl_bandwidth
 	case $1 in
@@ -424,7 +424,7 @@ get_lte_dl_bandwidth()
 
 #NR_DL_bandwidth
 # $1:下行带宽数字
-get_nr_dl_bandwidth()
+quectel_get_nr_dl_bandwidth()
 {
     local nr_dl_bandwidth
 	case $1 in
@@ -438,7 +438,7 @@ get_nr_dl_bandwidth()
 
 #获取NR子载波间隔
 # $1:NR子载波间隔数字
-get_scs()
+quectel_get_scs()
 {
     local scs
 	case $1 in
@@ -454,7 +454,7 @@ get_scs()
 
 #获取物理信道
 # $1:物理信道数字
-get_phych()
+quectel_get_phych()
 {
     local phych
 	case $1 in
@@ -466,7 +466,7 @@ get_phych()
 
 #获取扩频因子
 # $1:扩频因子数字
-get_sf()
+quectel_get_sf()
 {
     local sf
 	case $1 in
@@ -478,7 +478,7 @@ get_sf()
 
 #获取插槽格式
 # $1:插槽格式数字
-get_slot()
+quectel_get_slot()
 {
     local slot=$1
 	# case $1 in
@@ -509,11 +509,11 @@ quectel_cell_info()
         endc_lte_physical_cell_id=$(echo "$lte" | awk -F',' '{print $6}')
         endc_lte_earfcn=$(echo "$lte" | awk -F',' '{print $7}')
         endc_lte_freq_band_ind_num=$(echo "$lte" | awk -F',' '{print $8}')
-        endc_lte_freq_band_ind=$(get_band "LTE" $endc_lte_freq_band_ind_num)
+        endc_lte_freq_band_ind=$(quectel_get_band "LTE" $endc_lte_freq_band_ind_num)
         ul_bandwidth_num=$(echo "$lte" | awk -F',' '{print $9}')
-        endc_lte_ul_bandwidth=$(get_lte_ul_bandwidth $ul_bandwidth_num)
+        endc_lte_ul_bandwidth=$(quectel_get_lte_ul_bandwidth $ul_bandwidth_num)
         dl_bandwidth_num=$(echo "$lte" | awk -F',' '{print $10}')
-        endc_lte_dl_bandwidth=$(get_lte_dl_bandwidth $dl_bandwidth_num)
+        endc_lte_dl_bandwidth=$(quectel_get_lte_dl_bandwidth $dl_bandwidth_num)
         endc_lte_tac=$(echo "$lte" | awk -F',' '{print $11}')
         endc_lte_rsrp=$(echo "$lte" | awk -F',' '{print $12}')
         endc_lte_rsrq=$(echo "$lte" | awk -F',' '{print $13}')
@@ -531,11 +531,11 @@ quectel_cell_info()
         endc_nr_rsrq=$(echo "$nr5g_nsa" | awk -F',' '{print $7}')
         endc_nr_arfcn=$(echo "$nr5g_nsa" | awk -F',' '{print $8}')
         endc_nr_band_num=$(echo "$nr5g_nsa" | awk -F',' '{print $9}')
-        endc_nr_band=$(get_band "NR" $endc_nr_band_num)
+        endc_nr_band=$(quectel_get_band "NR" $endc_nr_band_num)
         nr_dl_bandwidth_num=$(echo "$nr5g_nsa" | awk -F',' '{print $10}')
-        endc_nr_dl_bandwidth=$(get_nr_dl_bandwidth $nr_dl_bandwidth_num)
+        endc_nr_dl_bandwidth=$(quectel_get_nr_dl_bandwidth $nr_dl_bandwidth_num)
         scs_num=$(echo "$nr5g_nsa" | awk -F',' '{print $16}' | sed 's/\r//g')
-        endc_nr_scs=$(get_scs $scs_num)
+        endc_nr_scs=$(quectel_get_scs $scs_num)
     else
         #SA，LTE，WCDMA模式
         response=$(echo "$response" | grep "+QENG:")
@@ -551,14 +551,14 @@ quectel_cell_info()
                 nr_tac=$(echo "$response" | awk -F',' '{print $9}')
                 nr_arfcn=$(echo "$response" | awk -F',' '{print $10}')
                 nr_band_num=$(echo "$response" | awk -F',' '{print $11}')
-                nr_band=$(get_band "NR" $nr_band_num)
+                nr_band=$(quectel_get_band "NR" $nr_band_num)
                 nr_dl_bandwidth_num=$(echo "$response" | awk -F',' '{print $12}')
-                nr_dl_bandwidth=$(get_nr_dl_bandwidth $nr_dl_bandwidth_num)
+                nr_dl_bandwidth=$(quectel_get_nr_dl_bandwidth $nr_dl_bandwidth_num)
                 nr_rsrp=$(echo "$response" | awk -F',' '{print $13}')
                 nr_rsrq=$(echo "$response" | awk -F',' '{print $14}')
                 nr_sinr=$(echo "$response" | awk -F',' '{print $15}')
                 nr_scs_num=$(echo "$response" | awk -F',' '{print $16}')
-                nr_scs=$(get_scs $nr_scs_num)
+                nr_scs=$(quectel_get_scs $nr_scs_num)
                 nr_rxlev=$(echo "$response" | awk -F',' '{print $17}' | sed 's/\r//g')
             ;;
             "LTE"|"CAT-M"|"CAT-NB")
@@ -570,11 +570,11 @@ quectel_cell_info()
                 lte_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
                 lte_earfcn=$(echo "$response" | awk -F',' '{print $9}')
                 lte_freq_band_ind_num=$(echo "$response" | awk -F',' '{print $10}')
-                lte_freq_band_ind=$(get_band "LTE" $lte_freq_band_ind_num)
+                lte_freq_band_ind=$(quectel_get_band "LTE" $lte_freq_band_ind_num)
                 ul_bandwidth_num=$(echo "$response" | awk -F',' '{print $11}')
-                lte_ul_bandwidth=$(get_lte_ul_bandwidth $ul_bandwidth_num)
+                lte_ul_bandwidth=$(quectel_get_lte_ul_bandwidth $ul_bandwidth_num)
                 dl_bandwidth_num=$(echo "$response" | awk -F',' '{print $12}')
-                lte_dl_bandwidth=$(get_lte_dl_bandwidth $dl_bandwidth_num)
+                lte_dl_bandwidth=$(quectel_get_lte_dl_bandwidth $dl_bandwidth_num)
                 lte_tac=$(echo "$response" | awk -F',' '{print $13}')
                 lte_rsrp=$(echo "$response" | awk -F',' '{print $14}')
                 lte_rsrq=$(echo "$response" | awk -F',' '{print $15}')
@@ -596,11 +596,11 @@ quectel_cell_info()
                 wcdma_rscp=$(echo "$response" | awk -F',' '{print $11}')
                 wcdma_ecio=$(echo "$response" | awk -F',' '{print $12}')
                 wcdma_phych_num=$(echo "$response" | awk -F',' '{print $13}')
-                wcdma_phych=$(get_phych $wcdma_phych_num)
+                wcdma_phych=$(quectel_get_phych $wcdma_phych_num)
                 wcdma_sf_num=$(echo "$response" | awk -F',' '{print $14}')
-                wcdma_sf=$(get_sf $wcdma_sf_num)
+                wcdma_sf=$(quectel_get_sf $wcdma_sf_num)
                 wcdma_slot_num=$(echo "$response" | awk -F',' '{print $15}')
-                wcdma_slot=$(get_slot $wcdma_slot_num)
+                wcdma_slot=$(quectel_get_slot $wcdma_slot_num)
                 wcdma_speech_code=$(echo "$response" | awk -F',' '{print $16}')
                 wcdma_com_mod=$(echo "$response" | awk -F',' '{print $17}' | sed 's/\r//g')
             ;;

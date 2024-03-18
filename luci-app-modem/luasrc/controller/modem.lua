@@ -55,7 +55,7 @@ end
 ]]
 function at(at_port,at_command)
 	local odpall = io.popen("cd "..script_path.." && source "..script_path.."modem_debug.sh && at "..at_port.." "..at_command)
-	local odp =  odpall:read("*a")
+	local odp = odpall:read("*a")
 	odpall:close()
 	odp=string.gsub(odp, "\r", "")
 	return odp
@@ -72,7 +72,7 @@ function getModemConnectStatus(at_port,manufacturer)
 	local connect_status="unknown"
 
 	if at_port and manufacturer~="unknown" then
-		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_connect_status "..at_port)
+		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_get_connect_status "..at_port)
 		opd = odpall:read("*a")
 		odpall:close()
 		connect_status = string.gsub(opd, "\n", "")
@@ -419,13 +419,13 @@ function setNetworkPrefer()
 	end)
 
 	--设置模组网络偏好
-	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && set_network_prefer "..at_port.." "..network_prefer_config)
+	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_set_network_prefer "..at_port.." "..network_prefer_config)
 	odpall:close()
 
 	--获取设置好后的模组网络偏好
 	local network_prefer={}
 	if at_port and manufacturer and manufacturer~="unknown" then
-		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_network_prefer "..at_port)
+		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_get_network_prefer "..at_port)
 		local opd = odpall:read("*a")
 		network_prefer=json.parse(opd)
 		odpall:close()
@@ -455,13 +455,13 @@ function setMode()
 	end)
 
 	--设置模组拨号模式
-	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && set_"..manufacturer.."_mode "..at_port.." "..mode_config)
+	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_set_mode "..at_port.." "..mode_config)
 	odpall:close()
 
 	--获取设置好后的模组拨号模式
 	local mode
 	if at_port and manufacturer and manufacturer~="unknown" then
-		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_"..manufacturer.."_mode "..at_port)
+		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_get_mode "..at_port)
 		mode = odpall:read("*a")
 		mode=string.gsub(mode, "\n", "")
 		odpall:close()
@@ -491,7 +491,7 @@ function getModeInfo(at_port,manufacturer)
 	end)
 
 	--获取模组拨号模式
-	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_"..manufacturer.."_mode "..at_port)
+	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_get_mode "..at_port)
 	local opd = odpall:read("*a")
 	odpall:close()
 	local mode=string.gsub(opd, "\n", "")
@@ -513,7 +513,7 @@ end
 function getNetworkPreferInfo(at_port,manufacturer)
 
 	--获取模组网络偏好
-	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && get_network_prefer "..at_port)
+	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_get_network_prefer "..at_port)
 	local opd = odpall:read("*a")
 	odpall:close()
 	local network_prefer_info=json.parse(opd)

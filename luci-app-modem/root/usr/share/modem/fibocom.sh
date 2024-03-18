@@ -3,7 +3,7 @@ current_dir="$(dirname "$0")"
 
 #获取拨号模式
 # $1:AT串口
-get_fibocom_mode()
+fibocom_get_mode()
 {
     local at_port="$1"
     at_command="AT+GTUSBMODE?"
@@ -63,7 +63,7 @@ get_fibocom_mode()
 #设置拨号模式
 # $1:AT串口
 # $2:拨号模式配置
-set_fibocom_mode()
+fibocom_set_mode()
 {
     local at_port="$1"
 
@@ -113,7 +113,7 @@ set_fibocom_mode()
 
 #获取网络偏好
 # $1:AT串口
-get_network_prefer()
+fibocom_get_network_prefer()
 {
     local at_port="$1"
     at_command="AT+GTACT?"
@@ -170,7 +170,7 @@ get_network_prefer()
 #设置网络偏好
 # $1:AT串口
 # $2:网络偏好配置
-set_network_prefer()
+fibocom_set_network_prefer()
 {
     local network_prefer="$2"
 
@@ -215,7 +215,7 @@ set_network_prefer()
 
 #获取连接状态
 # $1:AT串口
-get_connect_status()
+fibocom_get_connect_status()
 {
     local at_port="$1"
     at_command="AT+CGDCONT?"
@@ -249,7 +249,7 @@ fibocom_base_info()
     revision=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
 
     #Mode（拨号模式）
-    mode=$(get_fibocom_mode $at_port | tr 'a-z' 'A-Z')
+    mode=$(fibocom_get_mode $at_port | tr 'a-z' 'A-Z')
 
     #Temperature（温度）
     at_command="AT+MTSM=1,6"
@@ -261,10 +261,11 @@ fibocom_base_info()
 
 #获取SIM卡状态
 # $1:SIM卡状态标志
-get_sim_status()
+fibocom_get_sim_status()
 {
     local sim_status
     case $1 in
+        "") sim_status="miss" ;;
         *"ERROR"*) sim_status="miss" ;;
         *"READY"*) sim_status="ready" ;;
         *"SIM PIN"*) sim_status="MT is waiting SIM PIN to be given" ;;
@@ -303,7 +304,7 @@ fibocom_sim_info()
     #SIM Status（SIM状态）
     at_command="AT+CPIN?"
 	sim_status_flag=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p')
-    sim_status=$(get_sim_status "$sim_status_flag")
+    sim_status=$(fibocom_get_sim_status "$sim_status_flag")
 
     if [ "$sim_status" != "ready" ]; then
         return
@@ -335,7 +336,7 @@ fibocom_sim_info()
 
 #获取信号强度指示
 # $1:信号强度指示数字
-get_rssi()
+fibocom_get_rssi()
 {
     local rssi
     case $1 in
@@ -351,7 +352,7 @@ fibocom_network_info()
     debug "Fibocom network info"
 
     #Connect Status（连接状态）
-    connect_status=$(get_connect_status $at_port)
+    connect_status=$(fibocom_get_connect_status $at_port)
     if [ "$connect_status" != "connect" ]; then
         return
     fi
@@ -370,7 +371,7 @@ fibocom_network_info()
 
     #RSSI（信号强度指示）
     rssi_num=$(echo $response | awk -F',' '{print $1}')
-    rssi=$(get_rssi $rssi_num)
+    rssi=$(fibocom_get_rssi $rssi_num)
     #BER（信道误码率）
     ber=$(echo $response | awk -F',' '{print $2}')
 
@@ -393,7 +394,7 @@ fibocom_network_info()
 #获取频段
 # $1:网络类型
 # $2:频段数字
-get_band()
+fibocom_get_band()
 {
     local band
     case $1 in
@@ -406,7 +407,7 @@ get_band()
 
 #获取上行带宽
 # $1:上行带宽数字
-get_ul_bandwidth()
+fibocom_get_ul_bandwidth()
 {
     local ul_bandwidth
 	case $1 in
@@ -418,7 +419,7 @@ get_ul_bandwidth()
 
 #获取下行带宽
 # $1:下行带宽数字
-get_dl_bandwidth()
+fibocom_get_dl_bandwidth()
 {
     local dl_bandwidth
 	case $1 in
@@ -430,7 +431,7 @@ get_dl_bandwidth()
 
 #获取NR下行带宽
 # $1:下行带宽数字
-get_nr_dl_bandwidth()
+fibocom_get_nr_dl_bandwidth()
 {
     local nr_dl_bandwidth
 	case $1 in
@@ -443,7 +444,7 @@ get_nr_dl_bandwidth()
 #获取参考信号接收功率
 # $1:网络类型
 # $2:参考信号接收功率数字
-get_rsrp()
+fibocom_get_rsrp()
 {
     local rsrp
     case $1 in
@@ -456,7 +457,7 @@ get_rsrp()
 #获取参考信号接收质量
 # $1:网络类型
 # $2:参考信号接收质量数字
-get_rsrq()
+fibocom_get_rsrq()
 {
     local rsrq
     case $1 in
@@ -468,7 +469,7 @@ get_rsrq()
 
 #获取信号干扰比
 # $1:信号干扰比数字
-get_rssnr()
+fibocom_get_rssnr()
 {
     #去掉小数点后的0
     local rssnr=$(awk "BEGIN{ printf \"%.2f\", $1 / 2 }" | sed 's/\.*0*$//')
@@ -478,7 +479,7 @@ get_rssnr()
 #获取接收信号功率
 # $1:网络类型
 # $2:接收信号功率数字
-get_rxlev()
+fibocom_get_rxlev()
 {
     local rxlev
     case $1 in
@@ -491,7 +492,7 @@ get_rxlev()
 
 #获取Ec/Io
 # $1:Ec/Io数字
-get_ecio()
+fibocom_get_ecio()
 {
     local ecio=$(awk "BEGIN{ printf \"%.2f\", $1 * 0.5 - 24.5 }" | sed 's/\.*0*$//')
     echo "$ecio"
@@ -518,16 +519,16 @@ fibocom_cell_info()
             nr_arfcn=$(echo "$response" | awk -F',' '{print $7}')
             nr_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
             nr_band_num=$(echo "$response" | awk -F',' '{print $9}')
-            nr_band=$(get_band "NR" $nr_band_num)
+            nr_band=$(fibocom_get_band "NR" $nr_band_num)
             nr_dl_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
-            nr_dl_bandwidth=$(get_nr_dl_bandwidth $nr_dl_bandwidth_num)
+            nr_dl_bandwidth=$(fibocom_get_nr_dl_bandwidth $nr_dl_bandwidth_num)
             nr_sinr=$(echo "$response" | awk -F',' '{print $11}')
             nr_rxlev_num=$(echo "$response" | awk -F',' '{print $12}')
-            nr_rxlev=$(get_rxlev "NR" $nr_rxlev_num)
+            nr_rxlev=$(fibocom_get_rxlev "NR" $nr_rxlev_num)
             nr_rsrp_num=$(echo "$response" | awk -F',' '{print $13}')
-            nr_rsrp=$(get_rsrp "NR" $nr_rsrp_num)
+            nr_rsrp=$(fibocom_get_rsrp "NR" $nr_rsrp_num)
             nr_rsrq_num=$(echo "$response" | awk -F',' '{print $14}' | sed 's/\r//g')
-            nr_rsrq=$(get_rsrq "NR" $nr_rsrq_num)
+            nr_rsrq=$(fibocom_get_rsrq "NR" $nr_rsrq_num)
         ;;
         "LTE-NR")
             network_mode="EN-DC Mode"
@@ -539,18 +540,18 @@ fibocom_cell_info()
             endc_lte_earfcn=$(echo "$response" | awk -F',' '{print $7}')
             endc_lte_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
             endc_lte_band_num=$(echo "$response" | awk -F',' '{print $9}')
-            endc_lte_band=$(get_band "LTE" $endc_lte_band_num)
+            endc_lte_band=$(fibocom_get_band "LTE" $endc_lte_band_num)
             ul_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
-            endc_lte_ul_bandwidth=$(get_ul_bandwidth $ul_bandwidth_num)
+            endc_lte_ul_bandwidth=$(fibocom_get_ul_bandwidth $ul_bandwidth_num)
             endc_lte_dl_bandwidth="$endc_lte_ul_bandwidth"
             endc_lte_rssnr_num=$(echo "$response" | awk -F',' '{print $11}')
-            endc_lte_rssnr=$(get_rssnr $endc_lte_rssnr_num)
+            endc_lte_rssnr=$(fibocom_get_rssnr $endc_lte_rssnr_num)
             endc_lte_rxlev_num=$(echo "$response" | awk -F',' '{print $12}')
-            endc_lte_rxlev=$(get_rxlev "LTE" $endc_lte_rxlev_num)
+            endc_lte_rxlev=$(fibocom_get_rxlev "LTE" $endc_lte_rxlev_num)
             endc_lte_rsrp_num=$(echo "$response" | awk -F',' '{print $13}')
-            endc_lte_rsrp=$(get_rsrp "LTE" $endc_lte_rsrp_num)
+            endc_lte_rsrp=$(fibocom_get_rsrp "LTE" $endc_lte_rsrp_num)
             endc_lte_rsrq_num=$(echo "$response" | awk -F',' '{print $14}' | sed 's/\r//g')
-            endc_lte_rsrq=$(get_rsrq "LTE" $endc_lte_rsrq_num)
+            endc_lte_rsrq=$(fibocom_get_rsrq "LTE" $endc_lte_rsrq_num)
             #NR5G-NSA
             endc_nr_mcc=$(echo "$response" | awk -F',' '{print $3}')
             endc_nr_mnc=$(echo "$response" | awk -F',' '{print $4}')
@@ -559,16 +560,16 @@ fibocom_cell_info()
             endc_nr_arfcn=$(echo "$response" | awk -F',' '{print $7}')
             endc_nr_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
             endc_nr_band_num=$(echo "$response" | awk -F',' '{print $9}')
-            endc_nr_band=$(get_band "NR" $endc_nr_band_num)
+            endc_nr_band=$(fibocom_get_band "NR" $endc_nr_band_num)
             nr_dl_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
-            endc_nr_dl_bandwidth=$(get_nr_dl_bandwidth $nr_dl_bandwidth_num)
+            endc_nr_dl_bandwidth=$(fibocom_get_nr_dl_bandwidth $nr_dl_bandwidth_num)
             endc_nr_sinr=$(echo "$response" | awk -F',' '{print $11}')
             endc_nr_rxlev_num=$(echo "$response" | awk -F',' '{print $12}')
-            endc_nr_rxlev=$(get_rxlev "NR" $endc_nr_rxlev_num)
+            endc_nr_rxlev=$(fibocom_get_rxlev "NR" $endc_nr_rxlev_num)
             endc_nr_rsrp_num=$(echo "$response" | awk -F',' '{print $13}')
-            endc_nr_rsrp=$(get_rsrp "NR" $endc_nr_rsrp_num)
+            endc_nr_rsrp=$(fibocom_get_rsrp "NR" $endc_nr_rsrp_num)
             endc_nr_rsrq_num=$(echo "$response" | awk -F',' '{print $14}' | sed 's/\r//g')
-            endc_nr_rsrq=$(get_rsrq "NR" $endc_nr_rsrq_num)
+            endc_nr_rsrq=$(fibocom_get_rsrq "NR" $endc_nr_rsrq_num)
             ;;
         "LTE"|"eMTC"|"NB-IoT")
             network_mode="LTE Mode"
@@ -579,17 +580,17 @@ fibocom_cell_info()
             lte_earfcn=$(echo "$response" | awk -F',' '{print $7}')
             lte_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
             lte_band_num=$(echo "$response" | awk -F',' '{print $9}')
-            lte_band=$(get_band "LTE" $lte_band_num)
+            lte_band=$(fibocom_get_band "LTE" $lte_band_num)
             ul_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
-            lte_ul_bandwidth=$(get_ul_bandwidth $ul_bandwidth_num)
+            lte_ul_bandwidth=$(fibocom_get_ul_bandwidth $ul_bandwidth_num)
             lte_dl_bandwidth="$lte_ul_bandwidth"
             lte_rssnr=$(echo "$response" | awk -F',' '{print $11}')
             lte_rxlev_num=$(echo "$response" | awk -F',' '{print $12}')
-            lte_rxlev=$(get_rxlev "LTE" $lte_rxlev_num)
+            lte_rxlev=$(fibocom_get_rxlev "LTE" $lte_rxlev_num)
             lte_rsrp_num=$(echo "$response" | awk -F',' '{print $13}')
-            lte_rsrp=$(get_rsrp "LTE" $lte_rsrp_num)
+            lte_rsrp=$(fibocom_get_rsrp "LTE" $lte_rsrp_num)
             lte_rsrq_num=$(echo "$response" | awk -F',' '{print $14}' | sed 's/\r//g')
-            lte_rsrq=$(get_rsrq "LTE" $lte_rsrq_num)
+            lte_rsrq=$(fibocom_get_rsrq "LTE" $lte_rsrq_num)
         ;;
         "WCDMA"|"UMTS")
             network_mode="WCDMA Mode"
@@ -600,15 +601,15 @@ fibocom_cell_info()
             wcdma_uarfcn=$(echo "$response" | awk -F',' '{print $7}')
             wcdma_psc=$(echo "$response" | awk -F',' '{print $8}')
             wcdma_band_num=$(echo "$response" | awk -F',' '{print $9}')
-            wcdma_band=$(get_band "WCDMA" $wcdma_band_num)
+            wcdma_band=$(fibocom_get_band "WCDMA" $wcdma_band_num)
             wcdma_ecno=$(echo "$response" | awk -F',' '{print $10}')
             wcdma_rscp=$(echo "$response" | awk -F',' '{print $11}')
             wcdma_rac=$(echo "$response" | awk -F',' '{print $12}')
             wcdma_rxlev_num=$(echo "$response" | awk -F',' '{print $13}')
-            wcdma_rxlev=$(get_rxlev "WCDMA" $wcdma_rxlev_num)
+            wcdma_rxlev=$(fibocom_get_rxlev "WCDMA" $wcdma_rxlev_num)
             wcdma_reserved=$(echo "$response" | awk -F',' '{print $14}')
             wcdma_ecio_num=$(echo "$response" | awk -F',' '{print $15}' | sed 's/\r//g')
-            wcdma_ecio=$(get_ecio $wcdma_ecio_num)
+            wcdma_ecio=$(fibocom_get_ecio $wcdma_ecio_num)
         ;;
     esac
 }
