@@ -21,6 +21,8 @@
         {"NCM拨号 > AT+QCFG=\"usbnet\",5":"AT+QCFG=\"usbnet\",5"},
         {"锁4G > AT+QNWPREFCFG=\"mode_pref\",LTE":"AT+QNWPREFCFG=\"mode_pref\",LTE"},
         {"锁5G > AT+QNWPREFCFG=\"mode_pref\",NR5G":"AT+QNWPREFCFG=\"mode_pref\",NR5G"},
+        {"锁5G NSA > AT+QNWPREFCFG=\"mode_pref\",NR5G-NSA":"AT+QNWPREFCFG=\"mode_pref\",NR5G-NSA"},
+        {"锁5G SA > AT+QNWPREFCFG=\"mode_pref\",NR5G-SA":"AT+QNWPREFCFG=\"mode_pref\",NR5G-SA"},
         {"恢复自动搜索网络 > AT+QNWPREFCFG=\"mode_pref\",AUTO":"AT+QNWPREFCFG=\"mode_pref\",AUTO"},
         {"查询模组IMEI > AT+CGSN":"AT+CGSN"},
         {"查询模组IMEI > AT+GSN":"AT+GSN"},

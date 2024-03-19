@@ -100,6 +100,14 @@ config custom-commands
 	option command 'AT+QNWPREFCFG="mode_pref",NR5G'
 
 config custom-commands
+	option description '锁5G NSA > AT+QNWPREFCFG="mode_pref",NR5G-NSA'
+	option command 'AT+QNWPREFCFG="mode_pref",NR5G-NSA'
+
+config custom-commands
+	option description '锁5G SA > AT+QNWPREFCFG="mode_pref",NR5G-SA'
+	option command 'AT+QNWPREFCFG="mode_pref",NR5G-SA'
+
+config custom-commands
 	option description '恢复自动搜索网络 > AT+QNWPREFCFG="mode_pref",AUTO'
 	option command 'AT+QNWPREFCFG="mode_pref",AUTO'
 

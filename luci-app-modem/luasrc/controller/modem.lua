@@ -204,13 +204,31 @@ function getModemInfo()
 	end
 	--小区信息翻译
 	if modem_more_info["cell_info"] then
-		for key in pairs(modem_more_info["cell_info"]) do
-			translation[key]=luci.i18n.translate(key)
-			local network_mode=modem_more_info["cell_info"][key]
-			for i = 1, #network_mode do
-				local info = network_mode[i]
-				for key in pairs(info) do
-					translation[key]=luci.i18n.translate(key)
+		for network_mode_key in pairs(modem_more_info["cell_info"]) do
+			--翻译网络模式
+			translation[network_mode_key]=luci.i18n.translate(network_mode_key)
+			if network_mode_key == "EN-DC Mode" then
+				local network_mode=modem_more_info["cell_info"][network_mode_key]
+				for i = 1, #network_mode do
+					for key in pairs(network_mode[i]) do
+						--获取每个网络类型信息
+						local network_type=network_mode[i][key]
+						for j = 1, #network_type do
+							local info = network_type[j]
+							for key in pairs(info) do
+								translation[key]=luci.i18n.translate(key)
+							end
+						end
+					end
+				end
+			else
+				--获取网络类型信息
+				local network_type=modem_more_info["cell_info"][network_mode_key]
+				for i = 1, #network_type do
+					local info = network_type[i]
+					for key in pairs(info) do
+						translation[key]=luci.i18n.translate(key)
+					end
 				end
 			end
 		end
