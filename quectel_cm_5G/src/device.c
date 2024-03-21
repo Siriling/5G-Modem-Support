@@ -444,28 +444,15 @@ int mhidevice_detect(char *qmichannel, char *usbnet_adapter, PROFILE_T *profile)
                 continue;
             }
 
-            // 解决硬编码导致不兼容hv问题
-            snprintf(path, sizeof(path), "%s/%s_IPCR", rootdir, ent->d_name);
+            snprintf(path, sizeof(path), "%s/%.13s_IPCR", rootdir, ent->d_name);
             if (access(path, F_OK)) {
-                snprintf(path, sizeof(path), "%s/%s_QMI0", rootdir, ent->d_name);
+                snprintf(path, sizeof(path), "%s/%.13s_QMI0", rootdir, ent->d_name);
                 if (access(path, F_OK)) {
-                    snprintf(path, sizeof(path), "%s/%s_MBIM", rootdir, ent->d_name);
+                    snprintf(path, sizeof(path), "%s/%.13s_MBIM", rootdir, ent->d_name);
                     if (!access(path, F_OK))
                         software_interface = SOFTWARE_MBIM;
                 }
             }
-
-            // 原代码
-            // snprintf(path, sizeof(path), "%s/%.13s_IPCR", rootdir, ent->d_name);
-            // if (access(path, F_OK)) {
-            //     snprintf(path, sizeof(path), "%s/%.13s_QMI0", rootdir, ent->d_name);
-            //     if (access(path, F_OK)) {
-            //         snprintf(path, sizeof(path), "%s/%.13s_MBIM", rootdir, ent->d_name);
-            //         if (!access(path, F_OK))
-            //             software_interface = SOFTWARE_MBIM;
-            //     }
-            // }
-            
             if (access(path, F_OK))
                 continue;
 
