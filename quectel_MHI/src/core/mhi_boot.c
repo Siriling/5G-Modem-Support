@@ -200,7 +200,7 @@ static int __mhi_download_rddm_in_panic(struct mhi_controller *mhi_cntrl)
 		      lower_32_bits(mhi_buf->dma_addr));
 
 	mhi_write_reg(mhi_cntrl, base, BHIE_RXVECSIZE_OFFS, mhi_buf->len);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0))
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 	sequence_id = get_random_u32() & BHIE_RXVECSTATUS_SEQNUM_BMSK;
 #else
 	sequence_id = prandom_u32() & BHIE_RXVECSTATUS_SEQNUM_BMSK;
@@ -315,8 +315,7 @@ int mhi_download_rddm_img(struct mhi_controller *mhi_cntrl, bool in_panic)
 		      lower_32_bits(mhi_buf->dma_addr));
 
 	mhi_write_reg(mhi_cntrl, base, BHIE_RXVECSIZE_OFFS, mhi_buf->len);
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0))
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 	sequence_id = get_random_u32() & BHIE_RXVECSTATUS_SEQNUM_BMSK;
 #else
 	sequence_id = prandom_u32() & BHIE_RXVECSTATUS_SEQNUM_BMSK;
@@ -371,11 +370,12 @@ static int mhi_fw_load_amss(struct mhi_controller *mhi_cntrl,
 		      lower_32_bits(mhi_buf->dma_addr));
 
 	mhi_write_reg(mhi_cntrl, base, BHIE_TXVECSIZE_OFFS, mhi_buf->len);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0))
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 	mhi_cntrl->sequence_id = get_random_u32() & BHIE_TXVECSTATUS_SEQNUM_BMSK;
 #else
 	mhi_cntrl->sequence_id = prandom_u32() & BHIE_TXVECSTATUS_SEQNUM_BMSK;
 #endif
+
 	mhi_write_reg_field(mhi_cntrl, base, BHIE_TXVECDB_OFFS,
 			    BHIE_TXVECDB_SEQNUM_BMSK, BHIE_TXVECDB_SEQNUM_SHFT,
 			    mhi_cntrl->sequence_id);
@@ -651,11 +651,12 @@ void mhi_fw_load_worker(struct work_struct *work)
 	ret = mhi_fw_load_sbl(mhi_cntrl, dma_addr, size);
 	mhi_free_coherent(mhi_cntrl, size, buf, dma_addr);
 
-	/* error or in edl, we're done */
-	if (ret || mhi_cntrl->ee == MHI_EE_EDL) {
+	if (!mhi_cntrl->fbc_download || ret || mhi_cntrl->ee == MHI_EE_EDL)
 		release_firmware(firmware);
+
+	/* error or in edl, we're done */
+	if (ret || mhi_cntrl->ee == MHI_EE_EDL)
 		return;
-	}
 
 	write_lock_irq(&mhi_cntrl->pm_lock);
 	mhi_cntrl->dev_state = MHI_STATE_RESET;
@@ -687,10 +688,8 @@ void mhi_fw_load_worker(struct work_struct *work)
 		TO_MHI_STATE_STR(mhi_cntrl->dev_state),
 		TO_MHI_EXEC_STR(mhi_cntrl->ee), ret);
 
-	if (!mhi_cntrl->fbc_download) {
-		release_firmware(firmware);
-		return;	
-	}
+	if (!mhi_cntrl->fbc_download)
+		return;
 
 	if (ret) {
 		MHI_ERR("Did not transition to READY state\n");
@@ -847,10 +846,7 @@ long bhi_write_image(struct mhi_controller *mhi_cntrl, void __user *ubuf)
 		MHI_ERR("IOCTL_BHI_WRITEIMAGE copy size error, ret = %ld\n", ret);
 		return ret;
 	}
-	if (size <= 0) {
-		MHI_ERR("IOCTL_BHI_WRITEIMAGE copy size error, size\n");
-		return -EINVAL;
-	}
+
 	ret = BhiWrite(mhi_cntrl, ubuf+sizeof(size), size);
 	if (ret) {
 		MHI_ERR("IOCTL_BHI_WRITEIMAGE BhiWrite error, ret = %ld\n", ret);

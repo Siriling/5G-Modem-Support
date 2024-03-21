@@ -12,7 +12,6 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/wait.h>
-#include <linux/uaccess.h>
 #include <asm/uaccess.h>
 #include <linux/version.h>
 #if (LINUX_VERSION_CODE > KERNEL_VERSION( 4,11,0 ))
@@ -28,7 +27,6 @@ struct mhi_controller_map {
 	u32 domain;
 	u32 bus;
 	u32 slot;
-    struct mhi_controller *mhi_cntrl;
 };
 
 #define MAX_MHI_CONTROLLER 16
@@ -390,7 +388,7 @@ static void mon_text_complete(void *data, u32 chan, dma_addr_t wp, struct mhi_tr
 	mon_text_event(rp, chan, wp, mhi_tre, NULL, 0, 'E');
 }
 
-static void mon_reader_add(struct mhi_controller *mbus, struct mon_reader *r)
+void mon_reader_add(struct mhi_controller *mbus, struct mon_reader *r)
 {
 	unsigned long flags;
 
@@ -562,9 +560,9 @@ static ssize_t mon_text_read_u(struct file *file, char __user *buf,
 	ptr.limit = rp->printf_size;
 
 	ptr.cnt += snprintf(ptr.pbuf + ptr.cnt, ptr.limit - ptr.cnt,
-		"%u %c %03d WP:%llx TRE: %llx %08x %08x",
-		ep->tstamp, ep->type, ep->chan, (long long unsigned int)ep->wp,
-		ep->mhi_tre.ptr, ep->mhi_tre.dword[0], ep->mhi_tre.dword[1]);
+	    "%u %c %03d WP:%llx TRE: %llx %08x %08x",
+	    ep->tstamp, ep->type, ep->chan, ep->wp,
+	    ep->mhi_tre.ptr, ep->mhi_tre.dword[0], ep->mhi_tre.dword[1]);
 
 	if (ep->len) {
 		struct mon_text_ptr *p = &ptr;
@@ -653,7 +651,7 @@ static const struct file_operations mon_fops_text_u = {
 void mhi_init_debugfs(struct mhi_controller *mhi_cntrl)
 {
 	struct dentry *dentry;
-	char node[64];
+	char node[32];
 
 #ifdef ENABLE_MHI_MON
 	struct mhi_controller *mbus = mhi_cntrl;
@@ -665,11 +663,11 @@ void mhi_init_debugfs(struct mhi_controller *mhi_cntrl)
 #endif
 
 	if (!mhi_cntrl->parent)
-	snprintf(node, sizeof(node), "mhi_%04x_%02x:%02x.%02x",
+	snprintf(node, sizeof(node), "mhi_%04x_%02u:%02u.%02u",
 		 mhi_cntrl->dev_id, mhi_cntrl->domain, mhi_cntrl->bus,
 		 mhi_cntrl->slot);
 	else
-	snprintf(node, sizeof(node), "%04x_%02x:%02x.%02x",
+	snprintf(node, sizeof(node), "%04x_%02u:%02u.%02u",
 		 mhi_cntrl->dev_id, mhi_cntrl->domain, mhi_cntrl->bus,
 		 mhi_cntrl->slot);
 
@@ -1011,7 +1009,7 @@ exit_timesync:
 
 int mhi_init_mmio(struct mhi_controller *mhi_cntrl)
 {
-	u32 val = 0;
+	u32 val;
 	int i, ret;
 	struct mhi_chan *mhi_chan;
 	struct mhi_event *mhi_event;
@@ -1088,7 +1086,7 @@ int mhi_init_mmio(struct mhi_controller *mhi_cntrl)
 			MHIDATALIMIT_LOWER, U32_MAX, 0,
 			lower_32_bits(mhi_cntrl->iova_stop),
 		},
-		{ 0, 0, 0, 0 }
+		{ 0, 0, 0 }
 	};
 
 	MHI_LOG("Initializing MMIO\n");
@@ -1196,21 +1194,6 @@ int mhi_init_chan_ctxt(struct mhi_controller *mhi_cntrl,
 		tre_ring->dma_handle = mhi_cntrl->mhi_ctxt->ctrl_seg_addr + offsetof(struct mhi_ctrl_seg, sw_out_chan_ring[mhi_chan->ring]);
 	}
 #endif
-
-#ifdef ENABLE_ADPL
-	else if (MHI_CLIENT_ADPL == mhi_chan->chan) {
-		tre_ring->pre_aligned = &mhi_cntrl->mhi_ctxt->ctrl_seg->adpl_in_chan_ring[mhi_chan->ring];
-		tre_ring->dma_handle = mhi_cntrl->mhi_ctxt->ctrl_seg_addr + offsetof(struct mhi_ctrl_seg, adpl_in_chan_ring[mhi_chan->ring]);
-	}
-#endif
-
-#ifdef ENABLE_QDSS
-	else if (MHI_CLIENT_IP_HW_QDSS == mhi_chan->chan) {
-		tre_ring->pre_aligned = &mhi_cntrl->mhi_ctxt->ctrl_seg->qdss_in_chan_ring[mhi_chan->ring];
-		tre_ring->dma_handle = mhi_cntrl->mhi_ctxt->ctrl_seg_addr + offsetof(struct mhi_ctrl_seg, qdss_in_chan_ring[mhi_chan->ring]);
-	}
-#endif
-
 	else if (MHI_CLIENT_DIAG_IN == mhi_chan->chan) {
 		tre_ring->pre_aligned = &mhi_cntrl->mhi_ctxt->ctrl_seg->diag_in_chan_ring[mhi_chan->ring];
 		tre_ring->dma_handle = mhi_cntrl->mhi_ctxt->ctrl_seg_addr + offsetof(struct mhi_ctrl_seg, diag_in_chan_ring[mhi_chan->ring]);
@@ -1623,20 +1606,10 @@ static int of_parse_ev_cfg(struct mhi_controller *mhi_cntrl,
 		mhi_event->er_index = i;
 
 		mhi_event->ring.elements = NUM_MHI_EVT_RING_ELEMENTS; //Event ring length in elements
-		if (i == PRIMARY_EVENT_RING)
+		if (i == PRIMARY_EVENT_RING || i == ADPL_EVT_RING)
 			mhi_event->ring.elements = 256; //256 is enough, and 1024 some times make driver fail to open channel (reason is x6x fail to malloc) 
 
 		mhi_event->intmod = 1; //Interrupt moderation time in ms
-
-#ifdef ENABLE_ADPL 
-		if (i == ADPL_EVT_RING)
-            mhi_event->ring.elements = 256;
-#endif
-
-#ifdef ENABLE_QDSS
-		if (i == QDSS_EVT_RING)
-            mhi_event->ring.elements = 512;
-#endif
 
 		/* see mhi_netdev_status_cb(), when interrupt come, the napi_poll maybe scheduled, so can reduce interrupts
 		root@OpenWrt:/# cat /proc/interrupts | grep mhi
@@ -1650,16 +1623,6 @@ static int of_parse_ev_cfg(struct mhi_controller *mhi_cntrl,
 			mhi_event->intmod = 5;
 #endif
 
-#ifdef ENABLE_ADPL
-		if (i == ADPL_EVT_RING)
-			mhi_event->intmod = 0;
-#endif
-
-#ifdef ENABLE_QDSS
-		if (i == QDSS_EVT_RING)
-			mhi_event->intmod = 0;
-#endif
-
 		mhi_event->msi = 1 + i + mhi_cntrl->msi_irq_base;  //MSI associated with this event ring
 
 		if (i == IPA_OUT_EVENT_RING)
@@ -1671,16 +1634,6 @@ static int of_parse_ev_cfg(struct mhi_controller *mhi_cntrl,
 			mhi_event->chan = MHI_CLIENT_IP_SW_0_OUT;
 		else if (i == SW_0_IN_EVT_RING)
 			mhi_event->chan = MHI_CLIENT_IP_SW_0_IN;
-#endif
-
-#ifdef ENABLE_ADPL
-		else if (i == ADPL_EVT_RING)
-			mhi_event->chan = MHI_CLIENT_ADPL;
-#endif
-
-#ifdef ENABLE_QDSS
-		else if (i == QDSS_EVT_RING)
-			mhi_event->chan = MHI_CLIENT_IP_HW_QDSS;
 #endif
 		else
 			mhi_event->chan = 0;
@@ -1706,16 +1659,6 @@ static int of_parse_ev_cfg(struct mhi_controller *mhi_cntrl,
 		else if (i == SW_0_OUT_EVT_RING || i == SW_0_IN_EVT_RING)
 			mhi_event->data_type = MHI_ER_DATA_ELEMENT_TYPE;
 #endif
-
-#ifdef ENABLE_ADPL
-		else if (i == ADPL_EVT_RING)
-			mhi_event->data_type = MHI_ER_DATA_ELEMENT_TYPE;
-#endif
-
-#ifdef ENABLE_QDSS
-		else if (i == QDSS_EVT_RING)
-			mhi_event->data_type = MHI_ER_DATA_ELEMENT_TYPE;
-#endif
 		else
 			mhi_event->data_type = MHI_ER_CTRL_ELEMENT_TYPE;
 
@@ -1731,14 +1674,7 @@ static int of_parse_ev_cfg(struct mhi_controller *mhi_cntrl,
 			break;
 		}
 
-		if (i == IPA_OUT_EVENT_RING || i == IPA_IN_EVENT_RING
-#ifdef ENABLE_ADPL
- 			|| i == ADPL_EVT_RING
-#endif
-#ifdef ENABLE_QDSS
-			|| i == QDSS_EVT_RING
-#endif
-		)
+		if (i == IPA_OUT_EVENT_RING || i == IPA_IN_EVENT_RING)
 			mhi_event->hw_ring = true;
 		else
 			mhi_event->hw_ring = false;
@@ -1778,9 +1714,8 @@ static struct chan_cfg_t chan_cfg[] = {
 	{"DIAG", MHI_CLIENT_DIAG_OUT, NUM_MHI_CHAN_RING_ELEMENTS},
 	{"DIAG", MHI_CLIENT_DIAG_IN, NUM_MHI_DIAG_IN_RING_ELEMENTS},
 //"Qualcomm PCIe QDSS Data"
-//"Do not use this QDSS. xingduo.du 2023-02-16"
-//	{"QDSS", MHI_CLIENT_QDSS_OUT, NUM_MHI_CHAN_RING_ELEMENTS},
-//	{"QDSS", MHI_CLIENT_QDSS_IN, NUM_MHI_CHAN_RING_ELEMENTS},
+	{"QDSS", MHI_CLIENT_QDSS_OUT, NUM_MHI_CHAN_RING_ELEMENTS},
+	{"QDSS", MHI_CLIENT_QDSS_IN, NUM_MHI_CHAN_RING_ELEMENTS},
 //"Qualcomm PCIe EFS"
 	{"EFS", MHI_CLIENT_EFS_OUT, NUM_MHI_CHAN_RING_ELEMENTS},
 	{"EFS", MHI_CLIENT_EFS_IN, NUM_MHI_CHAN_RING_ELEMENTS},
@@ -1818,13 +1753,6 @@ static struct chan_cfg_t chan_cfg[] = {
 //"Qualcomm PCIe WWAN Adapter"
 	{"IP_HW0", MHI_CLIENT_IP_HW_0_OUT, NUM_MHI_IPA_OUT_RING_ELEMENTS},
 	{"IP_HW0", MHI_CLIENT_IP_HW_0_IN, NUM_MHI_IPA_IN_RING_ELEMENTS},
-#ifdef ENABLE_ADPL
-	{"ADPL", MHI_CLIENT_ADPL, NUM_MHI_ADPL_RING_ELEMENTS},
-#endif
-
-#ifdef ENABLE_QDSS
-	{"QDSS", MHI_CLIENT_IP_HW_QDSS, NUM_MHI_QDSS_RING_ELEMENTS},
-#endif
 };
 
 extern int mhi_netdev_mbin_enabled(void);
@@ -1878,14 +1806,7 @@ static int of_parse_ch_cfg(struct mhi_controller *mhi_cntrl,
 		mhi_chan->buf_ring.elements = mhi_chan->tre_ring.elements;
 
 		if (chan == MHI_CLIENT_IP_HW_0_OUT || chan == MHI_CLIENT_IP_HW_0_IN || chan == MHI_CLIENT_DIAG_IN
-			|| chan == MHI_CLIENT_IP_SW_0_OUT || chan == MHI_CLIENT_IP_SW_0_IN
-#ifdef ENABLE_ADPL
-			|| chan == MHI_CLIENT_ADPL
-#endif
-#ifdef ENABLE_QDSS
-			|| chan == MHI_CLIENT_IP_HW_QDSS
-#endif
-			) {
+			|| chan == MHI_CLIENT_IP_SW_0_OUT || chan == MHI_CLIENT_IP_SW_0_IN) {
 			mhi_chan->ring = 0;
 		}
 		else {
@@ -1903,29 +1824,11 @@ static int of_parse_ch_cfg(struct mhi_controller *mhi_cntrl,
 		else if (chan == MHI_CLIENT_IP_SW_0_IN)
 			mhi_chan->er_index = SW_0_IN_EVT_RING;
 #endif
-
-#ifdef ENABLE_ADPL
-		else if (chan == MHI_CLIENT_ADPL)
-			mhi_chan->er_index = ADPL_EVT_RING;
-#endif	
-#ifdef ENABLE_QDSS
-		else if (chan == MHI_CLIENT_IP_HW_QDSS)
-			mhi_chan->er_index = QDSS_EVT_RING;
-#endif	
 		else
 			mhi_chan->er_index = PRIMARY_EVENT_RING;
 
 		mhi_chan->dir = CHAN_INBOUND(chan) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
 
-#ifdef ENABLE_ADPL
-		if (chan == MHI_CLIENT_ADPL)
-			mhi_chan->dir = DMA_FROM_DEVICE;
-#endif
-
-#ifdef ENABLE_QDSS
-		if (chan == MHI_CLIENT_IP_HW_QDSS)
-			mhi_chan->dir = DMA_FROM_DEVICE;
-#endif
 		/*
 		 * For most channels, chtype is identical to channel directions,
 		 * if not defined, assign ch direction to chtype
@@ -1944,14 +1847,6 @@ static int of_parse_ch_cfg(struct mhi_controller *mhi_cntrl,
 			mhi_chan->xfer_type = MHI_XFER_SKB;
 		else if (chan == MHI_CLIENT_IP_HW_0_IN || chan == MHI_CLIENT_IP_SW_0_IN)
 			mhi_chan->xfer_type = MHI_XFER_SKB; //MHI_XFER_DMA;
-#ifdef ENABLE_ADPL
-  		else if (chan == MHI_CLIENT_ADPL)
-			mhi_chan->xfer_type = MHI_XFER_BUFFER;
-#endif
-#ifdef ENABLE_QDSS
-  		else if (chan == MHI_CLIENT_IP_HW_QDSS)
-			mhi_chan->xfer_type = MHI_XFER_BUFFER;
-#endif
 		else
 			mhi_chan->xfer_type = MHI_XFER_BUFFER;
 
@@ -2009,14 +1904,6 @@ static int of_parse_ch_cfg(struct mhi_controller *mhi_cntrl,
 			if (chan == MHI_CLIENT_IP_HW_0_OUT || chan == MHI_CLIENT_IP_HW_0_IN)
 				mhi_chan->db_cfg.brstmode = MHI_BRSTMODE_ENABLE;
 
-#ifdef ENABLE_ADPL
- 			if (chan == MHI_CLIENT_ADPL)
- 				mhi_chan->db_cfg.brstmode = MHI_BRSTMODE_DISABLE;
-#endif
-#ifdef ENABLE_QDSS
-			if (chan == MHI_CLIENT_IP_HW_QDSS)
-				mhi_chan->db_cfg.brstmode = MHI_BRSTMODE_DISABLE;
-#endif
 			if (MHI_INVALID_BRSTMODE(mhi_chan->db_cfg.brstmode))
 				goto error_chan_cfg;
 
@@ -2055,17 +1942,7 @@ static int of_parse_dt(struct mhi_controller *mhi_cntrl,
 	ret = of_parse_ev_cfg(mhi_cntrl, of_node);
 	if (ret)
 		goto error_ev_cfg;
-#if defined(QCOM_AP_QCA6490_DMA_IOMMU)
-	/* for QCS6490 iommu-dma is fastmap
-	   for SG845 iommu-dma is set in driver
-	   for ipq iommu-dma is disabled
-	*/
-	const char *str;
-	ret = of_property_read_string(of_node, "qcom,iommu-dma", &str);
-	if (ret)
-		MHI_ERR("mhi qcom,iommu-dma need set");
 
-#endif
 #if 0
 	ret = of_property_read_u32(of_node, "mhi,timeout",
 				   &mhi_cntrl->timeout_ms);
@@ -2119,7 +1996,6 @@ int of_register_mhi_controller(struct mhi_controller *mhi_cntrl)
 			mhi_controller_minors[i].domain = mhi_cntrl->domain;
 			mhi_controller_minors[i].bus = mhi_cntrl->bus;
 			mhi_controller_minors[i].slot = mhi_cntrl->slot;
-			mhi_controller_minors[i].mhi_cntrl = mhi_cntrl;
 			mhi_cntrl->cntrl_idx = i;
 			break;
 		}
@@ -2672,11 +2548,7 @@ static int __init mhi_cntrl_init(void)
 		return ret;
 
 	mhi_cntrl_drv.major = ret;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
-	mhi_cntrl_drv.class = class_create(MHI_CNTRL_DRIVER_NAME);
-#else
 	mhi_cntrl_drv.class = class_create(THIS_MODULE, MHI_CNTRL_DRIVER_NAME);
-#endif
 	if (IS_ERR(mhi_cntrl_drv.class)) {
 		unregister_chrdev(mhi_cntrl_drv.major, MHI_CNTRL_DRIVER_NAME);
 		return -ENODEV;

@@ -53,9 +53,9 @@
 #include <stddef.h>
 
 #include "qendian.h"
-#include "QCQMI.h"
-#include "QCQCTL.h"
-#include "QCQMUX.h"
+#include "MPQMI.h"
+#include "MPQCTL.h"
+#include "MPQMUX.h"
 #include "util.h"
 
 #define DEVICE_CLASS_UNKNOWN           0
@@ -196,12 +196,10 @@ typedef struct __PROFILE {
     int iptype;
     const char *pincode;
     char proxy[32];
-    int pdp;//pdp_context
-    int profile_index;//profile_index
+    int pdp;
     int enable_bridge;
     bool enable_ipv4;
     bool enable_ipv6;
-    bool no_dhcp;
     const char *logfile;
     const char *usblogfile;
     char expect_adapter[32];
@@ -223,7 +221,6 @@ typedef struct __PROFILE {
     UINT qos_id;
 #endif
     int wda_client;
-    uint32_t udhcpc_ip;
     IPV4_T ipv4;
     IPV6_T ipv6;
     UINT PCSCFIpv4Addr1;
