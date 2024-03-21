@@ -13,7 +13,7 @@ config custom-commands
 
 config custom-commands
 	option description '查询SIM卡状态 > AT+CPIN?'
-	option command 'AT+CSQ'
+	option command 'AT+CPIN?'
 
 config custom-commands
 	option description '查询此时信号强度 > AT+CSQ'

@@ -13,6 +13,39 @@
 
 <script type="text/javascript">
 
+	window.onload=function()
+	{
+		//获取快捷AT命令选择框元素
+		var command_select = document.getElementById('command_select');
+		//更换快捷AT命令时触发
+		command_select.addEventListener("change", function() {
+			//自动填写到命令输入框
+			copy_to_input();
+		});
+
+		//获取快捷AT命令选择框元素
+		command_select = document.getElementById('command_select');
+		//点击快捷AT命令时触发（解决选择第一条命令的问题）
+		command_select.addEventListener("click", function() {
+			//选择框不为空，且选中的为第一个
+			if (command_select.options.length != 0 && command_select.selectedIndex == 0) {
+				//自动填写到命令输入框
+				copy_to_input();
+			}
+		});
+	}
+	
+	//自动填写到命令输入框
+	function copy_to_input()
+	{
+		var node = document.getElementById('response');
+		node.style.visibility = 'hidden';
+
+		var command_select = document.getElementById("command_select").value;
+		document.getElementById("at_command").value = command_select;
+		document.getElementById("response").innerHTML = "";
+	}
+
 	//第一次打开界面
 	first_start=1;
 
@@ -117,17 +150,6 @@
 		}
 	);
 
-	//自动填写到命令输入框
-	function copy_to_input()
-	{
-		var node = document.getElementById('response');
-		node.style.visibility = 'hidden';
-
-		var command_select = document.getElementById("command_select").value;
-		document.getElementById("at_command").value = command_select;
-		document.getElementById("response").innerHTML = "";
-	}
-
 	function post_command(at_port,at_command)
 	{
 		XHR.post('<%=luci.dispatcher.build_url("admin", "network", "modem", "send_at_command")%>', {"port":at_port,"command":at_command},
@@ -218,7 +240,7 @@
 			<div class="tr">
 				<div class="td left" style="width:25%;"><%:Quick Commands%></div>
 				<div class="td left" style="width:50%;">
-					<select name="command_select" id="command_select" onclick="copy_to_input()"></select>
+					<select name="command_select" id="command_select"></select>
 				</div>
 				<!-- <div class="td left" style="width:50%;"></div> -->
 			</div>

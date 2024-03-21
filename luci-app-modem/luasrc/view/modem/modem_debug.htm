@@ -6,7 +6,6 @@
 	{
 		//获取模组选择框元素
 		var modem_select = document.getElementById('modem_select');
-
 		//更换模组（AT串口）时触发
 		modem_select.addEventListener('change', function() {
 			//获取快捷命令
@@ -23,6 +22,25 @@
 			if (target.matches('input[type="radio"]')) {
 				//获取快捷命令
 				get_quick_commands();
+			}
+		});
+		
+		//获取快捷AT命令选择框元素
+		var command_select = document.getElementById('command_select');
+		//更换快捷AT命令时触发
+		command_select.addEventListener("change", function() {
+			//自动填写到命令输入框
+			copy_to_input();
+		});
+
+		//获取快捷AT命令选择框元素
+		command_select = document.getElementById('command_select');
+		//点击快捷AT命令时触发（解决选择第一条命令的问题）
+		command_select.addEventListener("click", function() {
+			//选择框不为空，且选中的为第一个
+			if (command_select.options.length != 0 && command_select.selectedIndex == 0) {
+				//自动填写到命令输入框
+				copy_to_input();
 			}
 		});
 
@@ -47,6 +65,13 @@
 				disabled_prefer_custom_config(false);
 			}
 		});
+	}
+
+	// 自动填写到快捷AT命令到输入框
+	function copy_to_input()
+	{
+		var command_select = document.getElementById("command_select").value;
+		document.getElementById("at_command").value = command_select;
 	}
 
 	// 发送AT命令
@@ -145,13 +170,6 @@
 				break;
 			}
 		}
-	}
-
-	// 自动填写到命令输入框
-	function copy_to_input()
-	{
-		var command_select = document.getElementById("command_select").value;
-		document.getElementById("at_command").value = command_select;
 	}
 
 	// 无模组界面
@@ -349,7 +367,7 @@
 		//设置当前拨号模式
 		document.getElementById('current_mode').innerHTML=current_mode_view;
 
-		var first_element=document.getElementById('first-checked');
+		var first_element=document.getElementById('first_checked');
 		if (first_element.value=="true")
 		{
 			//设置支持的拨号模式
@@ -442,7 +460,7 @@
 		document.getElementById('current_prefer').innerHTML=current_prefer_view;
 
 		//设置偏好选项和复选框
-		var first_element=document.getElementById('first-checked');
+		var first_element=document.getElementById('first_checked');
 		if (first_element.value=="true")
 		{
 			if (network_prefer["3G"]&&network_prefer["4G"]&&network_prefer["5G"])
@@ -546,7 +564,7 @@
 				set_network_prefer_info(network_prefer_info);
 
 				//设置第一次获取数据标志
-				document.getElementById('first-checked').value=false;
+				document.getElementById('first_checked').value=false;
 
 				//显示全功能界面
 				all_function_view();
@@ -572,11 +590,22 @@
 			}
 			else
 			{
-				//获取快捷选项
-				var quick_option = document.querySelector('input[name="quick_option"]:checked').value;
-				if (quick_option=="auto") {
-					get_quick_commands();
+				//获取缓存的模组
+				var modem_select_cache = document.getElementById("modem_select_cache");
+				//获取当前的选择的模组名称
+				var modem_select_element = document.getElementById('modem_select');
+				var select_modem_name = modem_select_element.options[modem_select_element.selectedIndex].text;
+				
+				if (select_modem_name != modem_select_cache.value)
+				{
+					//获取快捷选项
+					var quick_option = document.querySelector('input[name="quick_option"]:checked').value;
+					if (quick_option=="auto") {
+						get_quick_commands();
+					}
+					modem_select_cache.value=select_modem_name;
 				}
+
 				//获取模组调试信息
 				get_modem_debug_info();
 			}
@@ -606,8 +635,13 @@
 			font-size: 15px;
 		} */
 
+		/* 模组选择缓存 */
+		[name="modem_select_cache"] {
+			display: none;
+		}
+
 		/* 网络偏好第一次复选框 */
-		[name="first-checked"] {
+		[name="first_checked"] {
 			display: none;
 		}
 
@@ -670,8 +704,11 @@
 					</div>
 				</div>
 			</div>
-			<div name="first-checked">
-				<input type="hidden" id="first-checked" value="true">
+			<div name="modem_select_cache">
+				<input type="hidden" id="modem_select_cache" value="">
+			</div>
+			<div name="first_checked">
+				<input type="hidden" id="first_checked" value="true">
 			</div>
 		</div>
 	</fieldset>
@@ -804,7 +841,7 @@
 					</tr>
 					<tr class="tr">
 						<td class="td left"><%:Quick Commands%></td>
-						<td class="td left"><select name="command_select" id="command_select" class="cbi-input-select" onclick="copy_to_input()"></select></td>
+						<td class="td left"><select name="command_select" id="command_select" class="cbi-input-select"></select></td>
 					</tr>
 					<tr class="tr">
 						<td class="td left"><%:Enter Command%></td>
