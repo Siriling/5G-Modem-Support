@@ -69,18 +69,19 @@ getMobileNetwork()
 --------advanced--------
 
 -- 拨号工具
-dial_tool = s:taboption("advanced", Value, "dial_tool", translate("Dial Tool"))
+dial_tool = s:taboption("advanced", ListValue, "dial_tool", translate("Dial Tool"))
 dial_tool.rmempty = true
 dial_tool:value("", translate("Auto Choose"))
 dial_tool:value("quectel-CM", translate("quectel-CM"))
+dial_tool:value("mmcli", translate("mmcli"))
 
 -- 网络类型
 pdp_type= s:taboption("advanced", ListValue, "pdp_type", translate("PDP Type"))
-pdp_type.default = "ipv4_ipv6"
+pdp_type.default = "ipv4v6"
 pdp_type.rmempty = false
 pdp_type:value("ipv4", translate("IPv4"))
 pdp_type:value("ipv6", translate("IPv6"))
-pdp_type:value("ipv4_ipv6", translate("IPv4/IPv6"))
+pdp_type:value("ipv4v6", translate("IPv4/IPv6"))
 
 -- 接入点
 apn = s:taboption("advanced", Value, "apn", translate("APN"))
@@ -99,13 +100,12 @@ username.rmempty = true
 password = s:taboption("advanced", Value, "password", translate("PAP/CHAP Password"))
 password.rmempty = true
 
-auth = s:taboption("advanced", Value, "auth", translate("Authentication Type"))
-auth.default = ""
-auth.rmempty = true
-auth:value("", translate("NONE"))
-auth:value("both", "PAP/CHAP (both)")
+auth = s:taboption("advanced", ListValue, "auth", translate("Authentication Type"))
+auth.default = "none"
+auth.rmempty = false
+auth:value("none", translate("NONE"))
+auth:value("both", translate("PAP/CHAP (both)"))
 auth:value("pap", "PAP")
 auth:value("chap", "CHAP")
--- auth:value("none", "NONE")
 
 return m

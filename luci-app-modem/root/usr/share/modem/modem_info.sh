@@ -29,8 +29,6 @@ init_modem_info()
 	#网络信息
 	connect_status="disconnect"	#SIM卡状态
 	network_type="-" 			#蜂窝网络类型
-	rssi="" 					#RSSI
-	ber=""  					#BER
 	tx_rate="-"  				#上传速率
 	rx_rate="-"  				#下载速率
 
@@ -167,9 +165,7 @@ set_network_info()
 	network_info="\"network_info\":[
 		{\"Network Type\":\"$network_type\", \"full_name\":\"Network Type\"},
 		{\"Tx Rate\":\"$tx_rate\", \"full_name\":\"Transmit Rate\"},
-		{\"Rx Rate\":\"$rx_rate\", \"full_name\":\"Receive Rate\"},
-		{\"RSSI\":\"$rssi\", \"full_name\":\"Received Signal Strength Indicator\"},
-		{\"BER\":\"$ber\", \"full_name\":\"Bit Error Rate\"}
+		{\"Rx Rate\":\"$rx_rate\", \"full_name\":\"Receive Rate\"}
 	],"
 }
 

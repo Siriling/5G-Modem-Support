@@ -178,6 +178,9 @@ msgstr "自动选择"
 msgid "quectel-CM"
 msgstr "移远模组拨号工具"
 
+msgid "mmcli"
+msgstr "模组管理工具"
+
 msgid "PDP Type"
 msgstr "网络类型"
 
@@ -207,6 +210,9 @@ msgstr "PAP/CHAP 密码"
 
 msgid "Authentication Type"
 msgstr "认证类型"
+
+msgid "PAP/CHAP (both)"
+msgstr "PAP/CHAP (均使用)"
 
 msgid "NONE"
 msgstr "无"

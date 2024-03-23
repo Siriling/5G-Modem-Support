@@ -35,13 +35,10 @@
 
 		//获取快捷AT命令选择框元素
 		command_select = document.getElementById('command_select');
-		//点击快捷AT命令时触发（解决选择第一条命令的问题）
+		//点击快捷AT命令时触发（解决情况再选的问题）
 		command_select.addEventListener("click", function() {
-			//选择框不为空，且选中的为第一个
-			if (command_select.options.length != 0 && command_select.selectedIndex == 0) {
 				//自动填写到命令输入框
 				copy_to_input();
-			}
 		});
 
 		//获取网络偏好选项元素
@@ -354,7 +351,7 @@
 	}
 
 	// 设置拨号模式信息
-	function set_mode_info(mode_info)
+	function set_mode_info(mode_info,first_cache)
 	{
 		//获取当前拨号模式
 		var current_mode=mode_info["mode"];
@@ -367,8 +364,7 @@
 		//设置当前拨号模式
 		document.getElementById('current_mode').innerHTML=current_mode_view;
 
-		var first_element=document.getElementById('first_checked');
-		if (first_element.value=="true")
+		if (first_cache)
 		{
 			//设置支持的拨号模式
 			var mode_option_view='';
@@ -405,8 +401,6 @@
 		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "set_mode")%>', {"port":at_port,"mode_config":mode_config},
 			function(x, data)
 			{
-				console.log(data);
-
 				//获取模组拨号模式
 				var current_mode=data;
 
@@ -448,7 +442,7 @@
 	}
 
 	// 设置网络偏好信息
-	function set_network_prefer_info(network_prefer_info)
+	function set_network_prefer_info(network_prefer_info,first_cache)
 	{
 		//获取模组网络偏好
 		var network_prefer=network_prefer_info["network_prefer"];
@@ -460,8 +454,7 @@
 		document.getElementById('current_prefer').innerHTML=current_prefer_view;
 
 		//设置偏好选项和复选框
-		var first_element=document.getElementById('first_checked');
-		if (first_element.value=="true")
+		if (first_cache)
 		{
 			if (network_prefer["3G"]&&network_prefer["4G"]&&network_prefer["5G"])
 			{
@@ -539,7 +532,7 @@
 	}
 
 	// 获取模组调试信息
-	function get_modem_debug_info(params)
+	function get_modem_debug_info(debug_params)
 	{
 		//获取选中的模组
 		var at_port = document.getElementById("modem_select").value;
@@ -548,7 +541,6 @@
 		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "get_modem_debug_info")%>', {"port":at_port},
 			function(x, data)
 			{
-
 				var mode_info=data["mode_info"];
 				var network_prefer_info=data["network_prefer_info"];
 				if (Object.keys(mode_info).length==0||Object.keys(network_prefer_info).length==0) {
@@ -558,13 +550,13 @@
 				}
 
 				//设置模式信息
-				set_mode_info(mode_info);
+				set_mode_info(mode_info,debug_params.first_cache);
 
 				//设置网络偏好信息
-				set_network_prefer_info(network_prefer_info);
+				set_network_prefer_info(network_prefer_info,debug_params.first_cache);
 
 				//设置第一次获取数据标志
-				document.getElementById('first_checked').value=false;
+				debug_params.first_cache=false;
 
 				//显示全功能界面
 				all_function_view();
@@ -574,42 +566,46 @@
 
 	// 定时触发更新AT串口
 	XHR.poll(5,'<%=luci.dispatcher.build_url("admin", "network", "modem", "get_at_port")%>', null,
-		function(x, data)
+		(function() 
 		{
-			var at_ports=data["at_ports"];
-			var translation=data["translation"];
-
-			//设置AT串口选项
-			set_at_port(at_ports,translation);
-
-			//获取快捷命令
-			if (Object.keys(at_ports).length==0)
+			//缓存当前选择的模组
+			var modem_select_cache="";
+			var debug_params={first_cache:true};
+			return function(x, data)
 			{
-				//显示无模组界面
-				no_modems_view();
-			}
-			else
-			{
-				//获取缓存的模组
-				var modem_select_cache = document.getElementById("modem_select_cache");
-				//获取当前的选择的模组名称
-				var modem_select_element = document.getElementById('modem_select');
-				var select_modem_name = modem_select_element.options[modem_select_element.selectedIndex].text;
-				
-				if (select_modem_name != modem_select_cache.value)
+				var at_ports=data["at_ports"];
+				var translation=data["translation"];
+
+				//设置AT串口选项
+				set_at_port(at_ports,translation);
+
+				//获取快捷命令
+				if (Object.keys(at_ports).length==0)
 				{
-					//获取快捷选项
-					var quick_option = document.querySelector('input[name="quick_option"]:checked').value;
-					if (quick_option=="auto") {
-						get_quick_commands();
-					}
-					modem_select_cache.value=select_modem_name;
+					//显示无模组界面
+					no_modems_view();
 				}
+				else
+				{
+					//获取当前的选择的模组名称
+					var modem_select_element = document.getElementById('modem_select');
+					var select_modem_name = modem_select_element.options[modem_select_element.selectedIndex].text;
+					
+					if (select_modem_name != modem_select_cache)
+					{
+						//获取快捷选项
+						var quick_option = document.querySelector('input[name="quick_option"]:checked').value;
+						if (quick_option=="auto") {
+							get_quick_commands();
+						}
+						modem_select_cache=select_modem_name;
+					}
 
-				//获取模组调试信息
-				get_modem_debug_info();
-			}
-		}
+					//获取模组调试信息
+					get_modem_debug_info(debug_params);
+				}
+			};
+		})()
 	);
 
 //]]>
@@ -634,16 +630,6 @@
 		/* #response_label {
 			font-size: 15px;
 		} */
-
-		/* 模组选择缓存 */
-		[name="modem_select_cache"] {
-			display: none;
-		}
-
-		/* 网络偏好第一次复选框 */
-		[name="first_checked"] {
-			display: none;
-		}
 
 		/* 终端 */
 		textarea {
@@ -703,12 +689,6 @@
 						</div>
 					</div>
 				</div>
-			</div>
-			<div name="modem_select_cache">
-				<input type="hidden" id="modem_select_cache" value="">
-			</div>
-			<div name="first_checked">
-				<input type="hidden" id="first_checked" value="true">
 			</div>
 		</div>
 	</fieldset>

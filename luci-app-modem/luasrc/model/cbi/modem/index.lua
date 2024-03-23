@@ -63,14 +63,19 @@ o = s:option(DummyValue, "dial_tool", translate("Dial Tool"))
 o.cfgvalue = function(t, n)
     local dial_tool = (Value.cfgvalue(t, n) or "")
     if dial_tool == "" then
-        dial_tool=translate("Auto Choose")
+        dial_tool = translate("Auto Choose")
     end
     return dial_tool
 end
 
 o = s:option(DummyValue, "pdp_type", translate("PDP Type"))
 o.cfgvalue = function(t, n)
-    local pdp_type = (Value.cfgvalue(t, n) or ""):gsub("_","/"):upper():gsub("V","v")
+    local pdp_type = (Value.cfgvalue(t, n) or "")
+    if pdp_type == "ipv4v6" then
+        pdp_type = translate("IPv4/IPv6")
+    else
+        pdp_type = pdp_type:gsub("_","/"):upper():gsub("V","v")
+    end
     return pdp_type
 end
 
@@ -78,7 +83,7 @@ o = s:option(DummyValue, "apn", translate("APN"))
 o.cfgvalue = function(t, n)
     local apn = (Value.cfgvalue(t, n) or "")
     if apn == "" then
-        apn=translate("Auto Choose")
+        apn = translate("Auto Choose")
     end
     return apn
 end

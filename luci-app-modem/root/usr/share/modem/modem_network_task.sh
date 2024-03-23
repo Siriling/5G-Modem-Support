@@ -3,7 +3,7 @@ current_dir="$(dirname "$0")"
 source "$current_dir/modem_debug.sh"
 source "$current_dir/modem_scan.sh"
 
-#拨号
+#ECM拨号
 # $1:AT串口
 # $2:制造商
 ecm_dial()
@@ -21,7 +21,7 @@ ecm_dial()
     sh "$current_dir/modem_at.sh" $1 $at_command
 }
 
-#拨号
+#GobiNet拨号
 # $1:AT串口
 # $2:制造商
 gobinet_dial()
@@ -39,11 +39,19 @@ gobinet_dial()
     sh "$current_dir/modem_at.sh" $1 $at_command
 }
 
+#Modem Manager拨号
+# $1:接口名称
+modemmanager_dial()
+{
+    ifup "$1";
+}
+
 #检查模组网络连接
 # $1:配置ID
 # $2:AT串口
 # $3:制造商
 # $4:拨号模式
+# $5:接口名称
 modem_network_task()
 {
     while true; do
@@ -63,9 +71,10 @@ modem_network_task()
         local connect_status=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p')
         if [ "$connect_status" = "0" ]; then
             case "$4" in
-                "ecm") ecm_dial $at_port $3 ;;
-                "gobinet") gobinet_dial $at_port $3 ;;
-                *) ecm_dial $at_port $3 ;;
+                "ecm") ecm_dial "$at_port" "$3" ;;
+                "gobinet") gobinet_dial "$at_port" "$3" ;;
+                "modemmanager") modemmanager_dial "$5" ;;
+                *) ecm_dial "$at_port" "$3" ;;
             esac
         fi
         debug "结束网络连接检查任务"

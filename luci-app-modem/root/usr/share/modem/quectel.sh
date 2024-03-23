@@ -364,10 +364,10 @@ quectel_network_info()
     response=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+CSQ:" | sed 's/+CSQ: //g' | sed 's/\r//g')
 
     #RSSI（信号强度指示）
-    rssi_num=$(echo $response | awk -F',' '{print $1}')
-    rssi=$(quectel_get_rssi $rssi_num)
+    # rssi_num=$(echo $response | awk -F',' '{print $1}')
+    # rssi=$(quectel_get_rssi $rssi_num)
     #Ber（信道误码率）
-    ber=$(echo $response | awk -F',' '{print $2}')
+    # ber=$(echo $response | awk -F',' '{print $2}')
 
     #PER（信号强度）
     # if [ -n "$csq" ]; then
