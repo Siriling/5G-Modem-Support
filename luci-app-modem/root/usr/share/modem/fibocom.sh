@@ -56,6 +56,14 @@ fibocom_get_mode()
                 *) mode="$mode_num" ;;
             esac
         ;;
+        "mediatek")
+            case "$mode_num" in
+                "29") mode="mbim" ;;
+                "40") mode="rndis" ;; #-
+                "41") mode="rndis" ;;
+                *) mode="$mode_num" ;;
+            esac
+        ;;
         *)
             mode="$mode_num"
         ;;
@@ -102,6 +110,14 @@ fibocom_set_mode()
                 "rndis") mode_num="38" ;;
                 "ncm") mode_num="36" ;;
                 *) mode_num="34" ;;
+            esac
+        ;;
+        "mediatek")
+            case "$2" in
+                # "mbim") mode_num="40" ;;
+                # "rndis") mode_num="40" ;;
+                "rndis") mode_num="41" ;;
+                *) mode_num="41" ;;
             esac
         ;;
         *)

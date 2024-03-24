@@ -65,7 +65,7 @@ o.cfgvalue = function(t, n)
     if dial_tool == "" then
         dial_tool = translate("Auto Choose")
     end
-    return dial_tool
+    return translate(dial_tool)
 end
 
 o = s:option(DummyValue, "pdp_type", translate("PDP Type"))

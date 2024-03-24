@@ -70,6 +70,7 @@ getMobileNetwork()
 
 -- 拨号工具
 dial_tool = s:taboption("advanced", ListValue, "dial_tool", translate("Dial Tool"))
+dial_tool.description = translate("After switching the dialing tool, it may be necessary to restart the module or restart the router to recognize the module.")
 dial_tool.rmempty = true
 dial_tool:value("", translate("Auto Choose"))
 dial_tool:value("quectel-CM", translate("quectel-CM"))
@@ -94,12 +95,6 @@ apn:value("ctnet", translate("China Telecom"))
 apn:value("cbnet", translate("China Broadcast"))
 apn:value("5gscuiot", translate("Skytone"))
 
-username = s:taboption("advanced", Value, "username", translate("PAP/CHAP Username"))
-username.rmempty = true
-
-password = s:taboption("advanced", Value, "password", translate("PAP/CHAP Password"))
-password.rmempty = true
-
 auth = s:taboption("advanced", ListValue, "auth", translate("Authentication Type"))
 auth.default = "none"
 auth.rmempty = false
@@ -107,5 +102,18 @@ auth:value("none", translate("NONE"))
 auth:value("both", translate("PAP/CHAP (both)"))
 auth:value("pap", "PAP")
 auth:value("chap", "CHAP")
+
+username = s:taboption("advanced", Value, "username", translate("PAP/CHAP Username"))
+username.rmempty = true
+username:depends("auth", "both")
+username:depends("auth", "pap")
+username:depends("auth", "chap")
+
+password = s:taboption("advanced", Value, "password", translate("PAP/CHAP Password"))
+password.rmempty = true
+password.password = true
+password:depends("auth", "both")
+password:depends("auth", "pap")
+password:depends("auth", "chap")
 
 return m

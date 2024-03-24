@@ -115,6 +115,9 @@ msgstr "响应"
 msgid "Return to old page"
 msgstr "返回旧界面"
 
+msgid "Return to modem debug"
+msgstr "返回模组调试界面"
+
 msgid "Custom quick commands"
 msgstr "自定义快捷命令"
 
@@ -172,6 +175,9 @@ msgstr "仅显示适配模组可用的拨号模式"
 msgid "Dial Tool"
 msgstr "拨号工具"
 
+msgid "After switching the dialing tool, it may be necessary to restart the module or restart the router to recognize the module."
+msgstr "切换拨号工具后，可能需要重启模组或重启路由器才能识别模组。"
+
 msgid "Auto Choose"
 msgstr "自动选择"
 
@@ -202,12 +208,6 @@ msgstr "中国广电"
 msgid "Skytone"
 msgstr "天际通"
 
-msgid "PAP/CHAP Username"
-msgstr "PAP/CHAP 用户名"
-
-msgid "PAP/CHAP Password"
-msgstr "PAP/CHAP 密码"
-
 msgid "Authentication Type"
 msgstr "认证类型"
 
@@ -216,6 +216,12 @@ msgstr "PAP/CHAP (均使用)"
 
 msgid "NONE"
 msgstr "无"
+
+msgid "PAP/CHAP Username"
+msgstr "PAP/CHAP 用户名"
+
+msgid "PAP/CHAP Password"
+msgstr "PAP/CHAP 密码"
 
 msgid "Message"
 msgstr "信息"

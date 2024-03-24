@@ -346,17 +346,14 @@ stop_qmi()
 		#Modem Manager
 		#获取接口名称
 		local interface_name="wwan_5g_$modem_no"
-		echo "$interface_name" >> /root/a
 		if [[ "$command" = *"$interface_name"* ]]; then
-			echo "111" >> /root/a
 			local pid=$(echo "$response" | jq -r ".modem.instances.$i.pid")
 			kill $pid >/dev/null 2>&1
 			
 			#获取调制解调器设备（模组路径）
 			local path=$(uci -q get modem.modem$modem_no.path)
 			mmcli -m "$path" --simple-disconnect
-			
-			# uci set network.$interface_name.auto='0'
+			#删除网络接口
 			uci del network.$interface_name
 			uci commit network
 		fi

@@ -49,6 +49,12 @@
                 "network_interface":"usb",
                 "modes":["ecm","mbim","rndis","ncm"]
             },
+            "fm350-gl":{
+                "manufacturer":"fibocom",
+                "platform":"mediatek",
+                "network_interface":"usb",
+                "modes":["rndis"]
+            },
             "fm150-ae":{
                 "manufacturer":"fibocom",
                 "platform":"qualcomm",
@@ -74,6 +80,12 @@
                 "platform":"qualcomm",
                 "network_interface":"pcie",
                 "modes":["qmi","gobinet","mbim"]
+            },
+            "fm350-gl":{
+                "manufacturer":"fibocom",
+                "platform":"mediatek",
+                "network_interface":"pcie",
+                "modes":["mbim"]
             },
             "fm150-ae":{
                 "manufacturer":"fibocom",
