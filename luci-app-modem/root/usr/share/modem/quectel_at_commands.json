@@ -6,6 +6,7 @@
 		{"查询网络信号质量（5G） > AT+CESQ":"AT+CESQ"},
         {"查询网络信息 > AT+COPS?":"AT+COPS?"},
         {"查询PDP信息 > AT+CGDCONT?":"AT+CGDCONT?"},
+        {"查询PDP地址 > AT+CGPADDR":"AT+CGPADDR"},
         {"最小功能模式 > AT+CFUN=0":"AT+CFUN=0"},
         {"全功能模式 > AT+CFUN=1":"AT+CFUN=1"},
         {"SIM卡状态上报 > AT+QSIMSTAT?":"AT+QSIMSTAT?"},

@@ -1,5 +1,24 @@
 #!/bin/sh
-current_dir="$(dirname "$0")"
+# Copyright (C) 2023 Siriling <siriling@qq.com>
+
+#脚本目录
+SCRIPT_DIR="/usr/share/modem"
+
+#预设
+fibocom_presets()
+{
+    #自动DHCP
+	at_command='AT+GTAUTODHCP=1'
+	sh "${SCRIPT_DIR}/modem_at.sh" "$at_port" "$at_command"
+
+	#启用IP直通
+	at_command='AT+GTIPPASS=1,1'
+	sh "${SCRIPT_DIR}/modem_at.sh" "$at_port" "$at_command"
+
+	#启用自动拨号
+	at_command='AT+GTAUTOCONNECT=1'
+	sh "${SCRIPT_DIR}/modem_at.sh" "$at_port" "$at_command"
+}
 
 #获取拨号模式
 # $1:AT串口
@@ -7,13 +26,14 @@ current_dir="$(dirname "$0")"
 fibocom_get_mode()
 {
     local at_port="$1"
+    local platform="$2"
+
     at_command="AT+GTUSBMODE?"
-    local mode_num=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+GTUSBMODE:" | sed 's/+GTUSBMODE: //g' | sed 's/\r//g')
+    local mode_num=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+GTUSBMODE:" | sed 's/+GTUSBMODE: //g' | sed 's/\r//g')
     
     #获取芯片平台
-    local platform="$2"
 	if [ -z "$platform" ]; then
-		local modem_number=$(uci -q get modem.global.modem_number)
+		local modem_number=$(uci -q get modem.@global[0].modem_number)
         for i in $(seq 0 $((modem_number-1))); do
             local at_port_tmp=$(uci -q get modem.modem$i.at_port)
             if [ "$at_port" = "$at_port_tmp" ]; then
@@ -80,7 +100,7 @@ fibocom_set_mode()
 
     #获取芯片平台
     local platform
-    local modem_number=$(uci -q get modem.global.modem_number)
+    local modem_number=$(uci -q get modem.@global[0].modem_number)
     for i in $(seq 0 $((modem_number-1))); do
         local at_port_tmp=$(uci -q get modem.modem$i.at_port)
         if [ "$at_port" = "$at_port_tmp" ]; then
@@ -127,7 +147,7 @@ fibocom_set_mode()
 
     #设置模组
     at_command="AT+GTUSBMODE=$mode_num"
-    sh $current_dir/modem_at.sh $at_port "$at_command"
+    sh ${SCRIPT_DIR}/modem_at.sh $at_port "$at_command"
 }
 
 #获取网络偏好
@@ -136,7 +156,7 @@ fibocom_get_network_prefer()
 {
     local at_port="$1"
     at_command="AT+GTACT?"
-    local network_prefer_num=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+GTACT:" | awk -F',' '{print $1}' | sed 's/+GTACT: //g')
+    local network_prefer_num=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+GTACT:" | awk -F',' '{print $1}' | sed 's/+GTACT: //g')
     
     local network_prefer_3g="0";
     local network_prefer_4g="0";
@@ -229,27 +249,47 @@ fibocom_set_network_prefer()
     #设置模组
     local at_port="$1"
     at_command="AT+GTACT=$network_prefer_num"
-    sh $current_dir/modem_at.sh $at_port "$at_command"
+    sh ${SCRIPT_DIR}/modem_at.sh $at_port "$at_command"
+}
+
+#获取自检信息
+# $1:AT串口
+fibocom_get_self_test_info()
+{
+    local at_port="$1"
+    
+    #Voltage（电压）
+    at_command="AT+CBC"
+	local voltage=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+CBC:" | awk -F',' '{print $2}' | sed 's/\r//g')
+    echo "${voltage}"
 }
 
 #获取连接状态
 # $1:AT串口
+# $2:连接定义
 fibocom_get_connect_status()
 {
     local at_port="$1"
-    at_command="AT+CGDCONT?"
+    local define_connect="$2"
 
-	local response=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $6}')
-	local not_ip="0.0.0.0,0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0"
+    #默认值为1
+    [ -z "$define_connect" ] && {
+        define_connect="1"
+    }
 
+    at_command="AT+CGPADDR=${define_connect}"
+    local ipv4=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CGPADDR: " | awk -F'"' '{print $2}')
+    local not_ip="0.0.0.0"
+
+    #设置连接状态
     local connect_status
-	if [ "$response" = "$not_ip" ]; then
+    if [ -z "$ipv4" ] || [[ "$ipv4" = *"$not_ip"* ]]; then
         connect_status="disconnect"
     else
         connect_status="connect"
     fi
 
-    echo "$connect_status"
+    echo "${connect_status}"
 }
 
 #基本信息
@@ -258,21 +298,21 @@ fibocom_base_info()
     debug "Fibocom base info"
 
     #Name（名称）
-    at_command="AT+CGMM"
-    name=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+    at_command="AT+CGMM?"
+    name=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+CGMM: " | awk -F'"' '{print $2}')
     #Manufacturer（制造商）
-    at_command="AT+CGMI"
-    manufacturer=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+    at_command="AT+CGMI?"
+    manufacturer=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+CGMI: " | awk -F'"' '{print $2}')
     #Revision（固件版本）
-    at_command="AT+CGMR"
-    revision=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+    at_command="AT+CGMR?"
+    revision=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+CGMR: " | awk -F'"' '{print $2}')
 
     #Mode（拨号模式）
     mode=$(fibocom_get_mode $at_port | tr 'a-z' 'A-Z')
 
     #Temperature（温度）
     at_command="AT+MTSM=1,6"
-	response=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/+MTSM: //g' | sed 's/\r//g')
+	response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/+MTSM: //g' | sed 's/\r//g')
 	if [ -n "$response" ]; then
 		temperature="$response$(printf "\xc2\xb0")C"
 	fi
@@ -304,7 +344,7 @@ fibocom_get_sim_status()
         *"PH-CORP PUK"*) sim_status="MT is waiting corporate personalization unblocking password to be given" ;;
         *) sim_status="unknown" ;;
     esac
-    echo "$sim_status"
+    echo "${sim_status}"
 }
 
 #SIM卡信息
@@ -313,16 +353,16 @@ fibocom_sim_info()
     debug "Fibocom sim info"
     
     #SIM Slot（SIM卡卡槽）
-    at_command="AT+GTDUALSIM"
-	sim_slot=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+GTDUALSIM:" | awk -F'"' '{print $2}' | sed 's/SUB//g')
+    at_command="AT+GTDUALSIM?"
+	sim_slot=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+GTDUALSIM" | awk -F'"' '{print $2}' | sed 's/SUB//g')
 
     #IMEI（国际移动设备识别码）
-    at_command="AT+CGSN"
-	imei=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+    at_command="AT+CGSN?"
+	imei=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CGSN: " | awk -F'"' '{print $2}')
 
     #SIM Status（SIM状态）
     at_command="AT+CPIN?"
-	sim_status_flag=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p')
+	sim_status_flag=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CPIN: ")
     sim_status=$(fibocom_get_sim_status "$sim_status_flag")
 
     if [ "$sim_status" != "ready" ]; then
@@ -331,7 +371,7 @@ fibocom_sim_info()
 
     #ISP（互联网服务提供商）
     at_command="AT+COPS?"
-    isp=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}')
+    isp=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+COPS" | awk -F'"' '{print $2}')
     # if [ "$isp" = "CHN-CMCC" ] || [ "$isp" = "CMCC" ]|| [ "$isp" = "46000" ]; then
     #     isp="中国移动"
     # elif [ "$isp" = "CHN-UNICOM" ] || [ "$isp" = "UNICOM" ] || [ "$isp" = "46001" ]; then
@@ -341,16 +381,36 @@ fibocom_sim_info()
     # fi
 
     #SIM Number（SIM卡号码，手机号）
-    at_command="AT+CNUM?"
-	sim_number=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}')
-
+    at_command="AT+CNUM"
+	sim_number=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CNUM: " | awk -F'"' '{print $2}')
+    [ -z "$sim_number" ] && {
+        sim_number=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CNUM: " | awk -F'"' '{print $4}')
+    }
+	
     #IMSI（国际移动用户识别码）
-    at_command="AT+CIMI"
-	imsi=$(sh $current_dir/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+    at_command="AT+CIMI?"
+    imsi=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CIMI: " | awk -F' ' '{print $2}' | sed 's/"/g' | sed 's/\r//g')
+	[ -z "$sim_number" ] && {
+        imsi=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CIMI: " | awk -F'"' '{print $2}')
+    }
 
     #ICCID（集成电路卡识别码）
     at_command="AT+ICCID"
-	iccid=$(sh $current_dir/modem_at.sh $at_port $at_command | grep -o "+ICCID:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}")
+	iccid=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep -o "+ICCID:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}")
+}
+
+#获取网络类型
+# $1:网络类型数字
+fibocom_get_rat()
+{
+    local rat
+    case $1 in
+		"0"|"1"|"3"|"8") rat="GSM" ;;
+		"2"|"4"|"5"|"6"|"9"|"10") rat="WCDMA" ;;
+        "7") rat="LTE" ;;
+        "11"|"12") rat="NR" ;;
+	esac
+    echo "${rat}"
 }
 
 #获取信号强度指示（4G）
@@ -371,22 +431,28 @@ fibocom_network_info()
     debug "Fibocom network info"
 
     #Connect Status（连接状态）
-    connect_status=$(fibocom_get_connect_status $at_port)
+    connect_status=$(fibocom_get_connect_status ${at_port} ${define_connect})
     if [ "$connect_status" != "connect" ]; then
         return
     fi
 
     #Network Type（网络类型）
     at_command="AT+PSRAT?"
-    network_type=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+PSRAT:" | sed 's/+PSRAT: //g' | sed 's/\r//g')
+    network_type=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+PSRAT:" | sed 's/+PSRAT: //g' | sed 's/\r//g')
+
+    [ -z "$network_type" ] && {
+        at_command='AT+COPS?'
+        rat_num=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+COPS:" | awk -F',' '{print $4}' | sed 's/\r//g')
+        network_type=$(fibocom_get_rat ${rat_num})
+    }
 
     #设置网络类型为5G时，信号强度指示用RSRP代替
     # at_command="AT+GTCSQNREN=1"
-    # sh $current_dir/modem_at.sh $at_port $at_command
+    # sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command
 
     #CSQ（信号强度）
     at_command="AT+CSQ"
-    response=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+CSQ:" | sed 's/+CSQ: //g' | sed 's/\r//g')
+    response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+CSQ:" | sed 's/+CSQ: //g' | sed 's/\r//g')
 
     #RSSI（4G信号强度指示）
     # rssi_num=$(echo $response | awk -F',' '{print $1}')
@@ -401,7 +467,7 @@ fibocom_network_info()
 
     #速率统计
     at_command="AT+GTSTATIS?"
-    response=$(sh $current_dir/modem_at.sh $at_port $at_command | grep "+GTSTATIS:" | sed 's/+GTSTATIS: //g' | sed 's/\r//g')
+    response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+GTSTATIS:" | sed 's/+GTSTATIS: //g' | sed 's/\r//g')
 
     #当前上传速率（单位，Byte/s）
     tx_rate=$(echo $response | awk -F',' '{print $2}')
@@ -524,10 +590,19 @@ fibocom_cell_info()
 
     #RSRQ，RSRP，SINR
     at_command='AT+GTCCINFO?'
-    response=$(sh $current_dir/modem_at.sh $at_port $at_command)
+    response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command)
     
     local rat=$(echo "$response" | grep "service" | awk -F' ' '{print $1}')
+
+    #适配联发科平台（FM350-GL）
+    [ -z "$rat" ] && {
+        at_command='AT+COPS?'
+        rat_num=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+COPS:" | awk -F',' '{print $4}' | sed 's/\r//g')
+        rat=$(fibocom_get_rat ${rat_num})
+    }
+
     response=$(echo "$response" | sed -n '4p')
+    
     case $rat in
         "NR")
             network_mode="NR5G-SA Mode"
@@ -538,16 +613,16 @@ fibocom_cell_info()
             nr_arfcn=$(echo "$response" | awk -F',' '{print $7}')
             nr_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
             nr_band_num=$(echo "$response" | awk -F',' '{print $9}')
-            nr_band=$(fibocom_get_band "NR" $nr_band_num)
+            nr_band=$(fibocom_get_band "NR" ${nr_band_num})
             nr_dl_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
-            nr_dl_bandwidth=$(fibocom_get_nr_dl_bandwidth $nr_dl_bandwidth_num)
+            nr_dl_bandwidth=$(fibocom_get_nr_dl_bandwidth ${nr_dl_bandwidth_num})
             nr_sinr=$(echo "$response" | awk -F',' '{print $11}')
             nr_rxlev_num=$(echo "$response" | awk -F',' '{print $12}')
-            nr_rxlev=$(fibocom_get_rxlev "NR" $nr_rxlev_num)
+            nr_rxlev=$(fibocom_get_rxlev "NR" ${nr_rxlev_num})
             nr_rsrp_num=$(echo "$response" | awk -F',' '{print $13}')
-            nr_rsrp=$(fibocom_get_rsrp "NR" $nr_rsrp_num)
+            nr_rsrp=$(fibocom_get_rsrp "NR" ${nr_rsrp_num})
             nr_rsrq_num=$(echo "$response" | awk -F',' '{print $14}' | sed 's/\r//g')
-            nr_rsrq=$(fibocom_get_rsrq "NR" $nr_rsrq_num)
+            nr_rsrq=$(fibocom_get_rsrq "NR" ${nr_rsrq_num})
         ;;
         "LTE-NR")
             network_mode="EN-DC Mode"
@@ -559,18 +634,18 @@ fibocom_cell_info()
             endc_lte_earfcn=$(echo "$response" | awk -F',' '{print $7}')
             endc_lte_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
             endc_lte_band_num=$(echo "$response" | awk -F',' '{print $9}')
-            endc_lte_band=$(fibocom_get_band "LTE" $endc_lte_band_num)
+            endc_lte_band=$(fibocom_get_band "LTE" ${endc_lte_band_num})
             ul_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
-            endc_lte_ul_bandwidth=$(fibocom_get_ul_bandwidth $ul_bandwidth_num)
+            endc_lte_ul_bandwidth=$(fibocom_get_ul_bandwidth ${ul_bandwidth_num})
             endc_lte_dl_bandwidth="$endc_lte_ul_bandwidth"
             endc_lte_rssnr_num=$(echo "$response" | awk -F',' '{print $11}')
-            endc_lte_rssnr=$(fibocom_get_rssnr $endc_lte_rssnr_num)
+            endc_lte_rssnr=$(fibocom_get_rssnr ${endc_lte_rssnr_num})
             endc_lte_rxlev_num=$(echo "$response" | awk -F',' '{print $12}')
-            endc_lte_rxlev=$(fibocom_get_rxlev "LTE" $endc_lte_rxlev_num)
+            endc_lte_rxlev=$(fibocom_get_rxlev "LTE" ${endc_lte_rxlev_num})
             endc_lte_rsrp_num=$(echo "$response" | awk -F',' '{print $13}')
-            endc_lte_rsrp=$(fibocom_get_rsrp "LTE" $endc_lte_rsrp_num)
+            endc_lte_rsrp=$(fibocom_get_rsrp "LTE" ${endc_lte_rsrp_num})
             endc_lte_rsrq_num=$(echo "$response" | awk -F',' '{print $14}' | sed 's/\r//g')
-            endc_lte_rsrq=$(fibocom_get_rsrq "LTE" $endc_lte_rsrq_num)
+            endc_lte_rsrq=$(fibocom_get_rsrq "LTE" ${endc_lte_rsrq_num})
             #NR5G-NSA
             endc_nr_mcc=$(echo "$response" | awk -F',' '{print $3}')
             endc_nr_mnc=$(echo "$response" | awk -F',' '{print $4}')
@@ -579,16 +654,16 @@ fibocom_cell_info()
             endc_nr_arfcn=$(echo "$response" | awk -F',' '{print $7}')
             endc_nr_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
             endc_nr_band_num=$(echo "$response" | awk -F',' '{print $9}')
-            endc_nr_band=$(fibocom_get_band "NR" $endc_nr_band_num)
+            endc_nr_band=$(fibocom_get_band "NR" ${endc_nr_band_num})
             nr_dl_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
-            endc_nr_dl_bandwidth=$(fibocom_get_nr_dl_bandwidth $nr_dl_bandwidth_num)
+            endc_nr_dl_bandwidth=$(fibocom_get_nr_dl_bandwidth ${nr_dl_bandwidth_num})
             endc_nr_sinr=$(echo "$response" | awk -F',' '{print $11}')
             endc_nr_rxlev_num=$(echo "$response" | awk -F',' '{print $12}')
-            endc_nr_rxlev=$(fibocom_get_rxlev "NR" $endc_nr_rxlev_num)
+            endc_nr_rxlev=$(fibocom_get_rxlev "NR" ${endc_nr_rxlev_num})
             endc_nr_rsrp_num=$(echo "$response" | awk -F',' '{print $13}')
-            endc_nr_rsrp=$(fibocom_get_rsrp "NR" $endc_nr_rsrp_num)
+            endc_nr_rsrp=$(fibocom_get_rsrp "NR" ${endc_nr_rsrp_num})
             endc_nr_rsrq_num=$(echo "$response" | awk -F',' '{print $14}' | sed 's/\r//g')
-            endc_nr_rsrq=$(fibocom_get_rsrq "NR" $endc_nr_rsrq_num)
+            endc_nr_rsrq=$(fibocom_get_rsrq "NR" ${endc_nr_rsrq_num})
             ;;
         "LTE"|"eMTC"|"NB-IoT")
             network_mode="LTE Mode"
@@ -599,17 +674,17 @@ fibocom_cell_info()
             lte_earfcn=$(echo "$response" | awk -F',' '{print $7}')
             lte_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
             lte_band_num=$(echo "$response" | awk -F',' '{print $9}')
-            lte_band=$(fibocom_get_band "LTE" $lte_band_num)
+            lte_band=$(fibocom_get_band "LTE" ${lte_band_num})
             ul_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
-            lte_ul_bandwidth=$(fibocom_get_ul_bandwidth $ul_bandwidth_num)
+            lte_ul_bandwidth=$(fibocom_get_ul_bandwidth ${ul_bandwidth_num})
             lte_dl_bandwidth="$lte_ul_bandwidth"
             lte_rssnr=$(echo "$response" | awk -F',' '{print $11}')
             lte_rxlev_num=$(echo "$response" | awk -F',' '{print $12}')
-            lte_rxlev=$(fibocom_get_rxlev "LTE" $lte_rxlev_num)
+            lte_rxlev=$(fibocom_get_rxlev "LTE" ${lte_rxlev_num})
             lte_rsrp_num=$(echo "$response" | awk -F',' '{print $13}')
-            lte_rsrp=$(fibocom_get_rsrp "LTE" $lte_rsrp_num)
+            lte_rsrp=$(fibocom_get_rsrp "LTE" ${lte_rsrp_num})
             lte_rsrq_num=$(echo "$response" | awk -F',' '{print $14}' | sed 's/\r//g')
-            lte_rsrq=$(fibocom_get_rsrq "LTE" $lte_rsrq_num)
+            lte_rsrq=$(fibocom_get_rsrq "LTE" ${lte_rsrq_num})
         ;;
         "WCDMA"|"UMTS")
             network_mode="WCDMA Mode"
@@ -620,15 +695,15 @@ fibocom_cell_info()
             wcdma_uarfcn=$(echo "$response" | awk -F',' '{print $7}')
             wcdma_psc=$(echo "$response" | awk -F',' '{print $8}')
             wcdma_band_num=$(echo "$response" | awk -F',' '{print $9}')
-            wcdma_band=$(fibocom_get_band "WCDMA" $wcdma_band_num)
+            wcdma_band=$(fibocom_get_band "WCDMA" ${wcdma_band_num})
             wcdma_ecno=$(echo "$response" | awk -F',' '{print $10}')
             wcdma_rscp=$(echo "$response" | awk -F',' '{print $11}')
             wcdma_rac=$(echo "$response" | awk -F',' '{print $12}')
             wcdma_rxlev_num=$(echo "$response" | awk -F',' '{print $13}')
-            wcdma_rxlev=$(fibocom_get_rxlev "WCDMA" $wcdma_rxlev_num)
+            wcdma_rxlev=$(fibocom_get_rxlev "WCDMA" ${wcdma_rxlev_num})
             wcdma_reserved=$(echo "$response" | awk -F',' '{print $14}')
             wcdma_ecio_num=$(echo "$response" | awk -F',' '{print $15}' | sed 's/\r//g')
-            wcdma_ecio=$(fibocom_get_ecio $wcdma_ecio_num)
+            wcdma_ecio=$(fibocom_get_ecio ${wcdma_ecio_num})
         ;;
     esac
 }
@@ -638,18 +713,18 @@ fibocom_cell_info()
 Fibocom_Cellinfo()
 {
     #baseinfo.gcom
-    OX=$( sh $current_dir/modem_at.sh $at_port "ATI")
-    OX=$( sh $current_dir/modem_at.sh $at_port "AT+CGEQNEG=1")
+    OX=$( sh ${SCRIPT_DIR}/modem_at.sh $at_port "ATI")
+    OX=$( sh ${SCRIPT_DIR}/modem_at.sh $at_port "AT+CGEQNEG=1")
 
     #cellinfo0.gcom
-    # OX1=$( sh $current_dir/modem_at.sh $at_port "AT+COPS=3,0;+COPS?")
-    # OX2=$( sh $current_dir/modem_at.sh $at_port "AT+COPS=3,2;+COPS?")
+    # OX1=$( sh ${SCRIPT_DIR}/modem_at.sh $at_port "AT+COPS=3,0;+COPS?")
+    # OX2=$( sh ${SCRIPT_DIR}/modem_at.sh $at_port "AT+COPS=3,2;+COPS?")
     OX=$OX1" "$OX2
 
     #cellinfo.gcom
-    OY1=$( sh $current_dir/modem_at.sh $at_port "AT+CREG=2;+CREG?;+CREG=0")
-    OY2=$( sh $current_dir/modem_at.sh $at_port "AT+CEREG=2;+CEREG?;+CEREG=0")
-    OY3=$( sh $current_dir/modem_at.sh $at_port "AT+C5GREG=2;+C5GREG?;+C5GREG=0")
+    OY1=$( sh ${SCRIPT_DIR}/modem_at.sh $at_port "AT+CREG=2;+CREG?;+CREG=0")
+    OY2=$( sh ${SCRIPT_DIR}/modem_at.sh $at_port "AT+CEREG=2;+CEREG?;+CEREG=0")
+    OY3=$( sh ${SCRIPT_DIR}/modem_at.sh $at_port "AT+C5GREG=2;+C5GREG?;+C5GREG=0")
     OY=$OY1" "$OY2" "$OY3
 
 
@@ -767,11 +842,13 @@ Fibocom_Cellinfo()
 
 #获取Fibocom模块信息
 # $1:AT串口
+# $2:连接定义
 get_fibocom_info()
 {
     debug "get fibocom info"
     #设置AT串口
-    at_port=$1
+    at_port="$1"
+    define_connect="$2"
 
     #基本信息
     fibocom_base_info
@@ -796,7 +873,7 @@ get_fibocom_info()
     # Fibocom_Cellinfo
 
     #基站信息
-	OX=$( sh $current_dir/modem_at.sh $at_port "AT+CPSI?")
+	OX=$( sh ${SCRIPT_DIR}/modem_at.sh $at_port "AT+CPSI?")
 	rec=$(echo "$OX" | grep "+CPSI:")
 	w=$(echo $rec |grep "NO SERVICE"| wc -l)
 	if [ $w -ge 1 ];then
@@ -874,7 +951,7 @@ get_fibocom_info()
 	fi
 
 	#CNMP
-	OX=$( sh $current_dir/modem_at.sh $at_port "AT+CNMP?")
+	OX=$( sh ${SCRIPT_DIR}/modem_at.sh $at_port "AT+CNMP?")
 	CNMP=$(echo "$OX" | grep -o "+CNMP:[ ]*[0-9]\{1,3\}" | grep -o "[0-9]\{1,3\}")
 	if [ -n "$CNMP" ]; then
 		case $CNMP in
@@ -896,7 +973,7 @@ get_fibocom_info()
 	fi
 	
 	# CMGRMI 信息
-	OX=$( sh $current_dir/modem_at.sh $at_port "AT+CMGRMI=4")
+	OX=$( sh ${SCRIPT_DIR}/modem_at.sh $at_port "AT+CMGRMI=4")
 	CAINFO=$(echo "$OX" | grep -o "$REGXz" | tr ' ' ':')
 	if [ -n "$CAINFO" ]; then
 		for CASV in $(echo "$CAINFO"); do

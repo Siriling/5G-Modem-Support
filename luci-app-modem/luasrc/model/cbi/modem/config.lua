@@ -84,6 +84,12 @@ pdp_type:value("ipv4", translate("IPv4"))
 pdp_type:value("ipv6", translate("IPv6"))
 pdp_type:value("ipv4v6", translate("IPv4/IPv6"))
 
+-- 网络桥接
+network_bridge = s:taboption("advanced", Flag, "network_bridge", translate("Network Bridge"))
+network_bridge.description = translate("After checking, enable network interface bridge.")
+network_bridge.default = "0"
+network_bridge.rmempty = false
+
 -- 接入点
 apn = s:taboption("advanced", Value, "apn", translate("APN"))
 apn.default = ""

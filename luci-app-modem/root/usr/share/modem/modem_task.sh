@@ -1,7 +1,10 @@
 #!/bin/sh
-current_dir="$(dirname "$0")"
-source "$current_dir/modem_debug.sh"
-source "$current_dir/modem_scan.sh"
+# Copyright (C) 2023 Siriling <siriling@qq.com>
+
+#脚本目录
+SCRIPT_DIR="/usr/share/modem"
+source "${SCRIPT_DIR}/modem_debug.sh"
+source "${SCRIPT_DIR}/modem_scan.sh"
 
 #模组扫描任务
 modem_scan_task()

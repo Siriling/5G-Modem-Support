@@ -1,9 +1,12 @@
 #!/bin/sh
-current_dir="$(dirname "$0")"
-source "$current_dir/modem_debug.sh"
-source "$current_dir/quectel.sh"
-source "$current_dir/fibocom.sh"
-# source "$current_dir/simcom.sh"
+# Copyright (C) 2023 Siriling <siriling@qq.com>
+
+#脚本目录
+SCRIPT_DIR="/usr/share/modem"
+source "${SCRIPT_DIR}/modem_debug.sh"
+# source "${SCRIPT_DIR}/quectel.sh"
+# source "${SCRIPT_DIR}/fibocom.sh"
+# source "${SCRIPT_DIR}/simcom.sh"
 
 #初值化数据结构
 init_modem_info()
@@ -344,7 +347,7 @@ get_modem_info()
 
 	#检查模块状态（是否处于重启，重置，串口异常状态）
     local at_command="ATI"
-	local response=$(sh $current_dir/modem_at.sh $at_port $at_command)
+	local response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command)
 	if [[ "$response" = *"failed"* ]] || [[ "$response" = *"$at_port"* ]]; then
 		debug "模组AT串口未就绪"
 		return
@@ -353,9 +356,9 @@ get_modem_info()
     debug "根据模组的制造商获取信息"
 	#更多信息获取
 	case $manufacturer in
-		"quectel") get_quectel_info $at_port ;;
-		"fibocom") get_fibocom_info $at_port ;;
-		"simcom") get_simcom_info $at_port ;;
+		"quectel") get_quectel_info "${at_port}" "${define_connect}" ;;
+		"fibocom") get_fibocom_info "${at_port}" "${define_connect}" ;;
+		"simcom") get_simcom_info "${at_port}" "${define_connect}" ;;
 		*) debug "未适配该模组" ;;
 	esac
 
@@ -366,6 +369,7 @@ get_modem_info()
 #获取模组数据信息
 # $1:AT串口
 # $2:制造商
+# $3:连接定义
 modem_info()
 {
 	#初值化模组信息
@@ -374,8 +378,10 @@ modem_info()
     debug "初值化模组信息完成"
 
     #获取模组信息
-	at_port=$1
-	manufacturer=$2
+	at_port="$1"
+	manufacturer="$2"
+	define_connect="$3"
+	
 	debug "获取模组信息"
 	get_modem_info
 	
@@ -387,4 +393,4 @@ modem_info()
 	# checkMobileNetwork
 }
 
-modem_info $1 $2
+modem_info "$1" "$2" "$3"

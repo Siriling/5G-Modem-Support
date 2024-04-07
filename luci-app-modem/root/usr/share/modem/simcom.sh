@@ -1,4 +1,8 @@
 #!/bin/sh
+# Copyright (C) 2023 Siriling <siriling@qq.com>
+
+#脚本目录
+SCRIPT_DIR="/usr/share/modem"
 
 #查询信息强度
 All_CSQ()

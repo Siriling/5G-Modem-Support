@@ -54,7 +54,7 @@ end
 	at_command AT命令
 ]]
 function at(at_port,at_command)
-	local odpall = io.popen("cd "..script_path.." && source "..script_path.."modem_debug.sh && at "..at_port.." "..at_command)
+	local odpall = io.popen("source "..script_path.."modem_debug.sh && at "..at_port.." "..at_command)
 	local odp = odpall:read("*a")
 	odpall:close()
 	odp=string.gsub(odp, "\r", "")
@@ -62,17 +62,38 @@ function at(at_port,at_command)
 end
 
 --[[
+@Description 获取模组拨号模式
+@Params
+	at_port AT串口
+	manufacturer 制造商
+	platform 平台
+]]
+function getMode(at_port,manufacturer,platform)
+	local mode="unknown"
+
+	if at_port and manufacturer~="unknown" then
+		local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_mode "..at_port.." "..platform)
+		opd = odpall:read("*a")
+		odpall:close()
+		mode = string.gsub(opd, "\n", "")
+	end
+
+	return mode
+end
+
+--[[
 @Description 获取模组连接状态
 @Params
 	at_port AT串口
 	manufacturer 制造商
+	define_connect 连接定义
 ]]
-function getModemConnectStatus(at_port,manufacturer)
+function getModemConnectStatus(at_port,manufacturer,define_connect)
 
 	local connect_status="unknown"
 
 	if at_port and manufacturer~="unknown" then
-		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_get_connect_status "..at_port)
+		local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_connect_status "..at_port.." "..define_connect)
 		opd = odpall:read("*a")
 		odpall:close()
 		connect_status = string.gsub(opd, "\n", "")
@@ -94,7 +115,7 @@ function getModemDeviceInfo(at_port)
 			--获取数据接口
 			local data_interface=modem_device["data_interface"]:upper()
 			--获取连接状态
-			local connect_status=getModemConnectStatus(modem_device["at_port"],modem_device["manufacturer"])
+			local connect_status=getModemConnectStatus(modem_device["at_port"],modem_device["manufacturer"],modem_device["define_connect"])
 
 			--设置值
 			modem_device_info=modem_device
@@ -113,10 +134,10 @@ end
 	at_port AT串口
 	manufacturer 制造商
 ]]
-function getModemMoreInfo(at_port,manufacturer)
+function getModemMoreInfo(at_port,manufacturer,define_connect)
 
 	--获取模组信息
-	local odpall = io.popen("sh "..script_path.."modem_info.sh".." "..at_port.." "..manufacturer)
+	local odpall = io.popen("sh "..script_path.."modem_info.sh".." "..at_port.." "..manufacturer.." "..define_connect)
 	local opd = odpall:read("*a")
 	odpall:close()
 
@@ -138,7 +159,7 @@ function getModemInfo()
 	local modem_more_info
 	if at_port then
 		modem_device_info=getModemDeviceInfo(at_port)
-		modem_more_info=getModemMoreInfo(at_port,modem_device_info["manufacturer"])
+		modem_more_info=getModemMoreInfo(at_port,modem_device_info["manufacturer"],modem_device_info["define_connect"])
 	end
 
 	--设置信息
@@ -254,16 +275,21 @@ function getModems()
 	local translation={}
 	uci:foreach("modem", "modem-device", function (modem_device)
 		-- 获取连接状态
-		local connect_status=getModemConnectStatus(modem_device["at_port"],modem_device["manufacturer"])
+		local connect_status=getModemConnectStatus(modem_device["at_port"],modem_device["manufacturer"],modem_device["define_connect"])
+		-- 获取拨号模式
+		local mode=getMode(modem_device["at_port"],modem_device["manufacturer"],modem_device["platform"])
 
 		-- 获取翻译
 		translation[connect_status]=luci.i18n.translate(connect_status)
-		translation[modem_device["name"]]=luci.i18n.translate(modem_device["name"])
-		translation[modem_device["mode"]]=luci.i18n.translate(modem_device["mode"])
+		if modem_device["name"] then
+			translation[modem_device["name"]]=luci.i18n.translate(modem_device["name"])
+		end
+		translation[mode]=luci.i18n.translate(mode)
 
 		-- 设置值
 		local modem=modem_device
 		modem["connect_status"]=connect_status
+		modem["mode"]=mode
 
 		local modem_tmp={}
 		modem_tmp[modem_device[".name"]]=modem
@@ -381,7 +407,7 @@ function getQuickCommands()
 	local commands={}
 	if quick_option=="auto" then
 		--获取模组AT命令
-		-- local odpall = io.popen("cd "..script_path.." && source "..script_path.."modem_debug.sh && get_quick_commands "..quick_option.." "..manufacturer)
+		-- local odpall = io.popen(source "..script_path.."modem_debug.sh && get_quick_commands "..quick_option.." "..manufacturer)
 		local odpall = io.popen("cat "..script_path..manufacturer.."_at_commands.json")
 		local opd = odpall:read("*a")
 		odpall:close()
@@ -437,13 +463,13 @@ function setNetworkPrefer()
 	end)
 
 	--设置模组网络偏好
-	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_set_network_prefer "..at_port.." "..network_prefer_config)
+	local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_set_network_prefer "..at_port.." "..network_prefer_config)
 	odpall:close()
 
 	--获取设置好后的模组网络偏好
 	local network_prefer={}
 	if at_port and manufacturer and manufacturer~="unknown" then
-		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_get_network_prefer "..at_port)
+		local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_network_prefer "..at_port)
 		local opd = odpall:read("*a")
 		network_prefer=json.parse(opd)
 		odpall:close()
@@ -473,13 +499,13 @@ function setMode()
 	end)
 
 	--设置模组拨号模式
-	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_set_mode "..at_port.." "..mode_config)
+	local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_set_mode "..at_port.." "..mode_config)
 	odpall:close()
 
 	--获取设置好后的模组拨号模式
 	local mode
 	if at_port and manufacturer and manufacturer~="unknown" then
-		local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_get_mode "..at_port)
+		local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_mode "..at_port)
 		mode = odpall:read("*a")
 		mode=string.gsub(mode, "\n", "")
 		odpall:close()
@@ -509,7 +535,7 @@ function getModeInfo(at_port,manufacturer)
 	end)
 
 	--获取模组拨号模式
-	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_get_mode "..at_port)
+	local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_mode "..at_port)
 	local opd = odpall:read("*a")
 	odpall:close()
 	local mode=string.gsub(opd, "\n", "")
@@ -531,12 +557,29 @@ end
 function getNetworkPreferInfo(at_port,manufacturer)
 
 	--获取模组网络偏好
-	local odpall = io.popen("cd "..script_path.." && source "..script_path..manufacturer..".sh && "..manufacturer.."_get_network_prefer "..at_port)
+	local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_network_prefer "..at_port)
 	local opd = odpall:read("*a")
 	odpall:close()
 	local network_prefer_info=json.parse(opd)
 	
 	return network_prefer_info
+end
+
+--[[
+@Description 获取自检信息
+@Params
+	at_port AT串口
+	manufacturer 制造商
+]]
+function getSelfTestInfo(at_port,manufacturer)
+
+	--获取模组自检信息
+	local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_self_test_info "..at_port)
+	local opd = odpall:read("*a")
+	odpall:close()
+	local self_test_info=json.parse(opd)
+	
+	return self_test_info
 end
 
 --[[
@@ -559,15 +602,18 @@ function getModemDebugInfo()
 	--获取值
 	local mode_info={}
 	local network_prefer_info={}
+	local self_test_info={}
 	if manufacturer~="unknown" then
 		mode_info=getModeInfo(at_port,manufacturer)
 		network_prefer_info=getNetworkPreferInfo(at_port,manufacturer)
+		self_test_info=getSelfTestInfo(at_port,manufacturer)
 	end
 
 	--设置值
 	local modem_debug_info={}
 	modem_debug_info["mode_info"]=mode_info
 	modem_debug_info["network_prefer_info"]=network_prefer_info
+	modem_debug_info["self_test_info"]=self_test_info
 
 	-- 写入Web界面
 	luci.http.prepare_content("application/json")

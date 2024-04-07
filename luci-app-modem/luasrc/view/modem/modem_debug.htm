@@ -182,6 +182,8 @@
 		document.getElementById("cbi-mode").style.display="none";
 		//隐藏网络偏好界面
 		document.getElementById("cbi-network-prefer").style.display="none";
+		//隐藏模组自检界面
+		document.getElementById("cbi-modem-self-test").style.display="none";
 		//隐藏AT界面
 		document.getElementById("cbi-at").style.display="none";
 	}
@@ -208,6 +210,8 @@
 		document.getElementById("cbi-mode").style.display="none";
 		//隐藏网络偏好界面
 		document.getElementById("cbi-network-prefer").style.display="none";
+		//隐藏模组自检界面
+		document.getElementById("cbi-modem-self-test").style.display="none";
 	}
 
 	// 全功能界面
@@ -217,6 +221,8 @@
 		document.getElementById("cbi-mode").style.display="block";
 		//显示网络偏好界面
 		document.getElementById("cbi-network-prefer").style.display="block";
+		//显示模组自检界面
+		document.getElementById("cbi-modem-self-test").style.display="block";
 		//隐藏提示信息
 		document.getElementById("cbi-info").style.display="none";
 	}
@@ -320,12 +326,14 @@
 		//拨号模式
 		if (function_name=="mode")
 		{
-			//模式选项
-			document.getElementById('mode_option_qmi').disabled=status;
-			document.getElementById('mode_option_ecm').disabled=status;
-			document.getElementById('mode_option_mbim').disabled=status;
-			document.getElementById('mode_option_rndis').disabled=status;
-			document.getElementById('mode_option_ncm').disabled=status;
+			modes=["qmi","ecm","mbim","rndis","ncm"]
+			for(mode of modes)
+			{
+				mode_element=document.getElementById('mode_option_'+mode)
+				if (mode_element!=null) {
+					mode_element.disabled=status;
+				}
+			}
 
 			//模式按钮
 			document.getElementById('mode_button').disabled=status;
@@ -484,6 +492,49 @@
 		}
 	}
 
+	// 设置模组自检信息
+	function set_modem_self_test_info(self_test_info)
+	{
+		// console.log(self_test_info);
+	
+		//获取模组自检
+		// var self_test=self_test_info["self_test"];
+
+		// //获取自检视图
+		// var self_test_view=set_current_self_test_view(self_test);
+		// //获取
+		// var self_test_view=set_current_self_test_view(self_test);
+
+		// //设置当前电压信息
+		// document.getElementById('current_voltage').innerHTML=current_self_test_view;
+		document.getElementById('current_voltage').innerHTML=self_test_info/1000;
+		
+		// 设置电压状态
+		var state = '';
+		var css = '';
+		if (self_test_info<3135)
+		{
+			state = "<%:Abnormal%>";
+			color = "red";
+		}
+		else if (self_test_info>3135 && self_test_info<3300)
+		{
+			state = "<%:Low%>";
+			color = "goldenrod";
+		}
+		else //大于3300（3.3V）
+		{
+			state = "<%:Normal%>";
+			color = "green";
+		}
+		var voltage_status=document.getElementById('voltage_status');
+		voltage_status.innerHTML=state;
+		voltage_status.style.color=color
+		
+		// //设置当前温度信息
+		// document.getElementById('current_temperature').innerHTML=current_self_test_view;
+	}
+
 	// 设置网络偏好
 	function set_network_prefer()
 	{
@@ -543,6 +594,7 @@
 			{
 				var mode_info=data["mode_info"];
 				var network_prefer_info=data["network_prefer_info"];
+				var self_test_info=data["self_test_info"];
 				if (Object.keys(mode_info).length==0||Object.keys(network_prefer_info).length==0) {
 					//显示未适配模组界面
 					not_adapted_modems_view();
@@ -554,6 +606,9 @@
 
 				//设置网络偏好信息
 				set_network_prefer_info(network_prefer_info,debug_params.first_cache);
+
+				//设置模组自检信息
+				set_modem_self_test_info(self_test_info);
 
 				//设置第一次获取数据标志
 				debug_params.first_cache=false;
@@ -599,6 +654,9 @@
 							get_quick_commands();
 						}
 						modem_select_cache=select_modem_name;
+
+						//设置第一次获取数据标志
+						debug_params.first_cache=true;
 					}
 
 					//获取模组调试信息
@@ -692,6 +750,54 @@
 			</div>
 		</div>
 	</fieldset>
+
+	<!-- <fieldset class="cbi-section" id="cbi-mode" style="display: none;">	
+		<div class="cbi-section">
+			<ul class="cbi-tabmenu">
+				<li class="cbi-tab" data-tab="traffic"><a href="#">流量分布</a></li>
+				<li class="cbi-tab-disabled" data-tab="layer7"><a href="#">应用层协议</a></li>
+				<li class="cbi-tab-disabled" data-tab="ipv6"><a href="#">IPv6</a></li>
+				<li class="cbi-tab-disabled" data-tab="export"><a href="#">导出</a></li>
+			</ul> -->
+				<!-- <div class="cbi-section-node cbi-section-node-tabbed" id="cbi-modem-bcfdc2df58a1440a9bab98c7d37ce93c" data-tab-group="0" data-initialized="true">
+				<div class="cbi-tabcontainer" id="container.modem.bcfdc2df58a1440a9bab98c7d37ce93c.general" data-tab="general" data-tab-title="常规设置" data-tab-active="true">
+					<div class="cbi-value" id="cbi-modem-bcfdc2df58a1440a9bab98c7d37ce93c-enable" data-index="1" data-depends="[]"><label class="cbi-value-title" for="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.enable">启用</label>
+					<div class="cbi-value-field">
+				<div id="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.enable" class="cbi-checkbox" data-idref="e234c82a"><input type="hidden" name="cbi.cbe.modem.bcfdc2df58a1440a9bab98c7d37ce93c.enable" value="1"><input id="cbe81b0aab" name="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.enable" type="checkbox" value="1" checked="" data-widget-id="widget.cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.enable"><label for="cbe81b0aab"></label></div>
+					</div></div>
+				<div class="cbi-value" id="cbi-modem-bcfdc2df58a1440a9bab98c7d37ce93c-remarks" data-index="2" data-depends="[]"><label class="cbi-value-title" for="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.remarks">备注</label>
+					<div class="cbi-value-field">
+				<div id="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.remarks" data-idref="30622a74"><input id="widget.cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.remarks" name="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.remarks" type="text" class="cbi-input-text" value="5GUSB"></div>
+					</div></div>
+				<div class="cbi-value cbi-value-last" id="cbi-modem-bcfdc2df58a1440a9bab98c7d37ce93c-network" data-index="3" data-depends="[]"><label class="cbi-value-title" for="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.network">移动网络</label>
+					<div class="cbi-value-field">
+				<div id="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.network" data-idref="f8c7e254"><select id="widget.cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.network" name="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.network" size="1" class="cbi-input-select"><option value="wwan0" selected="">wwan0 (FM150-AE)</option></select></div>
+					</div></div>
+				</div>
+				<div class="cbi-tabcontainer" id="container.modem.bcfdc2df58a1440a9bab98c7d37ce93c.advanced" data-tab="advanced" data-tab-title="高级设置" data-tab-active="false">
+				<div class="cbi-value" id="cbi-modem-bcfdc2df58a1440a9bab98c7d37ce93c-dial_tool" data-index="1" data-depends="[]"><label class="cbi-value-title" for="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.dial_tool">拨号工具</label>
+				<div class="cbi-value-field">
+				<div id="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.dial_tool" data-idref="184707a1"><select id="widget.cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.dial_tool" name="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.dial_tool" size="1" class="cbi-input-select"><option value="">自动选择</option><option value="quectel-CM">移远模组拨号工具</option><option value="mmcli" selected="">mmcli</option></select></div>
+					<div class="cbi-value-description">
+						After switching the dialing tool, it may be necessary to restart the module or restart the router to recognize the module.
+					</div></div></div>
+				<div class="cbi-value" id="cbi-modem-bcfdc2df58a1440a9bab98c7d37ce93c-pdp_type" data-index="2" data-depends="[]"><label class="cbi-value-title" for="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.pdp_type">网络类型</label>
+				<div class="cbi-value-field">
+				<div id="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.pdp_type" data-idref="74f51b28"><select id="widget.cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.pdp_type" name="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.pdp_type" size="1" class="cbi-input-select"><option value="ipv4">IPv4</option><option value="ipv6">IPv6</option><option value="ipv4v6" selected="">IPv4/IPv6</option></select></div>
+				</div></div>
+				<div class="cbi-value" id="cbi-modem-bcfdc2df58a1440a9bab98c7d37ce93c-apn" data-index="3" data-depends="[]"><label class="cbi-value-title" for="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.apn">接入点</label>
+				<div class="cbi-value-field">
+				<div id="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.apn" class="cbi-dropdown" optional="" tabindex="0" data-idref="a314df9e"><ul tabindex="-1"><li data-value="" selected="" display="0">自动选择</li><li data-value="cmnet">中国移动</li><li data-value="3gnet">中国联通</li><li data-value="ctnet">中国电信</li><li data-value="cbnet">中国广电</li><li data-value="5gscuiot">天际通</li><li data-value="-" unselectable=""><input type="text" class="create-item-input" placeholder="-- 自定义 --"></li></ul><span class="more" tabindex="-1">···</span><span class="open" tabindex="-1">▾</span><div><input type="hidden" name="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.apn" value=""></div></div>
+				</div></div>
+				<div class="cbi-value cbi-value-last" id="cbi-modem-bcfdc2df58a1440a9bab98c7d37ce93c-auth" data-index="4" data-depends="[]"><label class="cbi-value-title" for="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.auth">认证类型</label>
+				<div class="cbi-value-field">
+				<div id="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.auth" data-idref="8b4f94b8"><select id="widget.cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.auth" name="cbid.modem.bcfdc2df58a1440a9bab98c7d37ce93c.auth" size="1" class="cbi-input-select"><option value="none" selected="">无</option><option value="both">PAP/CHAP（均使用）</option><option value="pap">PAP</option><option value="chap">CHAP</option></select></div>
+				</div>
+				</div>
+				</div>
+				</div> -->
+		<!-- </div>
+	</fieldset> -->
 
 	<fieldset class="cbi-section" id="cbi-mode" style="display: none;">	
 		<div class="cbi-section cbi-tblsection">
@@ -789,6 +895,32 @@
 							</div>
 						</td>
 					</tr>
+				</tbody>
+			</table>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section" id="cbi-modem-self-test" style="display: none;">
+		<div class="cbi-section fade-in">
+			<!-- <legend><%:Self Test%></legend> -->
+			<h3><%:Self Test%></h3>
+			<table class="table cbi-section-table">
+				<tbody>
+					<tr class="tr cbi-section-table-titles anonymous">
+						<th class="th cbi-section-table-cell"><%:Item%></th>
+						<th class="th cbi-section-table-cell"><%:Current%></th>
+						<th class="th cbi-section-table-cell"><%:Status%></th>
+					</tr>
+					<tr class="tr cbi-section-table-row cbi-rowstyle-1">
+						<td class="td cbi-value-field" data-title="<%:Item%>" id="voltage_label">电压</td>
+						<td class="td cbi-value-field" data-title="<%:Current%>" id="current_voltage"></td>
+						<td class="td cbi-value-field" data-title="<%:Status%>" id="voltage_status">-</td>
+					</tr>
+					<!-- <tr class="tr cbi-section-table-row cbi-rowstyle-2">
+						<td class="td cbi-value-field" data-title="<%:Item%>" id="temperature_label">温度</td>
+						<td class="td cbi-value-field" data-title="<%:Current%>" id="current_temperature">-</td>
+						<td class="td cbi-value-field" data-title="<%:Status%>" id="temperature_status">正常</td>
+					</tr> -->
 				</tbody>
 			</table>
 		</div>

@@ -32,6 +32,10 @@ config custom-commands
 	option command 'AT+CGDCONT?'
 
 config custom-commands
+	option description '查询PDP地址 > AT+CGPADDR'
+	option command 'AT+CGPADDR'
+
+config custom-commands
 	option description '最小功能模式 > AT+CFUN=0'
 	option command 'AT+CFUN=0'
 
@@ -204,7 +208,7 @@ config custom-commands
 	option command 'AT+GTUSBMODE=18'
 
 config custom-commands
-	option description '锁4G > AT+GTACT=2":"AT+GTACT=2'
+	option description '锁4G > AT+GTACT=2'
 	option command 'AT+GTACT=2'
 
 config custom-commands

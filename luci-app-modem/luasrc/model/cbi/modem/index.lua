@@ -68,6 +68,7 @@ o.cfgvalue = function(t, n)
     return translate(dial_tool)
 end
 
+
 o = s:option(DummyValue, "pdp_type", translate("PDP Type"))
 o.cfgvalue = function(t, n)
     local pdp_type = (Value.cfgvalue(t, n) or "")
@@ -78,6 +79,10 @@ o.cfgvalue = function(t, n)
     end
     return pdp_type
 end
+
+o = s:option(Flag, "network_bridge", translate("Network Bridge"))
+o.width = "5%"
+o.rmempty = false
 
 o = s:option(DummyValue, "apn", translate("APN"))
 o.cfgvalue = function(t, n)

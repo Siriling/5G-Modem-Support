@@ -2,69 +2,91 @@
     "modem_support":{
         "usb":{
             "rg200u-cn":{
+                "manufacturer_id":"2c7c",
                 "manufacturer":"quectel",
                 "platform":"unisoc",
                 "network_interface":"usb",
+                "define_connect":"1",
                 "modes":["ecm","mbim","rndis","ncm"]
             },
             "rm500u-cn":{
+                "manufacturer_id":"2c7c",
                 "manufacturer":"quectel",
                 "platform":"unisoc",
                 "network_interface":"usb",
+                "define_connect":"1",
                 "modes":["ecm","mbim","rndis","ncm"]
             },
             "rm500q-gl":{
+                "manufacturer_id":"2c7c",
                 "manufacturer":"quectel",
                 "platform":"qualcomm",
                 "network_interface":"usb",
+                "define_connect":"1",
                 "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
             },
             "rm502q-gl":{
+                "manufacturer_id":"2c7c",
                 "manufacturer":"quectel",
                 "platform":"qualcomm",
                 "network_interface":"usb",
+                "define_connect":"1",
                 "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
             },
             "rm502q-ae":{
+                "manufacturer_id":"2c7c",
                 "manufacturer":"quectel",
                 "platform":"qualcomm",
                 "network_interface":"usb",
+                "define_connect":"1",
                 "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
             },
             "rm520n-cn":{
+                "manufacturer_id":"2c7c",
                 "manufacturer":"quectel",
                 "platform":"qualcomm",
                 "network_interface":"usb",
+                "define_connect":"1",
                 "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
             },
             "rm520n-gl":{
+                "manufacturer_id":"2c7c",
                 "manufacturer":"quectel",
                 "platform":"qualcomm",
                 "network_interface":"usb",
+                "define_connect":"1",
                 "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
             },
             "fm650-cn":{
+                "manufacturer_id":"2cb7",
                 "manufacturer":"fibocom",
                 "platform":"unisoc",
                 "network_interface":"usb",
+                "define_connect":"1",
                 "modes":["ecm","mbim","rndis","ncm"]
             },
             "fm350-gl":{
+                "manufacturer_id":"0e8d",
                 "manufacturer":"fibocom",
                 "platform":"mediatek",
                 "network_interface":"usb",
+                "define_connect":"3",
                 "modes":["rndis"]
             },
             "fm150-ae":{
+                "manufacturer_id":"2cb7",
                 "manufacturer":"fibocom",
                 "platform":"qualcomm",
                 "network_interface":"usb",
+                "define_connect":"1",
                 "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
             },
             "fm160-cn":{
+                "manufacturer_id":"2cb7",
                 "manufacturer":"fibocom",
                 "platform":"qualcomm",
                 "network_interface":"usb",
+                "define_connect":"1",
                 "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
             }
         },
@@ -73,25 +95,29 @@
                 "manufacturer":"quectel",
                 "platform":"qualcomm",
                 "network_interface":"pcie",
+                "define_connect":"1",
                 "modes":["qmi","gobinet","mbim"]
             },
             "rm502q-gl":{
                 "manufacturer":"fibocom",
                 "platform":"qualcomm",
                 "network_interface":"pcie",
+                "define_connect":"1",
                 "modes":["qmi","gobinet","mbim"]
             },
             "fm350-gl":{
                 "manufacturer":"fibocom",
                 "platform":"mediatek",
                 "network_interface":"pcie",
+                "define_connect":"1",
                 "modes":["mbim"]
             },
             "fm150-ae":{
                 "manufacturer":"fibocom",
                 "platform":"qualcomm",
                 "network_interface":"pcie",
-                "modes":["qmi"]
+                "define_connect":"1",
+                "modes":["qmi","mbim"]
             }
         }
     }

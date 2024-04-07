@@ -1,18 +1,28 @@
 #!/bin/sh /etc/rc.common
-# Copyright (C) 2006-2014 OpenWrt.org
+# Copyright (C) 2023 Siriling <siriling@qq.com>
 
 START=90
 STOP=13
 USE_PROCD=1
+
+#脚本目录
+SCRIPT_DIR="/usr/share/modem"
+
+#运行目录
+MODEM_RUNDIR="/var/run/modem"
+MODEM_RUN_CONFIG="${MODEM_RUNDIR}/config.cache"
+
+#导入组件工具
+source "${SCRIPT_DIR}/modem_debug.sh"
 
 #设置拨号模式
 # $1:拨号模式
 # set_mode()
 # {
 # 	#获取AT串口、制造商、模块名
-# 	local at_port=$(uci -q get modem.modem$modem_no.at_port)
-# 	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
-# 	local name=$(uci -q get modem.modem$modem_no.name)
+# 	local at_port=$(uci -q get modem.modem${modem_no}.at_port)
+# 	local manufacturer=$(uci -q get modem.modem${modem_no}.manufacturer)
+# 	local name=$(uci -q get modem.modem${modem_no}.name)
 
 # 	#分制造商设置不同的AT命令
 # 	local command
@@ -30,7 +40,7 @@ USE_PROCD=1
 
 # 		#查询当前拨号模式
 # 		command='AT+QCFG="usbnet"'
-# 		local at_result=$(sh /usr/share/modem/modem_at.sh $at_port $command)
+# 		local at_result=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $command)
 # 		if [[ "$at_result" != *"$mode_num"* ]]; then
 			
 # 			#切换到指定的拨号模式
@@ -43,7 +53,7 @@ USE_PROCD=1
 # 				"ncm") command='AT+QCFG="usbnet",5' ;;
 # 				*) command='AT+QCFG="usbnet",0' ;;
 # 			esac
-# 			at_result=$(sh /usr/share/modem/modem_at.sh "$at_port" "$command")
+# 			at_result=$(sh ${SCRIPT_DIR}/modem_at.sh "$at_port" "$command")
 # 			#移远切换模式后，还需要重启模块，待测试
 # 			sleep 5
 # 			modem_scan
@@ -63,7 +73,7 @@ USE_PROCD=1
 
 # 			#查询当前拨号模式
 # 			command='AT+GTUSBMODE?'
-# 			local at_result=$(sh /usr/share/modem/modem_at.sh $at_port $command)
+# 			local at_result=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $command)
 # 			if [[ "$at_result" != *"$mode_num"* ]]; then
 # 				#切换到指定的拨号模式
 # 				case $1 in
@@ -75,7 +85,7 @@ USE_PROCD=1
 # 					"ncm") command='AT+GTUSBMODE=23' ;;
 # 					*) command='AT+GTUSBMODE=32' ;;
 # 				esac
-# 				at_result=$(sh /usr/share/modem/modem_at.sh "$at_port" "$command")
+# 				at_result=$(sh ${SCRIPT_DIR}/modem_at.sh "$at_port" "$command")
 # 				sleep 5
 # 				modem_scan
 # 			fi
@@ -93,10 +103,12 @@ USE_PROCD=1
 # $1:网络接口名称
 set_firewall()
 {
-	local num=`uci show firewall | grep "name='wan'" | wc -l`
-	local wwan_num=`uci -q get firewall.@zone[$num].network | grep -w "$1" | wc -l`
+	local interface_name="$1"
+
+	local num=$(uci show firewall | grep "name='wan'" | wc -l)
+	local wwan_num=$(uci -q get firewall.@zone[$num].network | grep -w "${interface_name}" | wc -l)
 	if [ "$wwan_num" = "0" ]; then
-		uci add_list firewall.@zone[$num].network="$1"
+		uci add_list firewall.@zone[$num].network="${interface_name}"
 	fi
 	uci commit firewall
 }
@@ -106,20 +118,21 @@ set_firewall()
 # $2:网络接口
 set_ipv4_interface()
 {
-	#配置中不存在这个网络接口配置，或这个网络接口配置的设备不同
-	if [ "$(uci -q get network.$1.device)" != "$2" ] && [ "$(uci -q get network.$1.ifname)" != "$2" ]; then
-		uci set network.$1='interface'
-		uci set network.$1.proto='dhcp'
-		uci set network.$1.device="$2"
-		uci set network.$1.ifname="$2"
-		uci commit network
+	local interface_name="$1"
+	local network_interface="$2"
 
-		#加入WAN防火墙
-		set_firewall $1
+	#添加或修改网络配置
+	uci set network.${interface_name}='interface'
+	uci set network.${interface_name}.proto='dhcp'
+	uci set network.${interface_name}.device="${network_interface}"
+	uci set network.${interface_name}.ifname="${network_interface}"
+	uci commit network
 
-		#启动网络接口
-		ifup $1
-	fi
+	#加入WAN防火墙
+	set_firewall "${interface_name}"
+
+	#启动网络接口
+	ifup "${interface_name}"
 }
 
 #设置IPv6网络接口
@@ -127,23 +140,22 @@ set_ipv4_interface()
 # $2:网络接口
 set_ipv6_interface()
 {
-	if [ "$(uci -q get network.$1.device)" != "$2" ] && [ "$(uci -q get network.$1.ifname)" != "$2" ] ; then
-		uci set network.$1='interface'
-		uci set network.$1.proto='dhcpv6'
-		uci set network.$1.extendprefix='1'
-		uci set network.$1.device="$2"
-		uci set network.$1.ifname="$2"
-		uci commit network
+	local interface_name="$1"
+	local network_interface="$2"
 
-		#加入WAN防火墙
-		set_firewall $1
-	else
-		uci set network.$1.extendprefix='1'
-		uci commit network
-	fi
+	#添加或修改网络配置
+	uci set network.${interface_name}='interface'
+	uci set network.${interface_name}.proto='dhcpv6'
+	uci set network.${interface_name}.extendprefix='1'
+	uci set network.${interface_name}.device="${network_interface}"
+	uci set network.${interface_name}.ifname="${network_interface}"
+	uci commit network
+
+	#加入WAN防火墙
+	set_firewall "${interface_name}"
 	
 	#启动网络接口
-	ifup $1
+	ifup "${interface_name}"
 }
 
 #设置IPV4和IPv6网络接口
@@ -152,10 +164,14 @@ set_ipv6_interface()
 # $3:网络接口
 set_ipv4v6_interface()
 {
+	local ipv4_interface_name="$1"
+	local ipv6_interface_name="$2"
+	local network_interface="$3"
+
 	#设置IPV4网络接口
-	set_ipv4_interface $1 $3
+	set_ipv4_interface "${ipv4_interface_name}" "${network_interface}"
 	#设置IPV6网络接口（别名）
-	set_ipv6_interface $2 "@$1"
+	set_ipv6_interface "${ipv6_interface_name}" "@${ipv4_interface_name}"
 }
 
 #设置网络接口
@@ -163,11 +179,14 @@ set_ipv4v6_interface()
 # $2:网络接口
 set_interface()
 {
+	local modem_no="$1"
+	local network_interface="$2"
+
 	case $pdp_type in
-		"ipv4") set_ipv4_interface wwan_5g_$1 $2 ;;
-		"ipv6") set_ipv6_interface wwan6_5g_$1 $2 ;;
-		"ipv4v6") set_ipv4v6_interface "wwan_5g_$1" "wwan6_5g_$1" $2 ;;
-		*) set_ipv4v6_interface "wwan_5g_$1" "wwan6_5g_$1" $2 ;;
+		"ipv4") set_ipv4_interface "wwan_5g_${modem_no}" "${network_interface}" ;;
+		"ipv6") set_ipv6_interface "wwan6_5g_${modem_no}" "${network_interface}" ;;
+		"ipv4v6") set_ipv4v6_interface "wwan_5g_${modem_no}" "wwan6_5g_${modem_no}" "${network_interface}" ;;
+		*) set_ipv4v6_interface "wwan_5g_${modem_no}" "wwan6_5g_${modem_no}" "${network_interface}" ;;
 	esac
 }
 
@@ -176,32 +195,38 @@ quectel_cm()
 {
 	#拨号
 	procd_open_instance
-	procd_set_param command quectel-CM
+	procd_set_param command "quectel-CM"
 
 	case $pdp_type in
-		"ipv4") procd_append_param command -4 ;;
-		"ipv6") procd_append_param command -6 ;;
-		"ipv4v6") procd_append_param command -4 -6 ;;
-		*) procd_append_param command -4 -6 ;;
+		"ipv4") procd_append_param command "-4" ;;
+		"ipv6") procd_append_param command "-6" ;;
+		"ipv4v6") procd_append_param command "-4" "-6" ;;
+		*) procd_append_param command "-4" "-6" ;;
 	esac
 
+	if [ "$network_bridge" = "1" ]; then
+		procd_append_param command "-b"
+	fi
 	if [ "$apn" != "" ]; then
-		procd_append_param command -s $apn
+		procd_append_param command "-s" "$apn"
 	fi
 	if [ "$username" != "" ]; then
-		procd_append_param command $username
+		procd_append_param command "$username"
 	fi
 	if [ "$password" != "" ]; then
-		procd_append_param command $password
+		procd_append_param command "$password"
 	fi
 	if [ "$auth" != "none" ]; then
-		procd_append_param command $auth
+		procd_append_param command "$auth"
 	fi
 	if [ "$network" != "" ]; then
-		procd_append_param command -i $network
+		procd_append_param command "-i" "$network"
 	fi
+	#日志
+	procd_append_param command "-f" "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
+
 	procd_set_param respawn
-	procd_set_param procd_pid /var/run/modem/modem$modem_no.pid
+	procd_set_param procd_pid "${MODEM_RUNDIR}/modem${modem_no}.pid"
 	procd_close_instance
 }
 
@@ -210,58 +235,52 @@ quectel_cm()
 # $2:模组路径
 set_interface_modemmanager()
 {
-	if [ "$(uci -q get network.$1.device)" != "$2" ] ; then
-		uci set network.$1='interface'
-		uci set network.$1.proto='modemmanager'
-		uci set network.$1.device="$2"
-		uci set network.$1.auth="$auth"
-		uci set network.$1.iptype="$pdp_type"
+	local interface_name="$1"
+	local path="$2"
+
+	if [ "$(uci -q get network.${interface_name}.device)" != "${path}" ] ; then
+		uci set network.${interface_name}='interface'
+		uci set network.${interface_name}.proto='modemmanager'
+		uci set network.${interface_name}.device="${path}"
+		uci set network.${interface_name}.auth="$auth"
+		uci set network.${interface_name}.iptype="$pdp_type"
 
 		if [ "$apn" != "" ]; then
-			uci set network.$1.apn="$apn"
+			uci set network.${interface_name}.apn="$apn"
 		fi
 		if [ "$pincode" != "" ]; then
-			uci set network.$1.pincode="$pincode"
+			uci set network.${interface_name}.pincode="$pincode"
 		fi
 		if [ "$username" != "" ]; then
-			uci set network.$1.username="$username"
+			uci set network.${interface_name}.username="$username"
 		fi
 		if [ "$password" != "" ]; then
-			uci set network.$1.password="$password"
+			uci set network.${interface_name}.password="$password"
 		fi
 
 		uci commit network
 
 		#加入WAN防火墙
-		set_firewall $1
+		set_firewall "${interface_name}"
 	fi
 
 	#启动网络接口
-	ifup $1
+	ifup "${interface_name}"
 }
 
 #模块管理
 modemmanager()
 {
 	#获取接口名称
-	local interface_name="wwan_5g_$modem_no"
-
+	local interface_name="wwan_5g_${modem_no}"
 	#获取调制解调器设备（模组路径）
-	local path=$(uci -q get modem.modem$modem_no.path)
-
+	local path=$(uci -q get modem.modem${modem_no}.path)
 	#设置Modem Manager网络接口
 	set_interface_modemmanager "$interface_name" "$path"
 
-	#获取网络接口、AT串口、制造商
-	local network_interface=$(uci -q get modem.modem$modem_no.network_interface)
-	local at_port=$(uci -q get modem.modem$modem_no.at_port)
-	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
-	#设置网络接口
-	set_interface $modem_no "$network_interface"
-
 	#拨号
 	procd_open_instance
-	procd_set_param command sh /usr/share/modem/modem_network_task.sh "$id" "$at_port" "$manufacturer" "modemmanager" "$interface_name"
+	procd_set_param command sh ${SCRIPT_DIR}/modem_network_task.sh "${id}" "${modem_no}" "modemmanager"
 	procd_set_param respawn
 	procd_close_instance
 }
@@ -269,8 +288,8 @@ modemmanager()
 qmi()
 {
 	#设置网络接口
-	local network_interface=$(uci -q get modem.modem$modem_no.network_interface)
-	set_interface $modem_no "$network_interface"
+	local network_interface=$(uci -q get modem.modem${modem_no}.network_interface)
+	set_interface "${modem_no}" "$network_interface"
 
 	#选择拨号工具
 	case $dial_tool in
@@ -283,32 +302,28 @@ qmi()
 
 gobinet()
 {
-	#获取网络接口、AT串口、制造商
-	local network_interface=$(uci -q get modem.modem$modem_no.network_interface)
-	local at_port=$(uci -q get modem.modem$modem_no.at_port)
-	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
+	#获取网络接口
+	local network_interface=$(uci -q get modem.modem${modem_no}.network_interface)
 	#设置网络接口
-	set_interface $modem_no "$network_interface"
+	set_interface "${modem_no}" "$network_interface"
 
 	#拨号
 	procd_open_instance
-	procd_set_param command sh /usr/share/modem/modem_network_task.sh "$id" "$at_port" "$manufacturer" "gobinet"
+	procd_set_param command sh ${SCRIPT_DIR}/modem_network_task.sh "${id}" "${modem_no}" "gobinet"
 	procd_set_param respawn
 	procd_close_instance
 }
 
 ecm()
 {
-	#获取网络接口、AT串口、制造商
-	local network_interface=$(uci -q get modem.modem$modem_no.network_interface)
-	local at_port=$(uci -q get modem.modem$modem_no.at_port)
-	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
+	#获取网络接口
+	local network_interface=$(uci -q get modem.modem${modem_no}.network_interface)
 	#设置网络接口
-	set_interface $modem_no "$network_interface"
+	set_interface "${modem_no}" "$network_interface"
 
 	#拨号
 	procd_open_instance
-	procd_set_param command sh /usr/share/modem/modem_network_task.sh "$id" "$at_port" "$manufacturer" "ecm"
+	procd_set_param command sh ${SCRIPT_DIR}/modem_network_task.sh "${id}" "${modem_no}" "ecm"
 	procd_set_param respawn
 	procd_close_instance
 }
@@ -320,8 +335,16 @@ mbim()
 
 rndis()
 {
-	ecm
-	#广和通的rndis和ecm不同，后续再测试
+	#获取网络接口
+	local network_interface=$(uci -q get modem.modem${modem_no}.network_interface)
+	#设置网络接口
+	set_interface "${modem_no}" "$network_interface"
+
+	#拨号
+	procd_open_instance
+	procd_set_param command sh ${SCRIPT_DIR}/modem_network_task.sh "${id}" "${modem_no}" "rndis"
+	procd_set_param respawn
+	procd_close_instance
 }
 
 ncm()
@@ -345,16 +368,16 @@ stop_qmi()
 
 		#Modem Manager
 		#获取接口名称
-		local interface_name="wwan_5g_$modem_no"
+		local interface_name="wwan_5g_${modem_no}"
 		if [[ "$command" = *"$interface_name"* ]]; then
 			local pid=$(echo "$response" | jq -r ".modem.instances.$i.pid")
 			kill $pid >/dev/null 2>&1
 			
 			#获取调制解调器设备（模组路径）
-			local path=$(uci -q get modem.modem$modem_no.path)
+			local path=$(uci -q get modem.modem${modem_no}.path)
 			mmcli -m "$path" --simple-disconnect
 			#删除网络接口
-			uci del network.$interface_name
+			uci -q del network.${interface_name}
 			uci commit network
 		fi
 	done
@@ -363,35 +386,46 @@ stop_qmi()
 stop_gobinet()
 {
 	#获取AT串口、制造商
-	local at_port=$(uci -q get modem.modem$modem_no.at_port)
-	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
+	local at_port=$(uci -q get modem.modem${modem_no}.at_port)
+	local manufacturer=$(uci -q get modem.modem${modem_no}.manufacturer)
 
 	#停止拨号
-	local command="sh /usr/share/modem/modem_at.sh $at_port"
+	local at_command
 	if [ "$manufacturer" = "quectel" ]; then
-		$command 'ATI'
+		at_command='ATI'
 	elif [ "$manufacturer" = "fibocom" ]; then
-		$command 'AT$QCRMCALL=0,1'
+		at_command='AT$QCRMCALL=0,1'
 	else
-		$command 'ATI'
+		at_command='ATI'
 	fi
+
+	tmp=$(at "${at_port}" "${at_command}")
 }
 
 stop_ecm()
 {
-	#获取AT串口、制造商
-	local at_port=$(uci -q get modem.modem$modem_no.at_port)
-	local manufacturer=$(uci -q get modem.modem$modem_no.manufacturer)
+	#获取AT串口、制造商、平台、连接定义
+	local at_port=$(uci -q get modem.modem${modem_no}.at_port)
+	local manufacturer=$(uci -q get modem.modem${modem_no}.manufacturer)
+	local platform=$(uci -q get modem.modem${modem_no}.platform)
+	local define_connect=$(uci -q get modem.modem${modem_no}.define_connect)
 
 	#停止拨号
-	local command="sh /usr/share/modem/modem_at.sh $at_port"
+	local at_command
 	if [ "$manufacturer" = "quectel" ]; then
-		$command 'ATI'
+		at_command="AT+QNETDEVCTL=${define_connect},2,1"
 	elif [ "$manufacturer" = "fibocom" ]; then
-		$command 'AT+GTRNDIS=0,1'
+		#联发科平台（广和通FM350-GL）
+		if [ "$platform" = "mediatek" ]; then
+			at_command="AT+CGACT=0,${define_connect}"
+		else
+			at_command="AT+GTRNDIS=0,${define_connect}"
+		fi
 	else
-		$command 'ATI'
+		at_command='ATI'
 	fi
+
+	tmp=$(at "${at_port}" "${at_command}")
 }
 
 stop_mbim()
@@ -417,10 +451,10 @@ get_modem_no()
 	local modem_number=$(uci -q get modem.@global[0].modem_number)
 	local modem_network
 	for i in $(seq 0 $((modem_number-1))); do
-		modem_network=$(uci -q get modem.modem$i.network)
+		modem_network=$(uci -q get modem.modem${i}.network)
 		if [ "$modem_network" = "$1" ]; then
 			#模块序号
-			modem_no=$i
+			modem_no=${i}
 			break
 		fi
 	done
@@ -430,6 +464,8 @@ get_modem_no()
 # $1:配置ID
 get_instance_status()
 {
+	local config_id="$1"
+
 	#获取modem的实例信息
 	local response=$(ubus call service list '{"name": "modem"}')
 	local instance_number=$(echo "$response" | jq -r ".modem.instances | length")
@@ -439,9 +475,9 @@ get_instance_status()
 		local command=$(echo "$response" | jq -r ".modem.instances.instance$i.command")
 		if [ "$running_status" = "true" ] && [[ "$command" = *"$network"* ]]; then
 			#查看配置ID是否记录在已运行的文件里
-			local run_config="/tmp/modem/run_config"
-			local run_config_id=$(grep -n "$network" "$run_config" | cut -d ';' -f 2)
-			if [ "$1" = "$run_config_id" ]; then
+			local run_config="/var/run/modem"
+			local run_config_id=$(grep -n "$network" "$run_config" | cut -d ',' -f 2)
+			if [ "${config_id}" = "$run_config_id" ]; then
 				status=2
 				break
 			else
@@ -452,6 +488,54 @@ get_instance_status()
 	done
 }
 
+#获取拨号模式
+# $1:模块号
+get_mode()
+{
+	local modem_no="$1"
+
+	local manufacturer=$(uci -q get modem.modem${modem_no}.manufacturer)
+	local at_port=$(uci -q get modem.modem${modem_no}.at_port)
+	local platform=$(uci -q get modem.modem${modem_no}.platform)
+
+	mode=$(${manufacturer}_get_mode ${at_port} ${platform})
+	echo "$mode"
+}
+
+#网络预设
+connect_presets()
+{
+	local at_port=$(uci -q get modem.modem${modem_no}.at_port)
+
+	#运营商选择设置
+	local at_command='AT+COPS=0,0'
+	tmp=$(at "${at_port}" "${at_command}")
+
+	#设置IPv6地址格式
+	at_command='AT+CGPIAF=1,0,0,0'
+	tmp=$(at "${at_port}" "${at_command}")
+
+	#获取连接定义
+	local define_connect=$(uci -q get modem.modem${modem_no}.define_connect)
+	#获取PDP类型和APN
+	local pdp_type_tmp="IPV4V6"
+	if [ -n "$pdp_type" ]; then
+		pdp_type_tmp=$(echo $pdp_type | tr 'a-z' 'A-Z')
+	fi
+	local apn_tmp=""
+	if [ -n "$apn" ]; then
+		apn_tmp=$(echo $apn | tr 'a-z' 'A-Z')
+	fi
+
+	#PDP设置
+	at_command="AT+CGDCONT=$define_connect,\"$pdp_type_tmp\",\"$apn_tmp\""
+	tmp=$(at "${at_port}" "${at_command}")
+
+	#制造商私有预设
+	# quectel_presets
+	# fibocom_presets
+}
+
 #停止拨号
 # $1:配置ID
 stop_dial()
@@ -460,18 +544,20 @@ stop_dial()
 	local network=$(uci -q get modem.$1.network) #移动网络
 
 	#把配置ID从临时列表中移除
-	local run_config="/tmp/modem/run_config"
-	local row_no=$(grep -n "$id" "$run_config" | cut -d ':' -f 1)
-	if [ -z "$row_no" ]; then
+	if [ -f "${MODEM_RUN_CONFIG}" ] && grep -q "${network}" "${MODEM_RUN_CONFIG}"; then
+		#该配置ID在运行，需要删除记录
+		sed -i "/${id}/d" "${MODEM_RUN_CONFIG}"
+	else
 		return 0
 	fi
-	#该配置ID在运行，需要删除记录
-	sed -i "$row_no"d $run_config
 
 	#获取模块序号
-	get_modem_no $network
+	get_modem_no "${network}"
+
 	#获取模组的拨号模式
-	local mode=$(uci -q get modem.modem$modem_no.mode)
+	[ -z "${modem_no}" ] && return 0
+	local mode=$(get_mode ${modem_no})
+	[ -z "$mode" ] && return
 
 	#根据不同的拨号模式停止拨号
 	if [ "$mode" = "qmi" ]; then
@@ -501,49 +587,55 @@ dial()
 		return 0
 	}
 
-	local remarks	#备注
-	local network	#移动网络
-	local dial_tool	#拨号工具
-	local pdp_type	#网络类型（IP类型）
-	local apn		#接入点
-	local username	#用户名
-	local password	#密码
-	local auth		#认证类型
+	local remarks			#备注
+	local network			#移动网络
+	local dial_tool			#拨号工具
+	local pdp_type			#网络类型（IP类型）
+	local network_bridge	#网络桥接
+	local apn				#接入点
+	local username			#用户名
+	local password			#密码
+	local auth				#认证类型
 
 	config_get remarks $1 remarks
 	config_get network $1 network
 	config_get dial_tool $1 dial_tool
 	config_get pdp_type $1 pdp_type
+	config_get network_bridge $1 network_bridge
 	config_get apn $1 apn
 	config_get username $1 username
 	config_get password $1 password
 	config_get auth $1 auth
 
 	#获取模块序号
-	get_modem_no $network
+	get_modem_no "${network}"
 	#获取模组的拨号模式
-	[ -z "$modem_no" ] && return 0
-	local mode=$(uci -q get modem.modem$modem_no.mode)
-	if [ "$mode" = "unknown" ]; then
-		mode="qmi"
-	fi
+	[ -z "${modem_no}" ] && return 0
+	local mode=$(get_mode ${modem_no})
+	[ -z "$mode" ] && {
+		mode="qmi";
+	}
 
 	#查看移动网络是否已经有配置在运行
-	local run_path="/tmp/modem"
-	mkdir -p $run_path
-	local run_config="/tmp/modem/run_config"
-	local row_no=$(grep -n "$network" "$run_config" | cut -d ':' -f 1) #1:wwan0;abc->1
-	if [ -z "$row_no" ]; then #未记录该移动网络
-		#把已运行的配置ID加入到记录中
-		echo "$network;$id" >> "$run_path/run_config"
-	else
-		local run_config_id=$(grep -n "$network" "$run_config" | cut -d ';' -f 2)
-		if [ "$id" != "$run_config_id" ]; then #该移动网络已存在，且已有其他配置运行
-			uci set modem.$1.enable=0
-			uci commit modem
-			return 0
+	mkdir -m 0755 -p "${MODEM_RUNDIR}"
+	if [ -f "${MODEM_RUN_CONFIG}" ]; then #文件存在
+		if grep -q "${network}" "${MODEM_RUN_CONFIG}"; then #是否记录该移动网络
+			local config_id=$(awk -v network="${network}" -F',' '!/^#/ && $0 ~ network { print $2 }' "${MODEM_RUN_CONFIG}")
+			#该移动网络已存在，且已有其他配置运行
+			if [ "$id" != "$config_id" ]; then
+				uci set modem.$1.enable=0
+				uci commit modem
+				return 0
+			fi
+		else
+			echo "${network},${id}" >> "${MODEM_RUN_CONFIG}"
 		fi
+	else
+		echo "${network},${id}" >> "${MODEM_RUN_CONFIG}"
 	fi
+
+	#设置网络预设
+	connect_presets
 
 	#根据不同的拨号模式拨号
 	if [ "$mode" = "qmi" ]; then
@@ -588,7 +680,7 @@ stop_service()
 	local modem_number=$(uci -q get modem.@global[0].modem_number)
 	for i in $(seq 0 $((modem_number-1))); do
 		modem_no=$i
-		local mode=$(uci -q get modem.modem$modem_no.mode)
+		local mode=$(uci -q get modem.modem${modem_no}.mode)
 		case $mode in
 			"gobinet") stop_gobinet ;;
 			"ecm") stop_ecm ;;
