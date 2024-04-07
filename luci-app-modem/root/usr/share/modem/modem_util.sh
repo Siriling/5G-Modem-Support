@@ -42,6 +42,27 @@ m_report_event()
 	m_log "debug" "event reported: action=${action}, type=${type}, name=${name}"
 }
 
+#模组预设
+# $1:AT串口
+# $2:连接定义
+m_modem_presets()
+{
+	local at_port="$1"
+	local define_connect="$2"
+
+	#运营商选择设置
+	local at_command='AT+COPS=0,0'
+	at "${at_port}" "${at_command}"
+
+	#设置IPv6地址格式
+	at_command='AT+CGPIAF=1,0,0,0'
+	at "${at_port}" "${at_command}"
+
+	#PDP设置
+	at_command="AT+CGDCONT=$define_connect,\"IPV4V6\",\"\""
+	at "${at_port}" "${at_command}"
+}
+
 #获取设备物理路径
 # $1:网络设备路径
 m_get_device_physical_path()
@@ -349,9 +370,8 @@ retry_set_modem_config()
 				uci add_list modem.modem${modem_no}.modes="${mode}"
 			done
 
-			#PDP设置
-			at_command="AT+CGDCONT=$define_connect,\"IPV4V6\",\"\""
-			at "${at_port}" "${at_command}"
+			#设置模组预设
+			m_modem_presets "${at_port}" "${define_connect}"
 
 			#打印日志
 			m_log "info" "Successfully retrying to configure the Modem ${modem_name}"
@@ -419,9 +439,8 @@ m_set_modem_config()
 		uci add_list modem.modem${modem_no}.modes="${mode}"
 	done
 
-	#PDP设置
-	at_command="AT+CGDCONT=$define_connect,\"IPV4V6\",\"\""
-	at "${at_port}" "${at_command}"
+	#设置模组预设
+	m_modem_presets "${at_port}" "${define_connect}"
 
 	#打印日志
 	m_log "info" "${log_message}"
