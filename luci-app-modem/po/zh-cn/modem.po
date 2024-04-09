@@ -203,7 +203,7 @@ msgid "quectel-CM"
 msgstr "移远模组拨号工具"
 
 msgid "mmcli"
-msgstr "模组管理工具"
+msgstr "调制解调器管理工具"
 
 msgid "PDP Type"
 msgstr "网络类型"
