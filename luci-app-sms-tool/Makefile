@@ -1,14 +1,16 @@
-﻿# Copyright 2020-2021 Rafał Wabik - IceG - From eko.one.pl forum
-# Licensed to the GNU General Public License v3.0.
+﻿# Copyright (C) 2023 Siriling <siriling@qq.com>
+# This is free software, licensed under the GNU General Public License v3.
 
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-sms-tool
 LUCI_TITLE:=LuCI Support for sms_tool
 LUCI_PKGARCH:=all
-LUCI_DEPENDS:=+sms-tool +kmod-usb-serial +kmod-usb-serial-option +luci-compat
-PKG_VERSION:=1.9.2-20211018
+PKG_VERSION:=1.0.0
 PKG_LICENSE:=GPLv3
+PKG_LINCESE_FILES:=LICENSE
+PKF_MAINTAINER:=siriling <siriling@qq.com>
+LUCI_DEPENDS:=+sms-tool +luci-compat +kmod-usb-serial +kmod-usb-serial-option
 
 define Package/luci-app-sms-tool/postinst
 #!/bin/sh

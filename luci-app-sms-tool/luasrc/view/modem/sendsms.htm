@@ -12,7 +12,7 @@
 <%+header%>
 
 <!--
--- Copyright 2020-2021 Rafał Wabik (IceG) - From eko.one.pl forum
+-- Copyright 2020-2022 Rafał Wabik (IceG) - From eko.one.pl forum
 -- Licensed to the GNU General Public License v3.0.
 -->
 
@@ -47,12 +47,12 @@ window.onload = function prefiksSMS() {
 		}
 
 		if ( msg == "1" ) {
-		alert("<%:The phone number should be preceded by the country prefix (for Poland it is 48, without +). If the number is 5, 4 or 3 characters, it is treated as.. short and should not be preceded by a country prefix.%>");
+		alert("<%:电话号码的前面应该有国家的前缀（波兰是48，没有+）。如果号码是5个、4个或3个字符，它将被视为短号码，而不应在前面加上国家前缀。(The phone number should be preceded by the country prefix (for Poland it is 48, without +). If the number is 5, 4 or 3 characters, it is treated as.. short and should not be preceded by a country prefix.)%>");
 		}
 
 
 
-XHR.get('<%=luci.dispatcher.build_url("admin", "services", "sms", "user_phonebook")%>', null,
+XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "sms", "user_phonebook")%>', null,
 			function(x, json)
 			{
 				select = document.getElementById('pb');
@@ -67,7 +67,6 @@ XHR.get('<%=luci.dispatcher.build_url("admin", "services", "sms", "user_phoneboo
 
 					for(var d=0;d<=countpb;d++)
 						{
-
 							var opt = document.createElement('option');
 							var s = json[d].phb;
 							var fields = s.split(/;/);
@@ -75,13 +74,16 @@ XHR.get('<%=luci.dispatcher.build_url("admin", "services", "sms", "user_phoneboo
 							var number = fields[1];
 							opt.text = name;
 							opt.value = number.trim();
-    						opt.innerHTML = name;
-    						select.appendChild(opt);
+    							opt.innerHTML = name;
+    							select.appendChild(opt);
 						}
 
 			}
 			);
-			
+
+
+
+
 }
 
 
@@ -91,6 +93,7 @@ function copyFunction2() {
      	document.getElementById("numer").value = x;
      	document.getElementById("odp").innerHTML = "";
 
+
 }
 
 
@@ -98,7 +101,7 @@ function count_replace(obj) {
 
         document.getElementById('counter').innerHTML = (160 - document.getElementById('smstxt').value.length);
 
-	    obj.value = obj.value.replace(/ą/g, 'a').replace(/Ą/g, 'A');
+	obj.value = obj.value.replace(/ą/g, 'a').replace(/Ą/g, 'A');
         obj.value = obj.value.replace(/ć/g, 'c').replace(/Ć/g, 'C')
         obj.value = obj.value.replace(/ę/g, 'e').replace(/Ę/g, 'E')
         obj.value = obj.value.replace(/ł/g, 'l').replace(/Ł/g, 'L')
@@ -107,7 +110,7 @@ function count_replace(obj) {
         obj.value = obj.value.replace(/ś/g, 's').replace(/Ś/g, 'S')
         obj.value = obj.value.replace(/ż/g, 'z').replace(/Ż/g, 'Z')
         obj.value = obj.value.replace(/ź/g, 'z').replace(/Ź/g, 'Z');
-	    document.getElementById("odp").innerHTML = "";
+	document.getElementById("odp").innerHTML = "";
 
 }
 
@@ -120,7 +123,7 @@ function codsp() {
 
 
 function postcmd(cmd) {
-    (new XHR()).post("<%=luci.dispatcher.build_url("admin", "services", "sms", "run_sms")%>", {"scode":cmd}, function(x) {
+    (new XHR()).post("<%=luci.dispatcher.build_url("admin", "modem", "sms", "run_sms")%>", {"scode":cmd}, function(x) {
         console.log(x.response)
         console.log(x)
 	 	var cut = x.response;
@@ -185,47 +188,46 @@ document.addEventListener('DOMContentLoaded', function (ev) {var button = docume
 //]]></script>
 
 
-<h2 name="content"><%:SMS Messages%></h2>
-	<div class="cbi-map-descr"><%:Web UI for sending messages via sms_tool.%></div>
-	<div class="cbi-map-descr"><%:The phone number should be preceded by the country prefix (for Poland it is 48, without '+'). If the number is 5, 4 or 3 characters, it is treated as 'short' and should not be preceded by a country prefix.%></div>
-	<p></p>	
-	<h4><br/></h4>
+	<h2><%:短信%></h2>
+	<div class="cbi-map-descr"><%:通过sms_tool发送信息的Web用户界面。关于短信工具的更多信息，请见%> <a href="https://eko.one.pl/?p=openwrt-sms_tool" target="_blank"><%:eko.one.pl 论坛%></a>.</div>
+	<p></p>
+	
+	<h4><%:发送短信%></h4>
 
-
-	<div class="table" width="100%">
+	<div class="table">
 
 		<div class="tr">
-			<div class="td left" style="width:25%;"><%:User Phonebook%>:</div>
-			<div class="td left" style="width:50%;">
+			<div class="td left" ><%:用户电话簿%>:</div>
+			<div class="td left" >
 
 				<select name="ussd" id="pb" onchange="copyFunction2()">
 
  				</select>
 </div>
-			<div class="td left" style="width:0%;"></div>
+			<div class="td left" ></div>
 		</div>
 
 		<div class="tr">
-			<div class="td left" style="width:25%;"><%:Send to%>:</div>
-			<div class="td left" style="width:50%;"><input type="text" id="numer" onKeyUp="codsp()" placeholder="<%:PHONE_NUMBER%>" required minlength="3" maxlength="24" size="11"></div>
-			<div class="td left" style="width:0%;"></div>
+			<div class="td left" ><%:发送至%>:</div>
+			<div class="td left" ><input type="text" id="numer" onKeyUp="codsp()" placeholder="<%:PHONE_NUMBER%>" required minlength="3" maxlength="24" size="11"></div>
+			<div class="td left" ></div>
 		</div>
 		<div class="tr">
-			<div class="td left" style="width:25%;"><%:Message text%>:</div>
-			<div class="td left" style="width:50%;"><textarea id="smstxt" onKeyUp="count_replace(this)" required></textarea><div id="counter">160</div></div>
-			<div class="td left" style="width:0%;"></div>
+			<div class="td left" ><%:消息正文%>:</div>
+			<div class="td left" ><textarea id="smstxt" onKeyUp="count_replace(this)" required></textarea><div id="counter">160</div></div>
+			<div class="td left" ></div>
 		</div>
 			
 		<div class="tr">
-			<div class="td left" width="25%"><%:Status%>:</div><div class="td left" id="odp"></div>
+			<div class="td left" ><%:状态%>:</div><div class="td left" id="odp"></div>
 
 		</div>
 
 	</div>
-	<div class="table" width="100%">
+	<div class="table">
 
 		<div class="tr cbi-rowstyle-2">
-		<div class="td center"><input type="button" style="margin-left: 35%"; id="sendsms" class="btn cbi-button cbi-button-neutral" value="<%:Send Message%>" /></div>
+		<div class="td right"><input type="button" style="margin-right: 5%"; id="sendsms" class="btn cbi-button cbi-button-neutral" value="<%:发送短信%>" /></div>
 		</div>
 
 	</div>

@@ -1,41 +1,41 @@
 <%+header%>
 
 <!--
--- Copyright 2020-2021 Rafał Wabik (IceG) - From eko.one.pl forum
+-- Copyright 2020-2022 Rafał Wabik (IceG) - From eko.one.pl forum
 -- Licensed to the GNU General Public License v3.0.
 -->
 
-<h2 name="content"><%:AT Commands%></h2>
-	<div class="cbi-map-descr"><%:Web UI for handling AT commands via sms_tool.%></div>
+	<h2><%:AT 命令%></h2>
+	<div class="cbi-map-descr"><%:通过sms_tool处理AT命令的Web用户界面。关于sms-tool的更多信息，请见%> <a href="https://eko.one.pl/?p=openwrt-sms_tool" target="_blank"><%:eko.one.pl 论坛%></a>.</div>
 	<p></p>
-	<h4><br/></h4>
+	<h4><%:向调制解调器发送命令%></h4>
 	<div class="table" width="100%">
 
 		<div class="tr">
-			<div class="td left" width="25%"><%:User AT Commands%>:</div>
+			<div class="td left"><%:用户AT命令%>:</div>
 
-			<div class="td left" style="width:50%;">
+			<div class="td left";">
 				<select name="ussd" id="pl" onclick="copyFunction()">
 
  				</select>
 			</div>
-			<div class="td left" style="width:50%;"></div>
+			<div class="td left""></div>
 			</div>
 
 		<div class="tr">
-			<div class="td left" style="width:25%;"><%:Command to send%>:</div>
-			<div class="td left" ><input type="text" id="code" required size="20" ></div>
+			<div class="td left" ><%:要发送的命令%>:</div>
+			<div class="td left" ><input type="text" id="code"></div>
 		</div>
 
 	</div>
 
 	<div class="table" width="100%">
-		<div class="td left" style="width:25%;"><%:Reply%>:
+		<div class="td left";"><%:回复%>:
 		<p>
-		<pre id="odp" style="visibility: hidden; width:75%;"></pre></div>
+		<pre id="odp" style="visibility: hidden;"></pre></div>
 
 		<div class="tr cbi-rowstyle-2">
-		<div class="td right"><input type="button" style="margin-right: 26%"; id="sendcmd" class="btn cbi-button cbi-button-neutral" value="<%:Send Command%>" /></div>
+		<div class="td right"><input type="button" style="margin-right: 5%"; id="sendcmd" class="btn cbi-button cbi-button-neutral" value="<%:发送命令%>" /></div>
 		</div>
 
 	</div>
@@ -45,7 +45,7 @@
 window.onload = function readUSER() {
 
 
-			XHR.get('<%=luci.dispatcher.build_url("admin", "services", "sms", "user_atc")%>', null,
+			XHR.get('<%=luci.dispatcher.build_url("admin", "modem", "sms", "user_atc")%>', null,
 			function(x, json)
 			{
 				select = document.getElementById('pl');
@@ -55,8 +55,7 @@ window.onload = function readUSER() {
 
 					for(var d=0;d<=count;d++)
 						{
-    			    		var opt = document.createElement('option');
-
+    			    				var opt = document.createElement('option');
 							var s = json[d].atu;
 							var fields = s.split(/;/);
 							var name = fields[0];
@@ -86,7 +85,7 @@ function copyFunction() {
 
 
 function postcmd(cmd) {
-    (new XHR()).post("<%=luci.dispatcher.build_url("admin", "services", "sms", "run_at")%>", {"code":cmd}, function(x) {
+    (new XHR()).post("<%=luci.dispatcher.build_url("admin", "modem", "sms", "run_at")%>", {"code":cmd}, function(x) {
         console.log(x.response)
         console.log(x)
 

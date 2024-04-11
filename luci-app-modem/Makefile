@@ -1,3 +1,4 @@
+# Copyright (C) 2023 Siriling <siriling@qq.com>
 # This is free software, licensed under the GNU General Public License v3.
 
 include $(TOPDIR)/rules.mk
