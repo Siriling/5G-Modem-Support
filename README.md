@@ -28,9 +28,9 @@
 
 ### 拨号
 
-- luci-app-modem（beta）
+- luci-app-modem（新）
 
-- luci-app-hypermodem（新）
+- luci-app-hypermodem
 - luci-app-usbmodem
 - luci-app-pcimodem
 - luci-app-gobinetmodem
