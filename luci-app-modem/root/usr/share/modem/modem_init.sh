@@ -8,9 +8,6 @@ source "${SCRIPT_DIR}/modem_util.sh"
 #模组配置初始化
 modem_init()
 {
-    #防止开机时存在
-    # [ -d "$MODEM_RUNDIR" ] && rm -rf "${MODEM_RUNDIR}"
-
     m_log "info" "Clearing all modem configurations"
     #清空模组配置
     local modem_no

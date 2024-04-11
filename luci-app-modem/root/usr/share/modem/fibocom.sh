@@ -324,7 +324,7 @@ fibocom_get_sim_status()
 {
     local sim_status
     case $1 in
-        "") sim_status="miss" ;;
+        "") sim_status="unknown" ;;
         *"ERROR"*) sim_status="miss" ;;
         *"READY"*) sim_status="ready" ;;
         *"SIM PIN"*) sim_status="MT is waiting SIM PIN to be given" ;;
@@ -363,6 +363,9 @@ fibocom_sim_info()
     #SIM Status（SIM状态）
     at_command="AT+CPIN?"
 	sim_status_flag=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CPIN: ")
+    [ -z "$sim_status_flag" ] && {
+        sim_status_flag=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CME")
+    }
     sim_status=$(fibocom_get_sim_status "$sim_status_flag")
 
     if [ "$sim_status" != "ready" ]; then

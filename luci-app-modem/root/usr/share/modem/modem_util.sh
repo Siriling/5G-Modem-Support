@@ -701,6 +701,8 @@ m_set_modem_port()
 	#不存在串口，返回
 	[ -z "${all_port}" ] && return
 
+	#删除原串口
+	uci -q del modem.modem${modem_no}.ports
 	#设置串口
 	local port_cache
 	for port_path in $all_port; do
@@ -710,7 +712,7 @@ m_set_modem_port()
 
 		#跳过重复的串口
 		[ "$port" = "$port_cache" ] && continue
-		#跳过重复的串口
+		#跳过多余串口（PCIE）
 		[[ "$port" = *"mhi_uci_q"* ]] && continue
 		[[ "$port" = *"mhi_cntrl_q"* ]] && continue
 

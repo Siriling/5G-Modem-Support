@@ -28,9 +28,10 @@
 | 移远通信 | RG200U-CN（DONGLE版）                              | 紫光展锐 | USB          | ECM，MBIM，RNDIS，NCM        |
 | 移远通信 | RM500U-CN                                          | 紫光展锐 | USB          | ECM，MBIM，RNDIS，NCM        |
 | 移远通信 | RM500Q-CN                                          | 高通     | USB          | RMNET，ECM，MBIM，RNDIS，NCM |
+| 移远通信 | RM500Q-AE                                          | 高通     | USB          | RMNET，ECM，MBIM，RNDIS，NCM |
 | 移远通信 | RM500Q-GL                                          | 高通     | USB          | RMNET，ECM，MBIM，RNDIS，NCM |
-| 移远通信 | RM502Q-GL                                          | 高通     | USB          | RMNET，ECM，MBIM，RNDIS，NCM |
 | 移远通信 | RM502Q-AE                                          | 高通     | USB          | RMNET，ECM，MBIM，RNDIS，NCM |
+| 移远通信 | RM502Q-GL                                          | 高通     | USB          | RMNET，ECM，MBIM，RNDIS，NCM |
 | 移远通信 | RM520N-CN                                          | 高通     | USB          | RMNET，ECM，MBIM，RNDIS，NCM |
 | 移远通信 | RM520N-GL                                          | 高通     | USB          | RMNET，ECM，MBIM，RNDIS，NCM |
 | 移远通信 | RM500Q-GL                                          | 高通     | PCIE         | RMNET，MBIM                  |
