@@ -33,7 +33,7 @@ if device_suggestions then
 	end
 end
 
-apn = s:taboption(Value, "apn", translate("APN"))
+apn = s:option(Value, "apn", translate("APN"))
 apn.default = ""
 apn.rmempty = true
 apn:value("", translate("Auto Choose"))
@@ -43,7 +43,7 @@ apn:value("ctnet", translate("China Telecom"))
 apn:value("cbnet", translate("China Broadcast"))
 apn:value("5gscuiot", translate("Skytone"))
 
-auth = s:taboption("advanced", ListValue, "auth", translate("Authentication Type"))
+auth = s:option(ListValue, "auth", translate("Authentication Type"))
 auth.default = "none"
 auth.rmempty = false
 auth:value("none", translate("NONE"))
@@ -51,13 +51,13 @@ auth:value("both", translate("PAP/CHAP (both)"))
 auth:value("pap", "PAP")
 auth:value("chap", "CHAP")
 
-username = s:taboption("advanced", Value, "username", translate("PAP/CHAP Username"))
+username = s:option(Value, "username", translate("PAP/CHAP Username"))
 username.rmempty = true
 username:depends("auth", "both")
 username:depends("auth", "pap")
 username:depends("auth", "chap")
 
-password = s:taboption("advanced", Value, "password", translate("PAP/CHAP Password"))
+password = s:option(Value, "password", translate("PAP/CHAP Password"))
 password.rmempty = true
 password.password = true
 password:depends("auth", "both")
