@@ -664,7 +664,7 @@ disable_dial()
 	done
 }
 
-#设置PCIE设备串口
+#设置模组串口
 # $1:物理路径
 m_set_modem_port()
 {
