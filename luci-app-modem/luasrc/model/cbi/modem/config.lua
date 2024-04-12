@@ -18,9 +18,6 @@ enable = s:taboption("general", Flag, "enable", translate("Enable"))
 enable.default = "0"
 enable.rmempty = false
 
--- 配置ID
-uci:set('modem',arg[1],'id',arg[1])
-
 -- 备注
 remarks = s:taboption("general", Value, "remarks", translate("Remarks"))
 remarks.rmempty = true
@@ -67,6 +64,14 @@ getMobileNetwork()
 -- m:append(Template("modem/mode_info"))
 
 --------advanced--------
+
+-- 配置ID
+id = s:taboption("advanced", Value, "id", translate("Config ID"))
+id.default = arg[1]
+id.rmempty = false
+id.readonly = true
+id.hidden = true
+-- uci:set('modem',arg[1],'id',arg[1])
 
 -- 拨号工具
 dial_tool = s:taboption("advanced", ListValue, "dial_tool", translate("Dial Tool"))
