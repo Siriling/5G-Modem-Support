@@ -66,11 +66,9 @@ getMobileNetwork()
 --------advanced--------
 
 -- 配置ID
-id = s:taboption("advanced", Value, "id", translate("Config ID"))
-id.default = arg[1]
+id = s:taboption("advanced", ListValue, "id", translate("Config ID"))
 id.rmempty = false
-id.readonly = true
-id.hidden = true
+id:value(arg[1])
 -- uci:set('modem',arg[1],'id',arg[1])
 
 -- 拨号工具
