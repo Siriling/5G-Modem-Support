@@ -127,6 +127,9 @@ rndis_dial()
 # $2:连接定义
 modemmanager_dial()
 {
+    local interface_name="$1"
+    local define_connect="$2"
+
     #激活
     local at_command="AT+CGACT=1,${define_connect}"
     #打印日志
@@ -134,7 +137,7 @@ modemmanager_dial()
     at "${at_port}" "${at_command}"
 
     #启动网络接口
-    ifup "$1";
+    ifup "${interface_name}";
 }
 
 #检查模组网络连接
