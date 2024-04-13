@@ -312,10 +312,18 @@ fibocom_base_info()
 
     #Temperature（温度）
     at_command="AT+MTSM=1,6"
-	response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | sed -n '2p' | sed 's/+MTSM: //g' | sed 's/\r//g')
-	if [ -n "$response" ]; then
-		temperature="$response$(printf "\xc2\xb0")C"
-	fi
+	response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+MTSM: " | sed 's/+MTSM: //g' | sed 's/\r//g')
+
+    [ -z "$response" ] && {
+        #联发科平台
+        at_command="AT+GTSENRDTEMP=0"
+        response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+GTSENRDTEMP: " | awk -F',' '{print $2}' | sed 's/\r//g')
+        response="${response:0:2}"
+    }
+
+    [ -n "$response" ] && {
+        temperature="$response$(printf "\xc2\xb0")C"
+    }
 }
 
 #获取SIM卡状态

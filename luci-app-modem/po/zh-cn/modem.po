@@ -190,6 +190,9 @@ msgstr "找不到网络设备"
 msgid "Only display the modes available for the adaptation modem"
 msgstr "仅显示适配模组可用的拨号模式"
 
+msgid "Config ID"
+msgstr "配置ID"
+
 msgid "Dial Tool"
 msgstr "拨号工具"
 

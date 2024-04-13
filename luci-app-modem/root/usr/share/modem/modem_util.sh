@@ -348,6 +348,11 @@ retry_set_modem_config()
 			modem_name=$(at ${at_port} ${at_command} | sed -n '2p' | sed 's/\r//g' | tr 'A-Z' 'a-z')
 		}
 
+		#特殊处理FM350-GL-00 5G Module
+		[[ "$modem_name" = *"fm350-gl"* ]] && {
+			modem_name="fm350-gl"
+		}
+
 		[ -n "$modem_name" ] && {
 			#获取模组信息
 			local data_interface=$(uci -q get modem.modem${modem_no}.data_interface)

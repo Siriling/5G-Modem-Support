@@ -211,7 +211,7 @@ quectel_get_self_test_info()
     
     #Voltage（电压）
     at_command="AT+CBC"
-	local voltage=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+CBC:" | awk -F',' '{print $2}' | sed 's/\r//g')
+	local voltage=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+CBC:" | awk -F',' '{print $3}' | sed 's/\r//g')
     echo "${voltage}"
 }
 
