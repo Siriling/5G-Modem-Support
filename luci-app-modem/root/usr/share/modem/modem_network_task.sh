@@ -83,23 +83,22 @@ ecm_dial()
 # $2:制造商
 # $3:平台
 # $4:连接定义
-# $5:接口名称
+# $5:模组序号
 rndis_dial()
 {
     local at_port="$1"
     local manufacturer="$2"
     local platform="$3"
     local define_connect="$4"
-    local interface_name="$5"
+    local modem_no="$5"
 
     #手动设置IP（广和通FM350-GL）
     if [ "$manufacturer" = "fibocom" ] && [ "$platform" = "mediatek" ]; then
 
-        #激活并拨号
         at_command="AT+CGACT=1,${define_connect}"
         #打印日志
         dial_log "${at_command}" "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
-
+        #激活并拨号
         at "${at_port}" "${at_command}"
 
         #获取IPv4地址
@@ -115,6 +114,10 @@ rndis_dial()
             uci set network.${interface_name}.gateway="${ipv4%.*}.1"
             uci commit network
             service network reload
+
+            #启动网络接口
+	        ifup "wwan_5g_${modem_no}"
+            ifup "wwan6_5g_${modem_no}"
         fi
     else
         #拨号
@@ -170,7 +173,7 @@ modem_network_task()
             break
         fi
         #单个模组
-        enable=$(uci -q get modem.$config_id.enable)
+        enable=$(uci -q get modem.${config_id}.enable)
         if [ "$enable" != "1" ]; then
             break
         fi
@@ -199,7 +202,7 @@ modem_network_task()
             case "$mode" in
                 "gobinet") gobinet_dial "${at_port}" "${manufacturer}" "${define_connect}" ;;
                 "ecm") ecm_dial "${at_port}" "${manufacturer}" "${define_connect}" ;;
-                "rndis") rndis_dial "${at_port}" "${manufacturer}" "${platform}" "${define_connect}" "${interface_name}" ;;
+                "rndis") rndis_dial "${at_port}" "${manufacturer}" "${platform}" "${define_connect}" "${modem_no}" ;;
                 "modemmanager") modemmanager_dial "${interface_name}" "${define_connect}" ;;
                 *) ecm_dial "${at_port}" "${manufacturer}" "${define_connect}" ;;
             esac

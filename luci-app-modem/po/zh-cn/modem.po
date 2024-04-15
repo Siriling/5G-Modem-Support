@@ -88,6 +88,9 @@ msgstr "配置"
 msgid "Item"
 msgstr "项目"
 
+msgid "Voltage"
+msgstr "电压"
+
 msgid "Status"
 msgstr "状态"
 
@@ -99,6 +102,12 @@ msgstr "正常"
 
 msgid "Low"
 msgstr "偏低"
+
+msgid "Somewhat High"
+msgstr "偏高"
+
+msgid "Excessively High"
+msgstr "过高"
 
 msgid "AT Command"
 msgstr "AT命令"
@@ -176,6 +185,9 @@ msgid "Mobile Network"
 msgstr "移动网络"
 
 msgid "UNKNOWN"
+msgstr "未知"
+
+msgid "Unknown"
 msgstr "未知"
 
 msgid "unknown"

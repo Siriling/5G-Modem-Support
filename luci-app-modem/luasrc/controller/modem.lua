@@ -29,8 +29,11 @@ function index()
 	entry({"admin", "network", "modem", "get_quick_commands"}, call("getQuickCommands"), nil).leaf = true
 	entry({"admin", "network", "modem", "send_at_command"}, call("sendATCommand"), nil).leaf = true
 	entry({"admin", "network", "modem", "get_modem_debug_info"}, call("getModemDebugInfo"), nil).leaf = true
+	entry({"admin", "network", "modem", "get_mode_info"}, call("getModeInfo"), nil).leaf = true
 	entry({"admin", "network", "modem", "set_mode"}, call("setMode"), nil).leaf = true
+	entry({"admin", "network", "modem", "get_network_prefer_info"}, call("getNetworkPreferInfo"), nil).leaf = true
 	entry({"admin", "network", "modem", "set_network_prefer"}, call("setNetworkPrefer"), nil).leaf = true
+	entry({"admin", "network", "modem", "get_self_test_info"}, call("getSelfTestInfo"), nil).leaf = true
 	entry({"admin", "network", "modem", "quick_commands_config"}, cbi("modem/quick_commands_config")).leaf = true
 
 	--AT命令旧界面
@@ -518,74 +521,59 @@ end
 
 --[[
 @Description 获取拨号模式信息
-@Params
-	at_port AT串口
-	manufacturer 制造商
 ]]
-function getModeInfo(at_port,manufacturer)
+function getModeInfo()
+	local at_port = http.formvalue("port")
 
-	--获取支持的拨号模式
-	local modes
+	--获取制造商
+	local manufacturer
 	uci:foreach("modem", "modem-device", function (modem_device)
 		--设置模组AT串口
 		if at_port == modem_device["at_port"] then
-			modes=modem_device["modes"]
+			--获取制造商
+			manufacturer=modem_device["manufacturer"]
 			return true --跳出循环
 		end
 	end)
 
-	--获取模组拨号模式
-	local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_mode "..at_port)
-	local opd = odpall:read("*a")
-	odpall:close()
-	local mode=string.gsub(opd, "\n", "")
-	
-	-- 设置值
+	--获取值
 	local mode_info={}
-	mode_info["mode"]=mode
-	mode_info["modes"]=modes
+	if manufacturer~="unknown" then
 
-	return mode_info
+		--获取支持的拨号模式
+		local modes
+		uci:foreach("modem", "modem-device", function (modem_device)
+			--设置模组AT串口
+			if at_port == modem_device["at_port"] then
+				modes=modem_device["modes"]
+				return true --跳出循环
+			end
+		end)
+
+		--获取模组拨号模式
+		local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_mode "..at_port)
+		local opd = odpall:read("*a")
+		odpall:close()
+		local mode=string.gsub(opd, "\n", "")
+
+		--设置模式信息
+		mode_info["mode"]=mode
+		mode_info["modes"]=modes
+	end
+
+	--设置值
+	local modem_debug_info={}
+	modem_debug_info["mode_info"]=mode_info
+
+	-- 写入Web界面
+	luci.http.prepare_content("application/json")
+	luci.http.write_json(modem_debug_info)
 end
 
 --[[
 @Description 获取网络偏好信息
-@Params
-	at_port AT串口
-	manufacturer 制造商
 ]]
-function getNetworkPreferInfo(at_port,manufacturer)
-
-	--获取模组网络偏好
-	local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_network_prefer "..at_port)
-	local opd = odpall:read("*a")
-	odpall:close()
-	local network_prefer_info=json.parse(opd)
-	
-	return network_prefer_info
-end
-
---[[
-@Description 获取自检信息
-@Params
-	at_port AT串口
-	manufacturer 制造商
-]]
-function getSelfTestInfo(at_port,manufacturer)
-
-	--获取模组自检信息
-	local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_self_test_info "..at_port)
-	local opd = odpall:read("*a")
-	odpall:close()
-	local self_test_info=json.parse(opd)
-	
-	return self_test_info
-end
-
---[[
-@Description 获取模组调试信息
-]]
-function getModemDebugInfo()
+function getNetworkPreferInfo()
 	local at_port = http.formvalue("port")
 	
 	--获取制造商
@@ -600,22 +588,100 @@ function getModemDebugInfo()
 	end)
 
 	--获取值
-	local mode_info={}
-	local network_prefer_info={}
-	local self_test_info={}
+	local network_prefer_info
 	if manufacturer~="unknown" then
-		mode_info=getModeInfo(at_port,manufacturer)
-		network_prefer_info=getNetworkPreferInfo(at_port,manufacturer)
-		self_test_info=getSelfTestInfo(at_port,manufacturer)
+		--获取模组网络偏好
+		local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_network_prefer "..at_port)
+		local opd = odpall:read("*a")
+		odpall:close()
+		network_prefer_info=json.parse(opd)
 	end
 
 	--设置值
 	local modem_debug_info={}
-	modem_debug_info["mode_info"]=mode_info
 	modem_debug_info["network_prefer_info"]=network_prefer_info
-	modem_debug_info["self_test_info"]=self_test_info
 
 	-- 写入Web界面
 	luci.http.prepare_content("application/json")
 	luci.http.write_json(modem_debug_info)
 end
+
+--[[
+@Description 获取自检信息
+]]
+function getSelfTestInfo()
+	local at_port = http.formvalue("port")
+	
+	--获取制造商
+	local manufacturer
+	uci:foreach("modem", "modem-device", function (modem_device)
+		--设置模组AT串口
+		if at_port == modem_device["at_port"] then
+			--获取制造商
+			manufacturer=modem_device["manufacturer"]
+			return true --跳出循环
+		end
+	end)
+
+	--获取值
+	local self_test_info={}
+	if manufacturer~="unknown" then
+		--获取模组电压
+		local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_voltage "..at_port)
+		local opd = odpall:read("*a")
+		odpall:close()
+		self_test_info["voltage"]=json.parse(opd)
+
+		--获取模组温度
+		local odpall = io.popen("source "..script_path..manufacturer..".sh && "..manufacturer.."_get_temperature "..at_port)
+		local opd = odpall:read("*a")
+		odpall:close()
+		self_test_info["temperature"]=json.parse(opd)
+	end
+
+	--设置值
+	local modem_debug_info={}
+	modem_debug_info["self_test_info"]=self_test_info
+	
+	-- 写入Web界面
+	luci.http.prepare_content("application/json")
+	luci.http.write_json(modem_debug_info)
+end
+
+--[[
+@Description 获取模组调试信息
+]]
+-- function getModemDebugInfo()
+-- 	local at_port = http.formvalue("port")
+	
+-- 	--获取制造商
+-- 	local manufacturer
+-- 	uci:foreach("modem", "modem-device", function (modem_device)
+-- 		--设置模组AT串口
+-- 		if at_port == modem_device["at_port"] then
+-- 			--获取制造商
+-- 			manufacturer=modem_device["manufacturer"]
+-- 			return true --跳出循环
+-- 		end
+-- 	end)
+
+-- 	--获取值
+-- 	local mode_info={}
+-- 	local network_prefer_info={}
+-- 	local self_test_info={}
+-- 	if manufacturer~="unknown" then
+-- 		mode_info=getModeInfo(at_port,manufacturer)
+-- 		network_prefer_info=getNetworkPreferInfo(at_port,manufacturer)
+-- 		self_test_info=getSelfTestInfo(at_port,manufacturer)
+-- 	end
+
+-- 	--设置值
+-- 	local modem_debug_info={}
+-- 	modem_debug_info["mode_info"]=mode_info
+-- 	modem_debug_info["network_prefer_info"]=network_prefer_info
+-- 	modem_debug_info["self_test_info"]=self_test_info
+
+-- 	-- 写入Web界面
+-- 	luci.http.prepare_content("application/json")
+-- 	luci.http.write_json(modem_debug_info)
+-- end

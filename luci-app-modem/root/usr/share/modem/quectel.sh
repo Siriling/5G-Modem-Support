@@ -203,9 +203,9 @@ quectel_set_network_prefer()
     sh ${SCRIPT_DIR}/modem_at.sh "${at_port}" "${at_command}"
 }
 
-#获取自检信息
+#获取电压
 # $1:AT串口
-quectel_get_self_test_info()
+quectel_get_voltage()
 {
     local at_port="$1"
     
@@ -213,6 +213,39 @@ quectel_get_self_test_info()
     at_command="AT+CBC"
 	local voltage=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+CBC:" | awk -F',' '{print $3}' | sed 's/\r//g')
     echo "${voltage}"
+}
+
+#获取温度
+# $1:AT串口
+quectel_get_temperature()
+{
+    local at_port="$1"
+    
+    #Temperature（温度）
+    at_command="AT+QTEMP"
+	response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $4}')
+
+    local temperature
+	if [ -n "$response" ]; then
+		temperature="$response$(printf "\xc2\xb0")C"
+	fi
+
+    # response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+QTEMP:")
+    # QTEMP=$(echo $response | grep -o -i "+QTEMP: [0-9]\{1,3\}")
+    # if [ -z "$QTEMP" ]; then
+    #     QTEMP=$(echo $response | grep -o -i "+QTEMP:[ ]\?\"XO[_-]THERM[_-][^,]\+,[\"]\?[0-9]\{1,3\}" | grep -o "[0-9]\{1,3\}")
+    # fi
+    # if [ -z "$QTEMP" ]; then
+    #     QTEMP=$(echo $response | grep -o -i "+QTEMP:[ ]\?\"MDM-CORE-USR.\+[0-9]\{1,3\}\"" | cut -d\" -f4)
+    # fi
+    # if [ -z "$QTEMP" ]; then
+    #     QTEMP=$(echo $response | grep -o -i "+QTEMP:[ ]\?\"MDMSS.\+[0-9]\{1,3\}\"" | cut -d\" -f4)
+    # fi
+    # if [ -n "$QTEMP" ]; then
+    #     CTEMP=$(echo $QTEMP | grep -o -i "[0-9]\{1,3\}")$(printf "\xc2\xb0")"C"
+    # fi
+
+    echo "${temperature}"
 }
 
 #获取连接状态
@@ -278,25 +311,7 @@ quectel_base_info()
     mode=$(quectel_get_mode $at_port | tr 'a-z' 'A-Z')
 
     #Temperature（温度）
-    at_command="AT+QTEMP"
-	response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | sed -n '2p' | awk -F'"' '{print $4}')
-	if [ -n "$response" ]; then
-		temperature="$response$(printf "\xc2\xb0")C"
-	fi
-    # response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+QTEMP:")
-    # QTEMP=$(echo $response | grep -o -i "+QTEMP: [0-9]\{1,3\}")
-    # if [ -z "$QTEMP" ]; then
-    #     QTEMP=$(echo $response | grep -o -i "+QTEMP:[ ]\?\"XO[_-]THERM[_-][^,]\+,[\"]\?[0-9]\{1,3\}" | grep -o "[0-9]\{1,3\}")
-    # fi
-    # if [ -z "$QTEMP" ]; then
-    #     QTEMP=$(echo $response | grep -o -i "+QTEMP:[ ]\?\"MDM-CORE-USR.\+[0-9]\{1,3\}\"" | cut -d\" -f4)
-    # fi
-    # if [ -z "$QTEMP" ]; then
-    #     QTEMP=$(echo $response | grep -o -i "+QTEMP:[ ]\?\"MDMSS.\+[0-9]\{1,3\}\"" | cut -d\" -f4)
-    # fi
-    # if [ -n "$QTEMP" ]; then
-    #     CTEMP=$(echo $QTEMP | grep -o -i "[0-9]\{1,3\}")$(printf "\xc2\xb0")"C"
-    # fi
+    temperature=$(quectel_get_temperature $at_port)
 }
 
 #获取SIM卡状态

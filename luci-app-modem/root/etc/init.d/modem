@@ -609,12 +609,17 @@ dial()
 
 	#获取模块序号
 	get_modem_no "${network}"
-	#获取模组的拨号模式
 	[ -z "${modem_no}" ] && return 0
-	local mode=$(get_mode ${modem_no})
-	[ -z "$mode" ] && {
-		mode="qmi";
-	}
+	
+	#获取模组的拨号模式
+	local mode
+	while true; do
+		mode=$(get_mode ${modem_no})
+		if [ -n "$mode" ]; then
+			break
+		fi
+		sleep 5s
+    done
 
 	#查看移动网络是否已经有配置在运行
 	mkdir -m 0755 -p "${MODEM_RUNDIR}"

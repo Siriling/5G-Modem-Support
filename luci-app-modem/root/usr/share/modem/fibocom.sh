@@ -252,9 +252,9 @@ fibocom_set_network_prefer()
     sh ${SCRIPT_DIR}/modem_at.sh $at_port "$at_command"
 }
 
-#获取自检信息
+#获取电压
 # $1:AT串口
-fibocom_get_self_test_info()
+fibocom_get_voltage()
 {
     local at_port="$1"
     
@@ -262,6 +262,31 @@ fibocom_get_self_test_info()
     at_command="AT+CBC"
 	local voltage=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+CBC:" | awk -F',' '{print $2}' | sed 's/\r//g')
     echo "${voltage}"
+}
+
+#获取温度
+# $1:AT串口
+fibocom_get_temperature()
+{
+    local at_port="$1"
+    
+    #Temperature（温度）
+    at_command="AT+MTSM=1,6"
+	response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+MTSM: " | sed 's/+MTSM: //g' | sed 's/\r//g')
+
+    [ -z "$response" ] && {
+        #联发科平台
+        at_command="AT+GTSENRDTEMP=0"
+        response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+GTSENRDTEMP: " | awk -F',' '{print $2}' | sed 's/\r//g')
+        response="${response:0:2}"
+    }
+
+    local temperature
+    [ -n "$response" ] && {
+        temperature="${response}$(printf "\xc2\xb0")C"
+    }
+
+    echo "${temperature}"
 }
 
 #获取连接状态
@@ -311,19 +336,7 @@ fibocom_base_info()
     mode=$(fibocom_get_mode $at_port | tr 'a-z' 'A-Z')
 
     #Temperature（温度）
-    at_command="AT+MTSM=1,6"
-	response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+MTSM: " | sed 's/+MTSM: //g' | sed 's/\r//g')
-
-    [ -z "$response" ] && {
-        #联发科平台
-        at_command="AT+GTSENRDTEMP=0"
-        response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+GTSENRDTEMP: " | awk -F',' '{print $2}' | sed 's/\r//g')
-        response="${response:0:2}"
-    }
-
-    [ -n "$response" ] && {
-        temperature="$response$(printf "\xc2\xb0")C"
-    }
+    temperature=$(fibocom_get_temperature $at_port)
 }
 
 #获取SIM卡状态
