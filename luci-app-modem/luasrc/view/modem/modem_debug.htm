@@ -15,8 +15,8 @@
 			get_modem_debug_info(debug_params);
 		});
 
-		//获取tab菜单
-		var tab_menu = document.getElementsByClassName('cbi-tabmenu')[0];
+		//获取标签菜单
+		var tab_menu = document.getElementById("tab_menu");
 		set_tab_event(tab_menu);
 
 		//获取快捷选项父元素
@@ -69,7 +69,7 @@
 		});
 	}
 
-	//设置tab菜单事件
+	//设置标签菜单事件
 	function set_tab_event(parent_element)
 	{
 		//获取子元素
@@ -77,35 +77,36 @@
 		//获取需要禁用的元素
 		for (var i = 0; i < childElements.length; i++)
 		{
-			// childElements[i].addEventListener('click', function(event) {
-			//  	var debug_params={first_cache:true};
-			// 	get_modem_debug_info(debug_params);
-			// });
-
-			// 创建一个 MutationObserver 实例
-			var observer = new MutationObserver(function(mutationsList) {
-				for (var mutation of mutationsList) {
-					if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-						//只处理当前变为禁用的tab
-						if (mutation.target.className=='cbi-tab') {
-							//获取模组调试信息
-							var debug_params={first_cache:true};
-							get_modem_debug_info(debug_params);
-							//只处理一次
-							break;
-						}
-					}
-				}
+			childElements[i].addEventListener('click', function(event) {
+				tab_event(this);
+				var debug_params={first_cache:true};
+				get_modem_debug_info(debug_params);
 			});
 
-			// 配置观察器选项
-			var observerOptions = {
-				attributes: true, // 监听属性值变化
-				attributeFilter: ['class'], // 要监听的属性名称
-			};
+			// // 创建一个 MutationObserver 实例
+			// var observer = new MutationObserver(function(mutationsList) {
+			// 	for (var mutation of mutationsList) {
+			// 		if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+			// 			//只处理当前变为禁用的tab
+			// 			if (mutation.target.className=='cbi-tab') {
+			// 				//获取模组调试信息
+			// 				var debug_params={first_cache:true};
+			// 				get_modem_debug_info(debug_params);
+			// 				//只处理一次
+			// 				break;
+			// 			}
+			// 		}
+			// 	}
+			// });
 
-			// 开始观察目标元素
-			observer.observe(childElements[i], observerOptions);
+			// // 配置观察器选项
+			// var observerOptions = {
+			// 	attributes: true, // 监听属性值变化
+			// 	attributeFilter: ['class'], // 要监听的属性名称
+			// };
+
+			// // 开始观察目标元素
+			// observer.observe(childElements[i], observerOptions);
 		}
 	}
 
@@ -123,7 +124,8 @@
 			function(x, data)
 			{
 				responseElement=document.getElementById("response");
-				if ("response" in data) {
+				if ("response" in data)
+				{
 					//显示当前时间
 					responseElement.value+=data["time"]+" ";
 					//显示返回值
@@ -233,7 +235,26 @@
 		return disenable_element;
 	}
 
-	// 设置tab显示
+	//获取需要禁用的元素
+	function get_enable_element(parent_element)
+	{
+		var enable_element;
+		//获取子元素
+		var childElements = parent_element.children;
+		//获取已启用的元素
+		for (var i = 0; i < childElements.length; i++)
+		{
+			// 检查当前子元素的class属性是否为cbi-tab
+			if (childElements[i].classList.contains('cbi-tab'))
+			{
+				enable_element=childElements[i];
+				break;
+			}
+		}
+		return enable_element;
+	}
+
+	// 设置标签显示
 	function set_tab_view(disenable_element,enable_element)
 	{
 		//获取tab内容父元素
@@ -246,6 +267,7 @@
 		var data_tab_disenable = disenable_element.getAttribute('data-tab');
 		var tab_context_disenable_element = tab_context.querySelector('div[data-tab="'+data_tab_disenable+'"]');
 		tab_context_disenable_element.setAttribute('data-tab-active','false');
+		tab_context_disenable_element.style.display="none";
 
 		//启用tab
 		enable_element.classList.remove('cbi-tab-disabled');
@@ -254,13 +276,15 @@
 		var data_tab_enable = enable_element.getAttribute('data-tab');
 		var tab_context_enable_element = tab_context.querySelector('div[data-tab="'+data_tab_enable+'"]');
 		tab_context_enable_element.setAttribute('data-tab-active','true');
+		tab_context_enable_element.style.display="block";
 	}
 
-	// tab事件处理（更新选中的tab及tab内容）
+	// 标签事件（更新选中的标签及标签内容）
 	function tab_event(tab_element)
 	{
 		//获取需要禁用的tab元素
-		var tab_menu = document.getElementsByClassName('cbi-tabmenu')[0];
+		// var tab_menu = document.getElementsByClassName("cbi-tabmenu")[0];
+		var tab_menu = document.getElementById("tab_menu");
 		var disenable_element=get_tab_enable_element(tab_menu);
 		if (tab_element != disenable_element) {
 			set_tab_view(disenable_element,tab_element);
@@ -277,20 +301,9 @@
 		//隐藏模组选择界面
 		document.getElementById("cbi-modem").style.display="none";
 		//隐藏tab菜单界面
-		document.getElementsByClassName("cbi-tabmenu")[0].style.display="none";
+		document.getElementById("tab_menu").style.display="none";
 		//隐藏tab内容界面
 		document.getElementById("tab_context").style.display="none";
-	}
-
-	// 有模组界面
-	function modems_view()
-	{
-		//显示模组选择界面
-		document.getElementById("cbi-modem").style.display="block";
-		//显示AT命令标题
-		document.getElementById("at_command_title").style.display="block";
-		//隐藏提示信息
-		// document.getElementById("cbi-info").style.display="none";
 	}
 
 	// 未适配模组界面
@@ -300,26 +313,30 @@
 		document.getElementById("info_message").innerHTML="<strong><%:Not adapted to this modem%></strong>";
 		//显示提示信息
 		document.getElementById("cbi-info").style.display="block";
-		//显示tab内容界面
+		//显示模组选择界面
+		document.getElementById("cbi-modem").style.display="block";
+		//显示标签内容界面
 		document.getElementById("tab_context").style.display="block";
 		//显示AT命令标题
 		document.getElementById("at_command_title").style.display="block";
-		//隐藏tab菜单界面
-		document.getElementsByClassName("cbi-tabmenu")[0].style.display="none";
-		//在tab菜单选中AT命令
+		//隐藏标签菜单界面
+		document.getElementById("tab_menu").style.display="none";
+		//在标签菜单选中AT命令
 		var data_tab="at_command_tab"
 		var at_command_tab_element = document.querySelector('li[data-tab="'+data_tab+'"]');
 		tab_event(at_command_tab_element);
-		//隐藏tab内容界面
-		// document.getElementById("tab_context").style.display="none";
 	}
 
 	// 全功能界面
 	function all_function_view()
 	{
-		//显示tab菜单界面
-		document.getElementsByClassName("cbi-tabmenu")[0].style.display="block";
-		//显示tab内容界面
+		//更新提示信息
+		document.getElementById("info_message").innerHTML='<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle"/><%:Loading modem%>...';
+		//显示模组选择界面
+		document.getElementById("cbi-modem").style.display="block";
+		//显示标签菜单界面
+		document.getElementById("tab_menu").style.display="block";
+		//显示标签内容界面
 		document.getElementById("tab_context").style.display="block";
 		//隐藏AT命令标题
 		document.getElementById("at_command_title").style.display="none";
@@ -390,9 +407,6 @@
 				var command_select = document.getElementById('command_select');
 				//更新选项
 				update_option(command_select,data["quick_commands"],true);
-
-				//显示有模组界面
-				modems_view();
 			}
 		);
 	}
@@ -462,6 +476,11 @@
 	{
 		//获取当前拨号模式
 		var current_mode=mode_info["mode"];
+		if (current_mode=="unknown")
+		{
+			return
+		}
+
 		//获取支持的拨号模式
 		var modes=mode_info["modes"];
 
@@ -489,7 +508,10 @@
 			document.getElementById('mode_option').innerHTML=mode_option_view;
 
 			//设置拨号模式选项
-			document.getElementById('mode_option_'+current_mode).checked=true;
+			element=document.getElementById('mode_option_'+current_mode).checked=true;
+
+			//设置第一次获取数据标志
+			first_cache=false;
 		}
 	}
 
@@ -588,6 +610,9 @@
 				//启用偏好复选框
 				disabled_prefer_custom_config(false);
 			}
+
+			//设置第一次获取数据标志
+			first_cache=false;
 		}
 	}
 
@@ -602,7 +627,7 @@
 		//设置当前电压
 		document.getElementById('current_voltage').innerHTML=voltage/1000+" V";
 		//设置当前温度
-		document.getElementById('current_temperature').innerHTML=temperature+" °C";
+		document.getElementById('current_temperature').innerHTML=temperature*1+" °C";
 		
 		//设置电压状态
 		var state = '';
@@ -719,7 +744,7 @@
 		var at_port = document.getElementById("modem_select").value;
 
 		//获取当前启用的tab元素
-		var tab_menu = document.getElementsByClassName('cbi-tabmenu')[0];
+		var tab_menu = document.getElementById("tab_menu");
 		var tab_enable_element=get_tab_enable_element(tab_menu);
 		
 		//获取当前选中的tab元素
@@ -733,19 +758,11 @@
 					var mode_info=data["mode_info"];
 					if (Object.keys(mode_info).length==0)
 					{
-						//显示未适配模组界面
-						not_adapted_modems_view();
 						return false
 					}
 
 					//设置模式信息
 					set_mode_info(mode_info,debug_params.first_cache);
-
-					//设置第一次获取数据标志
-					debug_params.first_cache=false;
-
-					//显示全功能界面
-					all_function_view();
 				}
 			);
 		}
@@ -757,19 +774,11 @@
 					var network_prefer_info=data["network_prefer_info"];
 					if (Object.keys(network_prefer_info).length==0)
 					{
-						//显示未适配模组界面
-						not_adapted_modems_view();
 						return false
 					}
 
 					//设置网络偏好信息
 					set_network_prefer_info(network_prefer_info,debug_params.first_cache);
-
-					//设置第一次获取数据标志
-					debug_params.first_cache=false;
-
-					//显示全功能界面
-					all_function_view();
 				}
 			);
 		}
@@ -781,53 +790,14 @@
 					var self_test_info=data["self_test_info"];
 					if (Object.keys(self_test_info).length==0)
 					{
-						//显示未适配模组界面
-						not_adapted_modems_view();
 						return false
 					}
 
 					//设置模组自检信息
 					set_modem_self_test_info(self_test_info);
-
-					//设置第一次获取数据标志
-					// debug_params.first_cache=false;
-
-					//显示全功能界面
-					all_function_view();
 				}
 			);
 		}
-
-		//获取调试信息
-		// XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "get_modem_debug_info")%>', {"port":at_port},
-		// 	function(x, data)
-		// 	{
-		// 		var mode_info=data["mode_info"];
-		// 		var network_prefer_info=data["network_prefer_info"];
-		// 		var self_test_info=data["self_test_info"];
-		// 		if (Object.keys(mode_info).length==0||Object.keys(network_prefer_info).length==0) {
-		// 			//显示未适配模组界面
-		// 			not_adapted_modems_view();
-		// 			return false
-		// 		}
-
-		// 		//设置模式信息
-		// 		set_mode_info(mode_info,debug_params.first_cache);
-
-		// 		//设置网络偏好信息
-		// 		set_network_prefer_info(network_prefer_info,debug_params.first_cache);
-
-		// 		//设置模组自检信息
-		// 		set_modem_self_test_info(self_test_info);
-
-		// 		//设置第一次获取数据标志
-		// 		debug_params.first_cache=false;
-
-		// 		//显示全功能界面
-		// 		all_function_view();
-		// 	}
-		// );
-
 	}
 
 	// 定时触发更新AT串口
@@ -836,7 +806,7 @@
 		{
 			//缓存当前选择的模组
 			var modem_select_cache="";
-			var debug_params={first_cache:true};
+			var debug_params={first_cache:true,view:0};
 			return function(x, data)
 			{
 				var at_ports=data["at_ports"];
@@ -848,8 +818,7 @@
 				//获取快捷命令
 				if (Object.keys(at_ports).length==0)
 				{
-					//显示无模组界面
-					no_modems_view();
+					debug_params.view=0;
 				}
 				else
 				{
@@ -857,6 +826,15 @@
 					var modem_select_element = document.getElementById('modem_select');
 					var select_modem_name = modem_select_element.options[modem_select_element.selectedIndex].text;
 					
+					if (select_modem_name.includes("ttyUSB")||select_modem_name.includes("at")||select_modem_name.includes("DUN"))
+					{
+						debug_params.view=2;
+					}
+					else
+					{
+						debug_params.view=1;
+					}
+
 					if (select_modem_name != modem_select_cache)
 					{
 						//获取快捷选项
@@ -864,6 +842,7 @@
 						if (quick_option=="auto") {
 							get_quick_commands();
 						}
+						//缓存当前选中的模组
 						modem_select_cache=select_modem_name;
 
 						//设置第一次获取数据标志
@@ -872,6 +851,20 @@
 
 					//获取模组调试信息
 					get_modem_debug_info(debug_params);
+				}
+
+				//设置界面
+				if (debug_params.view==0) {
+					//显示无模组界面
+					no_modems_view();
+				}
+				else if (debug_params.view==1) {
+					//显示全功能界面
+					all_function_view();
+				}
+				else if (debug_params.view==2) {
+					//显示未适配模组界面
+					not_adapted_modems_view();
 				}
 			};
 		})()
@@ -913,7 +906,7 @@
 			display: none;
 		}
 
-		/* 终端 */
+		/* AT命令响应 */
 		textarea {
 			background:#373737;
 			border:none;
@@ -975,16 +968,16 @@
 		</div>
 	</fieldset>
 	
-	<!-- <ul class="cbi-tabmenu" id="tab_menu">
+	<ul class="cbi-tabmenu" id="tab_menu">
 		<li class="cbi-tab" data-tab="mode_tab"><a href="#"><%:Mode%></a></li>
 		<li class="cbi-tab-disabled" data-tab="network_prefer_tab"><a href="#"><%:Network Preferences%></a></li>
 		<li class="cbi-tab-disabled" data-tab="self_test_tab"><a href="#"><%:Self Test%></a></li>
 		<li class="cbi-tab-disabled" data-tab="at_command_tab"><a href="#"><%:AT Command%></a></li>
-	</ul> -->
+	</ul>
 
-	<div id="tab_context">
+	<div class="cbi-section-node cbi-section-node-tabbed" id="tab_context">
 	<!-- <div class="cbi-section cbi-tblsection" data-tab-active="true"> -->
-		<div class="cbi-section" data-tab="mode_tab" data-tab-title="<%:Mode%>" data-tab-active="true">
+		<div class="cbi-section" data-tab="mode_tab" data-tab-title="<%:Mode%>" data-tab-active="true" style="display: block;">
 			<!-- <legend><%:Mode%></legend> -->
 			<!-- <h3><%:Mode%></h3> -->
 			<table class="table cbi-section-table">
@@ -1030,7 +1023,7 @@
 			</table>
 		</div>
 		<!-- <div class="cbi-section cbi-tblsection"> -->
-		<div class="cbi-section" data-tab="network_prefer_tab" data-tab-title="<%:Network Preferences%>" data-tab-active="false">
+		<div class="cbi-section" data-tab="network_prefer_tab" data-tab-title="<%:Network Preferences%>" data-tab-active="false" style="display: none;">
 			<!-- <legend><%:Network Preferences%></legend> -->
 			<!-- <h3><%:Network Preferences%></h3> -->
 			<table class="table cbi-section-table">
@@ -1081,7 +1074,7 @@
 			</table>
 		</div>
 		<!-- <div class="cbi-section fade-in"> -->
-		<div class="cbi-section" data-tab="self_test_tab" data-tab-title="<%:Self Test%>" data-tab-active="false">
+		<div class="cbi-section" data-tab="self_test_tab" data-tab-title="<%:Self Test%>" data-tab-active="false" style="display: none;">
 			<!-- <legend><%:Self Test%></legend> -->
 			<!-- <h3><%:Self Test%></h3> -->
 			<table class="table cbi-section-table">
@@ -1105,7 +1098,7 @@
 			</table>
 		</div>
 		<!-- <div class="cbi-section fade-in"> -->
-		<div class="cbi-section" data-tab="at_command_tab" data-tab-title="<%:AT Command%>" data-tab-active="false">
+		<div class="cbi-section" data-tab="at_command_tab" data-tab-title="<%:AT Command%>" data-tab-active="false" style="display: none;">
 			<!-- <legend><%:AT Command%></legend> -->
 			<h3 id="at_command_title"><%:AT Command%></h3>
 			<table class="table" id="at_command_info">
@@ -1150,8 +1143,8 @@
 							<div id="response_label"><%:Response%></div><br/>
 							<div><textarea readonly="readonly" id="response" rows="20" maxlength="160"></textarea></div>
 							<div class="cbi-page-actions">
-								<input class="btn cbi-button cbi-button-link" type="button" value="<%:Return to old page%>" onclick="location.href='/cgi-bin/luci/admin/network/modem/at_command_old'">
-								<input class="btn cbi-button cbi-button-link" type="button" value="<%:Custom quick commands%>" onclick="location.href='/cgi-bin/luci/admin/network/modem/quick_commands_config'">
+								<input class="btn cbi-button cbi-button-link" type="button" value="<%:Return to old page%>" onclick="location.href='/cgi-bin/luci/admin/network/modem/at_command_old'" alt="<%:Return to old page%>" title="<%:Return to old page%>">
+								<input class="btn cbi-button cbi-button-link" type="button" value="<%:Custom quick commands%>" onclick="location.href='/cgi-bin/luci/admin/network/modem/quick_commands_config'" alt="<%:Custom quick commands%>" title="<%:Custom quick commands%>">
 								<input class="cbi-button cbi-button-reset" type="button" value="<%:Clean%>" onclick="clean_response()" alt="<%:Clean%>" title="<%:Clean%>">
 							</div>
 						</td>

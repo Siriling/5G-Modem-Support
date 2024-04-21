@@ -59,7 +59,7 @@ m_modem_presets()
 	at "${at_port}" "${at_command}"
 
 	#PDP设置
-	at_command="AT+CGDCONT=$define_connect,\"IPV4V6\",\"\""
+	at_command="AT+CGDCONT=${define_connect},\"IPV4V6\",\"\""
 	at "${at_port}" "${at_command}"
 }
 
@@ -700,6 +700,7 @@ m_set_modem_port()
 		local mhi_hwip=$(find ${physical_path} -name mhi_hwip*)
 		if [ -n "$mhi_hwip" ]; then
 			all_port=$(find ${physical_path} -name wwan*)
+			all_port=$(echo "$all_port" | sed '1,2d')
 		else
 			all_port=$(find ${physical_path} -name mhi_*)
 		fi

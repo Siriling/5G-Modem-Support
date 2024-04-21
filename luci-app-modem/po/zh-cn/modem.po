@@ -1,3 +1,6 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
 msgid "Base Setting"
 msgstr "基本设置"
 
@@ -42,6 +45,12 @@ msgstr "在此页面给所有模组添加拨号配置"
 
 msgid "Global Config"
 msgstr "全局配置"
+
+msgid "Dial Log"
+msgstr "拨号日志"
+
+msgid "Download Log"
+msgstr "下载日志"
 
 msgid "connect"
 msgstr "已连接"
@@ -495,3 +504,54 @@ msgstr "中国电信"
 
 msgid "46011"
 msgstr "中国电信"
+
+msgid "Plugin Info"
+msgstr "插件信息"
+
+msgid "View the version information of the plugin"
+msgstr "查看插件的版本信息"
+
+msgid "Plugin Version"
+msgstr "插件版本"
+
+msgid "Dial Tool Info"
+msgstr "拨号工具信息"
+
+msgid "quectel-CM Version"
+msgstr "quectel-CM 版本"
+
+msgid "modemmanager Version"
+msgstr "modemmanager 版本"
+
+msgid "Modem General Driver Info"
+msgstr "模组通用信息"
+
+msgid "Driver Type"
+msgstr "驱动类型"
+
+msgid "Kernel Model"
+msgstr "内核模块"
+
+msgid "USB Network"
+msgstr "USB网络"
+
+msgid "Serial Port"
+msgstr "串口"
+
+msgid "Loaded"
+msgstr "已加载"
+
+msgid "Not loaded"
+msgstr "未加载"
+
+msgid "Modem USB Driver Info"
+msgstr "模组USB驱动信息"
+
+msgid "Modem PCIE Driver Info"
+msgstr "模组PCIE驱动信息"
+
+msgid "General"
+msgstr "通用"
+
+msgid "Private"
+msgstr "私有"

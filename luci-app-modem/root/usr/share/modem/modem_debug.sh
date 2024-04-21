@@ -72,5 +72,5 @@ dial_log()
 
 	#打印日志
     local update_time=$(date +"%Y-%m-%d %H:%M:%S")
-    echo "${update_time} Send AT command ${at_command} to modem" >> "${path}"
+    echo "[${update_time}] Send AT command ${at_command} to modem" >> "${path}"
 }

@@ -20,6 +20,59 @@ fibocom_presets()
 	sh "${SCRIPT_DIR}/modem_at.sh" "$at_port" "$at_command"
 }
 
+#获取DNS
+# $1:AT串口
+# $2:连接定义
+fibocom_get_dns()
+{
+    local at_port="$1"
+    local define_connect="$2"
+
+    [ -z "$define_connect" ] && {
+        define_connect="1"
+    }
+
+    local public_dns1_ipv4="223.5.5.5"
+    local public_dns2_ipv4="119.29.29.29"
+    local public_dns1_ipv6="2400:3200::1" #下一代互联网北京研究中心：240C::6666，阿里：2400:3200::1，腾讯：2402:4e00::
+    local public_dns2_ipv6="2402:4e00::"
+
+    #获取DNS地址
+    at_command="AT+GTDNS=${define_connect}"
+    local response=$(at ${at_port} ${at_command} | grep "+GTDNS: ")
+
+    local ipv4_dns1=$(echo "${response}" | awk -F'"' '{print $2}' | awk -F',' '{print $1}')
+    [ -z "$ipv4_dns1" ] && {
+        ipv4_dns1="${public_dns1_ipv4}"
+    }
+
+    local ipv4_dns2=$(echo "${response}" | awk -F'"' '{print $4}' | awk -F',' '{print $1}')
+    [ -z "$ipv4_dns2" ] && {
+        ipv4_dns2="${public_dns2_ipv4}"
+    }
+
+    local ipv6_dns1=$(echo "${response}" | awk -F'"' '{print $2}' | awk -F',' '{print $2}')
+    [ -z "$ipv6_dns1" ] && {
+        ipv6_dns1="${public_dns1_ipv6}"
+    }
+
+    local ipv6_dns2=$(echo "${response}" | awk -F'"' '{print $4}' | awk -F',' '{print $2}')
+    [ -z "$ipv6_dns2" ] && {
+        ipv6_dns2="${public_dns2_ipv6}"
+    }
+
+    dns="{
+        \"dns\":{
+            \"ipv4_dns1\":\"$ipv4_dns1\",
+            \"ipv4_dns2\":\"$ipv4_dns2\",
+            \"ipv6_dns1\":\"$ipv6_dns1\",
+            \"ipv6_dns2\":\"$ipv6_dns2\"
+	    }
+    }"
+
+    echo "$dns"
+}
+
 #获取拨号模式
 # $1:AT串口
 # $2:平台
@@ -29,8 +82,13 @@ fibocom_get_mode()
     local platform="$2"
 
     at_command="AT+GTUSBMODE?"
-    local mode_num=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+GTUSBMODE:" | sed 's/+GTUSBMODE: //g' | sed 's/\r//g')
+    local mode_num=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+GTUSBMODE:" | sed 's/+GTUSBMODE: //g' | sed 's/\r//g')
     
+    if [ -z "$mode_num" ]; then
+        echo "unknown"
+        return
+    fi
+
     #获取芯片平台
 	if [ -z "$platform" ]; then
 		local modem_number=$(uci -q get modem.@global[0].modem_number)
@@ -88,7 +146,7 @@ fibocom_get_mode()
             mode="$mode_num"
         ;;
     esac
-    echo "$mode"
+    echo "${mode}"
 }
 
 #设置拨号模式
@@ -97,6 +155,7 @@ fibocom_get_mode()
 fibocom_set_mode()
 {
     local at_port="$1"
+    local mode_config="$2"
 
     #获取芯片平台
     local platform
@@ -113,7 +172,7 @@ fibocom_set_mode()
     local mode_num
     case "$platform" in
         "qualcomm")
-            case "$2" in
+            case "$mode_config" in
                 "qmi") mode_num="32" ;;
                 # "gobinet")  mode_num="32" ;;
                 "ecm") mode_num="18" ;;
@@ -124,7 +183,7 @@ fibocom_set_mode()
             esac
         ;;
         "unisoc")
-            case "$2" in
+            case "$mode_config" in
                 "ecm") mode_num="34" ;;
                 "mbim") mode_num="40" ;;
                 "rndis") mode_num="38" ;;
@@ -133,7 +192,7 @@ fibocom_set_mode()
             esac
         ;;
         "mediatek")
-            case "$2" in
+            case "$mode_config" in
                 # "mbim") mode_num="40" ;;
                 # "rndis") mode_num="40" ;;
                 "rndis") mode_num="41" ;;
@@ -146,8 +205,8 @@ fibocom_set_mode()
     esac
 
     #设置模组
-    at_command="AT+GTUSBMODE=$mode_num"
-    sh ${SCRIPT_DIR}/modem_at.sh $at_port "$at_command"
+    at_command="AT+GTUSBMODE=${mode_num}"
+    sh ${SCRIPT_DIR}/modem_at.sh ${at_port} "${at_command}"
 }
 
 #获取网络偏好
@@ -345,7 +404,7 @@ fibocom_get_sim_status()
 {
     local sim_status
     case $1 in
-        "") sim_status="unknown" ;;
+        "") sim_status="miss" ;;
         *"ERROR"*) sim_status="miss" ;;
         *"READY"*) sim_status="ready" ;;
         *"SIM PIN"*) sim_status="MT is waiting SIM PIN to be given" ;;
@@ -413,7 +472,7 @@ fibocom_sim_info()
 	
     #IMSI（国际移动用户识别码）
     at_command="AT+CIMI?"
-    imsi=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CIMI: " | awk -F' ' '{print $2}' | sed 's/"/g' | sed 's/\r//g')
+    imsi=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CIMI: " | awk -F' ' '{print $2}' | sed 's/"//g' | sed 's/\r//g')
 	[ -z "$sim_number" ] && {
         imsi=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CIMI: " | awk -F'"' '{print $2}')
     }

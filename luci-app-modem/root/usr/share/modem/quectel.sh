@@ -11,6 +11,59 @@ quectel_presets()
 	# sh "${SCRIPT_DIR}/modem_at.sh" "$at_port" "$at_command"
 }
 
+#获取DNS
+# $1:AT串口
+# $2:连接定义
+quectel_get_dns()
+{
+    local at_port="$1"
+    local define_connect="$2"
+
+    [ -z "$define_connect" ] && {
+        define_connect="1"
+    }
+
+    local public_dns1_ipv4="223.5.5.5"
+    local public_dns2_ipv4="119.29.29.29"
+    local public_dns1_ipv6="2400:3200::1" #下一代互联网北京研究中心：240C::6666，阿里：2400:3200::1，腾讯：2402:4e00::
+    local public_dns2_ipv6="2402:4e00::"
+
+    #获取DNS地址
+    at_command="AT+GTDNS=${define_connect}"
+    local response=$(at ${at_port} ${at_command} | grep "+GTDNS: ")
+
+    local ipv4_dns1=$(echo "${response}" | awk -F'"' '{print $2}' | awk -F',' '{print $1}')
+    [ -z "$ipv4_dns1" ] && {
+        ipv4_dns1="${public_dns1_ipv4}"
+    }
+
+    local ipv4_dns2=$(echo "${response}" | awk -F'"' '{print $4}' | awk -F',' '{print $1}')
+    [ -z "$ipv4_dns2" ] && {
+        ipv4_dns2="${public_dns2_ipv4}"
+    }
+
+    local ipv6_dns1=$(echo "${response}" | awk -F'"' '{print $2}' | awk -F',' '{print $2}')
+    [ -z "$ipv6_dns1" ] && {
+        ipv6_dns1="${public_dns1_ipv6}"
+    }
+
+    local ipv6_dns2=$(echo "${response}" | awk -F'"' '{print $4}' | awk -F',' '{print $2}')
+    [ -z "$ipv6_dns2" ] && {
+        ipv6_dns2="${public_dns2_ipv6}"
+    }
+
+    dns="{
+        \"dns\":{
+            \"ipv4_dns1\":\"$ipv4_dns1\",
+            \"ipv4_dns2\":\"$ipv4_dns2\",
+            \"ipv6_dns1\":\"$ipv6_dns1\",
+            \"ipv6_dns2\":\"$ipv6_dns2\"
+	    }
+    }"
+
+    echo "$dns"
+}
+
 #获取拨号模式
 # $1:AT串口
 # $2:平台
@@ -20,7 +73,12 @@ quectel_get_mode()
     local platform="$2"
 
     at_command='AT+QCFG="usbnet"'
-    local mode_num=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+QCFG:" | sed 's/+QCFG: "usbnet",//g' | sed 's/\r//g')
+    local mode_num=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+QCFG:" | sed 's/+QCFG: "usbnet",//g' | sed 's/\r//g')
+    
+    if [ -z "$mode_num" ]; then
+        echo "unknown"
+        return
+    fi
 
     #获取芯片平台
 	if [ -z "$platform" ]; then

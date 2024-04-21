@@ -93,6 +93,9 @@ o.cfgvalue = function(t, n)
     return apn
 end
 
+-- 添加模块拨号日志
+m:append(Template("modem/modem_dial_log"))
+
 -- m:append(Template("modem/list_status"))
 
 return m
