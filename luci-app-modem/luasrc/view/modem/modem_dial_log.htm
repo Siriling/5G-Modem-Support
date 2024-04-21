@@ -137,7 +137,8 @@
 		function(x, data)
 		{
 			var dial_log_info=data["dial_log_info"];
-			var modem_name=data["modem_name"];
+			var modem_name_info=data["modem_name_info"];
+			var translation=data["translation"];
 
 			var tab_menu=document.getElementById("tab_menu");
 			var dial_log_div=document.getElementById('dial_log_view');
@@ -195,7 +196,8 @@
 						}
 
 						// 设置拨号日志标签
-						tab_view+='<li class="'+class_name+'" data-tab="'+key+'_tab"><a>'+modem_name[key].toUpperCase()+' ('+key.replace("modem","")+')</a></li>';
+						var modem_name=translation[modem_name_info[key]].toUpperCase();
+						tab_view+='<li class="'+class_name+'" data-tab="'+key+'_tab"><a>'+modem_name+' ('+key.replace("modem","")+')</a></li>';
 						// 设置拨号日志
 						dial_log_view += '<div class="cbi-section" data-tab="'+key+'_tab" data-tab-title="'+key+'" data-tab-active="'+active+'" style="display: '+display+';">';
 						dial_log_view += '<div><textarea readonly="readonly" id="'+key+'_log" rows="20" maxlength="160" style="'+log_style+'">'+dial_log[key]+'</textarea></div>';

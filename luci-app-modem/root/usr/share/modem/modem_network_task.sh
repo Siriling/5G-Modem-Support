@@ -59,7 +59,7 @@ reset_network_interface()
         service network reload
 
         #输出日志
-        echo "[$(date +"%Y-%m-%d %H:%M:%S")] Reset network interface ${interface_name} successful" >> "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
+        echo "[$(date +"%Y-%m-%d %H:%M:%S")] Reset network interface successful" >> "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
     fi
 }
 
@@ -153,6 +153,8 @@ rndis_dial()
         dial_log "${at_command}" "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
         #激活并拨号
         at "${at_port}" "${at_command}"
+
+        sleep 3s
     else
         #拨号
         ecm_dial "${at_port}" "${manufacturer}"
@@ -234,7 +236,18 @@ modem_network_task()
             echo "[$(date +"%Y-%m-%d %H:%M:%S")] Unable to get IPv4 address" >> "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
             echo "[$(date +"%Y-%m-%d %H:%M:%S")] Redefine connect to ${define_connect}" >> "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
             service modem reload
-            # sleep 1s
+
+            #输出日志
+            echo "[$(date +"%Y-%m-%d %H:%M:%S")] Modem dial" >> "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
+            #拨号（针对获取IPv4返回为空的模组）
+            case "$mode" in
+                "gobinet") gobinet_dial "${at_port}" "${manufacturer}" "${define_connect}" ;;
+                "ecm") ecm_dial "${at_port}" "${manufacturer}" "${define_connect}" ;;
+                "rndis") rndis_dial "${at_port}" "${manufacturer}" "${platform}" "${define_connect}" "${modem_no}" ;;
+                "modemmanager") modemmanager_dial "${interface_name}" "${define_connect}" ;;
+                *) ecm_dial "${at_port}" "${manufacturer}" "${define_connect}" ;;
+            esac
+
         elif [[ "$ipv4" = *"0.0.0.0"* ]]; then
 
             #输出日志

@@ -375,33 +375,37 @@ function getDialLogInfo()
 
 	local logs={}
 	local names={}
+	local translation={}
 	for key in pairs(log_paths) do
 
 		local log_path=log_paths[key]
 
 		if log_path ~= "" then
-			--获取模组
+			-- 获取模组
 			local tmp=string.gsub(log_path, run_path, "")
 			local modem=string.gsub(tmp, "_dial.cache", "")
 			local modem_name=uci:get("modem", modem, "name")
 
-			--获取日志内容
+			-- 获取日志内容
 			local command="cat "..log_path
 			log=shell(command)
 
-			--排序插入
+			-- 排序插入
 			modem_log={}
 			modem_log[modem]=log
 			table.insert(logs, modem_log)
 
+			--设置模组名
 			names[modem]=modem_name
+			-- 设置翻译
+			translation[modem_name]=luci.i18n.translate(modem_name)
 		end
 	end
 
 	-- 设置值
 	local data={}
 	data["dial_log_info"]=logs
-	data["modem_name"]=names
+	data["modem_name_info"]=names
 	data["translation"]=translation
 
 	-- 写入Web界面

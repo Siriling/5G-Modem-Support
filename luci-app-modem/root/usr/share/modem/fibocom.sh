@@ -39,7 +39,7 @@ fibocom_get_dns()
 
     #获取DNS地址
     at_command="AT+GTDNS=${define_connect}"
-    local response=$(at ${at_port} ${at_command} | grep "+GTDNS: ")
+    local response=$(at ${at_port} ${at_command} | grep "+GTDNS: " | grep -E '[0-9]+.[0-9]+.[0-9]+.[0-9]+' | sed -n '1p')
 
     local ipv4_dns1=$(echo "${response}" | awk -F'"' '{print $2}' | awk -F',' '{print $1}')
     [ -z "$ipv4_dns1" ] && {
