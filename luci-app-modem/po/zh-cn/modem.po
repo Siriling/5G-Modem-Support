@@ -1,5 +1,20 @@
+#
+# Siriling <siriling@qq.com>, 2023.
+#
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8"
+msgstr ""
+"Project-Id-Version: luci-app-modem 1.4.1-1\n"
+"POT-Creation-Date: 2024-04-20 12:07+0100\n"
+"PO-Revision-Date: 2024-04-24 18:08+0000\n"
+"Last-Translator: Siriling <siriling@gmail.com>\n"
+"Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
+"openwrt/luciapplicationsmodem/zh_Hans/>\n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 5.5-dev\n"
 
 msgid "Base Setting"
 msgstr "基本设置"
@@ -22,8 +37,8 @@ msgstr "模组调试"
 msgid "Modem Select"
 msgstr "模组选择"
 
-msgid "Check information about adapted modem on this page"
-msgstr "在此页面查看已适配模组的信息"
+msgid "Check the information of the adapted modem"
+msgstr "查看已适配模组的信息"
 
 msgid "Not adapted to this modem"
 msgstr "未适配该模组"
@@ -37,11 +52,11 @@ msgstr "正在加载模组状态"
 msgid "Loading modem"
 msgstr "正在加载模组"
 
-msgid "Dial Config"
-msgstr "拨号配置"
+msgid "Dial Overview"
+msgstr "拨号总览"
 
-msgid "Add dialing configuration to all modules on this page"
-msgstr "在此页面给所有模组添加拨号配置"
+msgid "Check and add modem dialing configurations"
+msgstr "查看和添加模组拨号配置"
 
 msgid "Global Config"
 msgstr "全局配置"
@@ -69,6 +84,9 @@ msgstr "模式"
 
 msgid "Connect Status"
 msgstr "连接状态"
+
+msgid "Dial Config"
+msgstr "拨号配置"
 
 msgid "Config List"
 msgstr "配置列表"
@@ -178,8 +196,8 @@ msgstr "模组信息"
 msgid "No modems found"
 msgstr "没有找到模组"
 
-msgid "Check to enable all configurations"
-msgstr "勾选启用全部配置"
+msgid "Enable dial configurations"
+msgstr "启用拨号配置"
 
 msgid "General Settings"
 msgstr "通用配置"
@@ -505,10 +523,37 @@ msgstr "中国电信"
 msgid "46011"
 msgstr "中国电信"
 
+msgid "Plugin Config"
+msgstr "插件配置"
+
+msgid "Check and modify the plugin configuration"
+msgstr "查看和修改插件配置"
+
+msgid "Modem Scan"
+msgstr "模组扫描"
+
+msgid "Scan"
+msgstr "扫描"
+
+msgid "Scaning modem..."
+msgstr "正在扫描中..."
+
+msgid "The automatic configuration modem is triggered only at startup, otherwise, manual scanning is necessary"
+msgstr "自动配置模组只有在启动的时候才会触发，其他情况需要手动点击扫描"
+
+msgid "Manual Configuration"
+msgstr "手动配置"
+
+msgid "Enable the manual configuration of modem information"
+msgstr "启用手动配置模组信息"
+
+msgid "(After enable, the automatic scanning and configuration function for modem information will be disabled)"
+msgstr "（启用后将禁用自动扫描配置模组信息功能）"
+
 msgid "Plugin Info"
 msgstr "插件信息"
 
-msgid "View the version information of the plugin"
+msgid "Check the version information of the plugin"
 msgstr "查看插件的版本信息"
 
 msgid "Plugin Version"

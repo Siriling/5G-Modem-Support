@@ -207,8 +207,8 @@ modem_network_task()
     echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start network task" >> "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
     while true; do
         #全局
-        local enable=$(uci -q get modem.@global[0].enable)
-        if [ "$enable" != "1" ]; then
+        local enable_dial=$(uci -q get modem.@global[0].enable_dial)
+        if [ "$enable_dial" != "1" ]; then
             #输出日志
             echo "[$(date +"%Y-%m-%d %H:%M:%S")] The dialing configuration has been disabled, this network task quit" >> "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
             break

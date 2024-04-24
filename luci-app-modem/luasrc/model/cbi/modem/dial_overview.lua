@@ -2,26 +2,26 @@ local d = require "luci.dispatcher"
 local uci = luci.model.uci.cursor()
 
 m = Map("modem")
-m.title = translate("Dial Config")
-m.description = translate("Add dialing configuration to all modules on this page")
+m.title = translate("Dial Overview")
+m.description = translate("Check and add modem dialing configurations")
 
 --全局配置
 s = m:section(NamedSection, "global", "global", translate("Global Config"))
 s.anonymous = true
 s.addremove = false
 
-o = s:option(Flag, "enable", translate("Enable"))
+o = s:option(Flag, "enable_dial", translate("Enable"))
 o.rmempty = false
-o.description = translate("Check to enable all configurations")
+o.description = translate("Enable dial configurations")
 
 -- 添加模块状态
 m:append(Template("modem/modem_status"))
 
-s = m:section(TypedSection, "config", translate("Config List"))
+s = m:section(TypedSection, "dial-config", translate("Config List"))
 s.anonymous = true
 s.addremove = true
 s.template = "modem/tblsection"
-s.extedit = d.build_url("admin", "network", "modem", "config", "%s")
+s.extedit = d.build_url("admin", "network", "modem", "dial_config", "%s")
 
 function s.create(uci, t)
     local uuid = string.gsub(luci.sys.exec("echo -n $(cat /proc/sys/kernel/random/uuid)"), "-", "")
@@ -32,7 +32,7 @@ end
 function s.remove(uci, t)
     uci.map.proceed = true
     uci.map:del(t)
-    luci.http.redirect(d.build_url("admin", "network", "modem","index"))
+    luci.http.redirect(d.build_url("admin", "network", "modem","dial_overview"))
 end
 
 o = s:option(Flag, "enable", translate("Enable"))

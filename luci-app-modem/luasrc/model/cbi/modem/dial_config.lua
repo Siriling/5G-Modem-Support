@@ -2,10 +2,10 @@ local dispatcher = require "luci.dispatcher"
 local uci = require "luci.model.uci".cursor()
 local http = require "luci.http"
 
-m = Map("modem", translate("Modem Config"))
-m.redirect = dispatcher.build_url("admin", "network", "modem","index")
+m = Map("modem", translate("Dial Config"))
+m.redirect = dispatcher.build_url("admin", "network", "modem","dial_overview")
 
-s = m:section(NamedSection, arg[1], "config", "")
+s = m:section(NamedSection, arg[1], "dial-config", "")
 s.addremove = false
 s.dynamic = false
 s:tab("general", translate("General Settings"))
@@ -35,18 +35,29 @@ function getMobileNetwork()
 		network:value("",translate("Mobile network not found"))
 	end
 
-	for i=0,modem_number-1 do
+	-- for i=0,modem_number-1 do
+	-- 	--获取模块名
+	-- 	local modem_name = uci:get('modem','modem'..i,'name')
+	-- 	if modem_name == nil then
+	-- 		modem_name = "unknown"
+	-- 	end
+	-- 	--设置网络
+	-- 	modem_network = uci:get('modem','modem'..i,'network')
+	-- 	if modem_network ~= nil then
+	-- 		network:value(modem_network,modem_network.." ("..translate(modem_name:upper())..")")
+	-- 	end
+	-- end
+
+	uci:foreach("modem", "modem-device", function (modem_device)
+
 		--获取模块名
-		local modem_name = uci:get('modem','modem'..i,'name')
-		if modem_name == nil then
-			modem_name = "unknown"
-		end
-		--设置网络
-		modem_network = uci:get('modem','modem'..i,'network')
-		if modem_network ~= nil then
-			network:value(modem_network,modem_network.." ("..translate(modem_name:upper())..")")
-		end
-	end
+		local modem_name=modem_device["name"]
+		--获取网络
+		local modem_network=modem_device["network"]
+
+		--设置网络值
+		network:value(modem_network,modem_network.." ("..translate(modem_name:upper())..")")
+	end)
 end
 
 getMobileNetwork()

@@ -13,7 +13,7 @@ MODEM_RUNDIR="/var/run/modem"
 MODEM_RUN_CONFIG="${MODEM_RUNDIR}/config.cache"
 
 #导入组件工具
-source "${SCRIPT_DIR}/modem_debug.sh"
+source "${SCRIPT_DIR}/modem_scan.sh"
 
 #设置拨号模式
 # $1:拨号模式
@@ -557,7 +557,7 @@ stop_dial()
 	#获取模组的拨号模式
 	[ -z "${modem_no}" ] && return 0
 	local mode=$(get_mode ${modem_no})
-	[ -z "$mode" ] && return
+	[ -z "$mode" ] || [ "$mode" = "unknown" ] && return
 
 	#根据不同的拨号模式停止拨号
 	if [ "$mode" = "qmi" ]; then
@@ -615,9 +615,7 @@ dial()
 	local mode
 	while true; do
 		mode=$(get_mode ${modem_no})
-		if [ -n "$mode" ]; then
-			break
-		fi
+		[ -n "$mode" ] && [ "$mode" != "unknown" ] && break
 		sleep 5s
     done
 
@@ -660,25 +658,97 @@ dial()
 	# sleep 15
 }
 
+#手动设置模组信息
+manual_set_modem_config()
+{
+	local manual	#手动配置
+	local network	#移动网络
+	# local name	#模组名称
+	# local at_port	#AT串口
+
+	config_get manual $1 manual
+	config_get network $1 network
+	# config_get name $1 name
+	# config_get at_port $1 at_port
+
+	[ -z "$manual" ] || [ "$manual" = "0" ] && return
+
+	#获取网络设备路径
+	local network_path="$(readlink -f /sys/class/net/${network})"
+
+    #只处理最上级的网络设备
+    local count=$(echo "${network_path}" | grep -o "/net" | wc -l)
+    [ "$count" -ge "2" ] && return
+
+    #判断路径是否带有usb（排除其他eth网络设备）
+    if [[ "$network" = *"eth"* ]] && [[ "$network_path" != *"usb"* ]]; then
+        return
+    fi
+
+	#获取物理路径
+	local physical_path=$(m_get_device_physical_path ${network_path})
+
+	#获取模组数量
+	local modem_number=$(uci -q get modem.@global[0].modem_number)
+	#模组配置是否存在
+	for i in $(seq 0 $((modem_number-1))); do
+		local modem_network=$(uci -q get modem.modem${i}.network)
+		if [ "$modem_network" = "$network" ]; then
+			# 配置已存在，退出
+			return
+		fi
+	done
+
+	#设置模组硬件配置
+	m_set_modem_hardware_config "${physical_path}"
+
+	#设置模组网络配置
+	m_set_network_config "${network}" "${physical_path}"
+
+	#设置模组串口
+	m_set_modem_port "${physical_path}"
+	
+	#获取模组数量
+	local modem_number=$(uci -q get modem.@global[0].modem_number)
+	#获取模组序号
+	local modem_no
+	for i in $(seq 0 $((modem_number-1))); do
+		local modem_path=$(uci -q get modem.modem${i}.path)
+		if [ "$modem_path" = "$physical_path" ]; then
+			modem_no="${i}"
+			break
+		fi
+	done
+
+	#设置模组配置（由于AT串口已经提前设置，则跳过了模组配置，这里需要手动执行一次）
+	m_set_modem_config "${modem_no}" "${physical_path}"
+	uci commit modem
+}
+
 service_triggers()
 {
 	procd_add_reload_trigger "modem"
 }
 
 start_service() {
-	local enable=$(uci -q get modem.@global[0].enable)
-	if [ "$enable" = "0" ]; then
+	local enable_dial=$(uci -q get modem.@global[0].enable_dial)
+	if [ "$enable_dial" = "0" ]; then
 		stop_service
 	else
+
+		#加载模组配置
 		config_load modem
-		config_foreach dial "config"
+		#手动设置模组信息
+		config_foreach manual_set_modem_config "modem-device"
+		#加载拨号配置
+		config_foreach dial "dial-config"
 	fi
 }
 
 stop_service()
 {
 	#删除记录文件
-	rm -rf /tmp/modem
+	rm -rf ${MODEM_RUN_CONFIG}
 	#停止qmi、mbim拨号
 	killall quectel-CM >/dev/null 2>&1
 	#停止gobinet、ecm、rndis、ncm拨号

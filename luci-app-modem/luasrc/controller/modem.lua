@@ -20,8 +20,8 @@ function index()
 	entry({"admin", "network", "modem", "get_modem_info"}, call("getModemInfo")).leaf = true
 
 	--拨号配置
-	entry({"admin", "network", "modem", "index"},cbi("modem/index"),translate("Dial Config"),20).leaf = true
-	entry({"admin", "network", "modem", "config"}, cbi("modem/config")).leaf = true
+	entry({"admin", "network", "modem", "dial_overview"},cbi("modem/dial_overview"),translate("Dial Overview"),20).leaf = true
+	entry({"admin", "network", "modem", "dial_config"}, cbi("modem/dial_config")).leaf = true
 	entry({"admin", "network", "modem", "get_modems"}, call("getModems"), nil).leaf = true
 	entry({"admin", "network", "modem", "get_dial_log_info"}, call("getDialLogInfo"), nil).leaf = true
 	entry({"admin", "network", "modem", "clean_dial_log"}, call("cleanDialLog"), nil).leaf = true
@@ -39,8 +39,13 @@ function index()
 	entry({"admin", "network", "modem", "send_at_command"}, call("sendATCommand"), nil).leaf = true
 	-- entry({"admin", "network", "modem", "get_modem_debug_info"}, call("getModemDebugInfo"), nil).leaf = true
 
+	--插件设置
+	entry({"admin", "network", "modem", "plugin_config"},cbi("modem/plugin_config"),translate("Plugin Config"),40).leaf = true
+	entry({"admin", "network", "modem", "modem_config"}, cbi("modem/modem_config")).leaf = true
+	entry({"admin", "network", "modem", "modem_scan"}, call("modemScan"), nil).leaf = true
+
 	--插件信息
-	entry({"admin", "network", "modem", "plugin_info"},template("modem/plugin_info"),translate("Plugin Info"),40).leaf = true
+	entry({"admin", "network", "modem", "plugin_info"},template("modem/plugin_info"),translate("Plugin Info"),50).leaf = true
 	entry({"admin", "network", "modem", "get_plugin_info"}, call("getPluginInfo"), nil).leaf = true
 
 	--AT命令旧界面
@@ -452,7 +457,7 @@ end
 ]]
 function getModemRemarks(network)
 	local remarks=""
-	uci:foreach("modem", "config", function (config)
+	uci:foreach("modem", "dial-config", function (config)
 		---配置启用，且备注存在
 		if network == config["network"] and config["enable"] == "1" then
 			if config["remarks"] then
@@ -747,6 +752,19 @@ end
 -- 	luci.http.prepare_content("application/json")
 -- 	luci.http.write_json(modem_debug_info)
 -- end
+
+--[[
+@Description 模组扫描
+]]
+function modemScan()
+
+	local command="source "..script_path.."modem_scan.sh && modem_scan"
+	local result=shell(command)
+
+	-- 写入Web界面
+	luci.http.prepare_content("application/json")
+	luci.http.write_json(result)
+end
 
 --[[
 @Description 设置插件版本信息

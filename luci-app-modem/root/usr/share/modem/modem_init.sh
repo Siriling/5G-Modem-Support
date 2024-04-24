@@ -10,7 +10,6 @@ modem_init()
 {
     m_log "info" "Clearing all modem configurations"
     #清空模组配置
-    local modem_no
     local modem_count=$(uci -q get modem.@global[0].modem_number)
     for i in $(seq 0 $((modem_count-1))); do
         #删除该模组的配置

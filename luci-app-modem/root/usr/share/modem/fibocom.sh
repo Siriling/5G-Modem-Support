@@ -83,7 +83,7 @@ fibocom_get_mode()
 
     at_command="AT+GTUSBMODE?"
     local mode_num=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+GTUSBMODE:" | sed 's/+GTUSBMODE: //g' | sed 's/\r//g')
-    
+
     if [ -z "$mode_num" ]; then
         echo "unknown"
         return

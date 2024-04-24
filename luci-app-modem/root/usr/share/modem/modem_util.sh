@@ -123,7 +123,7 @@ m_get_physical_path_status()
 	[ -f "${MODEM_PHYSICAL_DEVICE_CACHE}" ] || return
 
 	#获取状态（不包含注释并且包含physical_path的行，获取以,分割的第二个字符串）
-	awk -v physical_path="${physical_path}" -F',' '!/^#/ && $0 ~ physical_path { print $3 }' "${MODEM_PHYSICAL_DEVICE_CACHE}"
+	awk -v physical_path="${physical_path}" -F',' '!/^#/ && $0 ~ physical_path { print $2 }' "${MODEM_PHYSICAL_DEVICE_CACHE}"
 }
 
 #设置设备物理路径状态
@@ -243,7 +243,10 @@ m_set_modem_hardware_config()
 
 	#是否是第一次添加（初始化模组）
 	local count=$(grep -o "processed" ${MODEM_PHYSICAL_DEVICE_CACHE} | wc -l)
-	[ "$count" -le "0" ] && {
+	#是否开启手动配置
+	local manual_configuration=$(uci -q get modem.@global[0].manual_configuration)
+	[ "$count" = "0" ] && [ "$manual_configuration" = "0" ] && {
+		#模组配置初始化
 		sh "${SCRIPT_DIR}/modem_init.sh"
 	}
 
@@ -316,6 +319,11 @@ m_set_usb_device()
 		# m_set_modem_hardware_config "${physical_path}"
 
 	elif [ "$action" = "remove" ]; then
+
+		#手动配置
+		local manual_configuration=$(uci -q get modem.@global[0].manual_configuration)
+		[ "${manual_configuration}" = "1" ] && return
+
 		#删除模组配置
 		m_del_modem_config "${physical_path}"
 	fi
@@ -403,8 +411,11 @@ m_set_modem_config()
 	local at_port=$(uci -q get modem.modem${modem_no}.at_port)
 
 	#获取模组名称
-	local at_command="AT+CGMM?"
-    local modem_name=$(at ${at_port} ${at_command} | grep "+CGMM: " | awk -F'"' '{print $2}' | tr 'A-Z' 'a-z')
+	local modem_name=$(uci -q get modem.modem${modem_no}.name)
+	[ -z "$modem_name" ] && {
+		local at_command="AT+CGMM?"
+   		modem_name=$(at ${at_port} ${at_command} | grep "+CGMM: " | awk -F'"' '{print $2}' | tr 'A-Z' 'a-z')
+	}
 
 	#获取模组支持列表
 	local modem_support=$(cat ${SCRIPT_DIR}/modem_support.json)
@@ -442,6 +453,7 @@ m_set_modem_config()
 	uci set modem.modem${modem_no}.manufacturer="${manufacturer}"
 	uci set modem.modem${modem_no}.define_connect="${define_connect}"
 	uci set modem.modem${modem_no}.platform="${platform}"
+	uci -q del modem.modem${modem_no}.modes #删除原来的拨号模式列表
 	for mode in $modes; do
 		uci add_list modem.modem${modem_no}.modes="${mode}"
 	done
@@ -633,10 +645,10 @@ enable_dial()
 	local i=0
 	while true; do
 		#查看该网络设备的配置是否启用
-		local modem_network=$(uci -q get modem.@config[${i}].network)
+		local modem_network=$(uci -q get modem.@dial-config[${i}].network)
 		[ -z "$modem_network" ] && break
 		if [ "$network" = "$modem_network" ]; then
-			local enable=$(uci -q get modem.@config[${i}].enable)
+			local enable=$(uci -q get modem.@dial-config[${i}].enable)
 			if [ "$enable" = "1" ]; then
 				service modem reload
 				break
@@ -655,12 +667,12 @@ disable_dial()
 	local i=0
 	while true; do
 		#查看该网络设备的配置是否启用
-		local modem_network=$(uci -q get modem.@config[${i}].network)
+		local modem_network=$(uci -q get modem.@dial-config[${i}].network)
 		[ -z "$modem_network" ] && break
 		if [ "$network" = "$modem_network" ]; then
-			local enable=$(uci -q get modem.@config[${i}].enable)
+			local enable=$(uci -q get modem.@dial-config[${i}].enable)
 			if [ "$enable" = "1" ]; then
-				uci set modem.@config[${i}].enable=0
+				uci set modem.@dial-config[${i}].enable=0
 				uci commit modem
 				service modem reload
 				break
@@ -743,7 +755,7 @@ m_set_modem_port()
 }
 
 #设置物理设备
-# $1:事件行为（add，remove，bind）
+# $1:事件行为（add，remove，bind，scan）
 # $2:网络设备
 # $3:物理路径
 m_set_physical_device()
@@ -770,6 +782,16 @@ m_set_physical_device()
 	elif [ "$action" = "remove" ]; then
 		#删除模组配置
 		m_del_modem_config "${physical_path}"
+	elif [ "$action" = "scan" ]; then
+		
+		#设置模组硬件配置
+		m_set_modem_hardware_config "${physical_path}"
+
+		#设置模组网络配置
+		m_set_network_config "${network}" "${physical_path}"
+
+		#设置模组串口
+		m_set_modem_port "${physical_path}"
 	fi
 }
 
@@ -796,6 +818,10 @@ m_set_network_device()
 
 	#上报事件
     m_report_event "${action}" "net" "${network}" "${network_path}"
+
+	#手动配置
+	local manual_configuration=$(uci -q get modem.@global[0].manual_configuration)
+	[ "${manual_configuration}" = "1" ] && return
 
 	if [ "$action" = "add" ]; then
 

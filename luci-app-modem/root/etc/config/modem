@@ -1,7 +1,8 @@
 
 config global 'global'
-	option enable '1'
+	option enable_dial '1'
 	option modem_number '0'
+	option manual_configuration '0'
 
 config custom-commands
 	option description '****************通用****************'
