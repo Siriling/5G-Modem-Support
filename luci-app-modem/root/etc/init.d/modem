@@ -676,14 +676,14 @@ manual_set_modem_config()
 	#获取网络设备路径
 	local network_path="$(readlink -f /sys/class/net/${network})"
 
-    #只处理最上级的网络设备
-    local count=$(echo "${network_path}" | grep -o "/net" | wc -l)
-    [ "$count" -ge "2" ] && return
+	#只处理最上级的网络设备
+	local count=$(echo "${network_path}" | grep -o "/net" | wc -l)
+	[ "$count" -ge "2" ] && return
 
     #判断路径是否带有usb（排除其他eth网络设备）
-    if [[ "$network" = *"eth"* ]] && [[ "$network_path" != *"usb"* ]]; then
-        return
-    fi
+	if [[ "$network" = *"eth"* ]] && [[ "$network_path" != *"usb"* ]]; then
+		return
+	fi
 
 	#获取物理路径
 	local physical_path=$(m_get_device_physical_path ${network_path})

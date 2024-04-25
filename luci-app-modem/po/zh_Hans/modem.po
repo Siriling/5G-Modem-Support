@@ -547,8 +547,8 @@ msgstr "手动配置"
 msgid "Enable the manual configuration of modem information"
 msgstr "启用手动配置模组信息"
 
-msgid "(After enable, the automatic scanning function for modem information will be disabled)"
-msgstr "（启用后将禁用自动扫描模组信息功能）"
+msgid "(After enable, the automatic scanning and configuration function for modem information will be disabled)"
+msgstr "（启用后将禁用自动扫描配置模组信息功能）"
 
 msgid "Plugin Info"
 msgstr "插件信息"
@@ -569,7 +569,7 @@ msgid "modemmanager Version"
 msgstr "modemmanager 版本"
 
 msgid "Modem General Driver Info"
-msgstr "模组通用信息"
+msgstr "模组通用驱动信息"
 
 msgid "Driver Type"
 msgstr "驱动类型"

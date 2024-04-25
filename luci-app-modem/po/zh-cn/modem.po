@@ -569,7 +569,7 @@ msgid "modemmanager Version"
 msgstr "modemmanager 版本"
 
 msgid "Modem General Driver Info"
-msgstr "模组通用信息"
+msgstr "模组通用驱动信息"
 
 msgid "Driver Type"
 msgstr "驱动类型"
