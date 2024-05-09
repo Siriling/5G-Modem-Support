@@ -11,8 +11,8 @@
 			//获取快捷命令
 			get_quick_commands();
 			//获取模组调试信息
-			var debug_params={first_cache:true};
-			get_modem_debug_info(debug_params);
+			document.getElementById("first_cache").checked=true;
+			get_modem_debug_info();
 		});
 
 		//获取标签菜单
@@ -79,8 +79,8 @@
 		{
 			childElements[i].addEventListener('click', function(event) {
 				tab_event(this);
-				var debug_params={first_cache:true};
-				get_modem_debug_info(debug_params);
+				document.getElementById("first_cache").checked=true;
+				get_modem_debug_info();
 			});
 
 			// // 创建一个 MutationObserver 实例
@@ -90,8 +90,8 @@
 			// 			//只处理当前变为禁用的tab
 			// 			if (mutation.target.className=='cbi-tab') {
 			// 				//获取模组调试信息
-			// 				var debug_params={first_cache:true};
-			// 				get_modem_debug_info(debug_params);
+			// 				document.getElementById("first_cache").checked=true;
+			// 				get_modem_debug_info();
 			// 				//只处理一次
 			// 				break;
 			// 			}
@@ -295,7 +295,7 @@
 	function no_modems_view()
 	{
 		//更新提示信息
-		document.getElementById("info_message").innerHTML="<strong><%:No modems found%></strong>";
+		document.getElementById("info_message").innerHTML='<strong><%:No modems found%></strong> <a href="https://blog.siriling.com:1212/2023/03/18/openwrt-5g-modem/#zi-dong-sao-miao-shi-bie-gong-neng" target="_blank"><%:(Check the reason)%></a>';
 		//显示提示信息
 		document.getElementById("cbi-info").style.display="block";
 		//隐藏模组选择界面
@@ -305,12 +305,12 @@
 		//隐藏tab内容界面
 		document.getElementById("tab_context").style.display="none";
 	}
-
+	
 	// 未适配模组界面
 	function not_adapted_modems_view()
 	{
 		//更新提示信息
-		document.getElementById("info_message").innerHTML="<strong><%:Not adapted to this modem%></strong>";
+		document.getElementById("info_message").innerHTML='<strong><%:Not adapted to this modem%></strong> <a href="https://github.com/Siriling/5G-Modem-Support/blob/main/luci-app-modem/README.md" target="_blank"><%:(Check adapted modem)%></a>';
 		//显示提示信息
 		document.getElementById("cbi-info").style.display="block";
 		//显示模组选择界面
@@ -331,7 +331,7 @@
 	function all_function_view()
 	{
 		//更新提示信息
-		document.getElementById("info_message").innerHTML='<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle"/><%:Loading modem%>...';
+		document.getElementById("info_message").innerHTML='<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>"/><%:Loading modem%>...';
 		//显示模组选择界面
 		document.getElementById("cbi-modem").style.display="block";
 		//显示标签菜单界面
@@ -472,7 +472,7 @@
 	}
 
 	// 设置拨号模式信息
-	function set_mode_info(mode_info,first_cache)
+	function set_mode_info(mode_info)
 	{
 		//获取当前拨号模式
 		var current_mode=mode_info["mode"];
@@ -490,9 +490,10 @@
 		//设置当前拨号模式
 		document.getElementById('current_mode').innerHTML=current_mode_view;
 
-		if (first_cache)
+		//设置支持的拨号模式
+		var first_cache=document.getElementById("first_cache");
+		if (first_cache.checked)
 		{
-			//设置支持的拨号模式
 			var mode_option_view='';
 			for(mode of modes)
 			{
@@ -511,7 +512,7 @@
 			element=document.getElementById('mode_option_'+current_mode).checked=true;
 
 			//设置第一次获取数据标志
-			first_cache=false;
+			first_cache.checked=false;
 		}
 	}
 
@@ -571,7 +572,7 @@
 	}
 
 	// 设置网络偏好信息
-	function set_network_prefer_info(network_prefer_info,first_cache)
+	function set_network_prefer_info(network_prefer_info)
 	{
 		//获取模组网络偏好
 		var network_prefer=network_prefer_info["network_prefer"];
@@ -583,7 +584,8 @@
 		document.getElementById('current_prefer').innerHTML=current_prefer_view;
 
 		//设置偏好选项和复选框
-		if (first_cache)
+		var first_cache=document.getElementById("first_cache");
+		if (first_cache.checked)
 		{
 			if (network_prefer["3G"]&&network_prefer["4G"]&&network_prefer["5G"])
 			{
@@ -612,7 +614,7 @@
 			}
 
 			//设置第一次获取数据标志
-			first_cache=false;
+			first_cache.checked=false;
 		}
 	}
 
@@ -738,7 +740,7 @@
 	}
 
 	// 获取模组调试信息
-	function get_modem_debug_info(debug_params)
+	function get_modem_debug_info()
 	{
 		//获取选中的模组
 		var at_port = document.getElementById("modem_select").value;
@@ -762,7 +764,7 @@
 					}
 
 					//设置模式信息
-					set_mode_info(mode_info,debug_params.first_cache);
+					set_mode_info(mode_info);
 				}
 			);
 		}
@@ -778,7 +780,7 @@
 					}
 
 					//设置网络偏好信息
-					set_network_prefer_info(network_prefer_info,debug_params.first_cache);
+					set_network_prefer_info(network_prefer_info);
 				}
 			);
 		}
@@ -806,7 +808,7 @@
 		{
 			//缓存当前选择的模组
 			var modem_select_cache="";
-			var debug_params={first_cache:true,view:0};
+			var debug_params={view:0};
 			return function(x, data)
 			{
 				var at_ports=data["at_ports"];
@@ -846,11 +848,11 @@
 						modem_select_cache=select_modem_name;
 
 						//设置第一次获取数据标志
-						debug_params.first_cache=true;
+						document.getElementById("first_cache").checked=true;
 					}
 
 					//获取模组调试信息
-					get_modem_debug_info(debug_params);
+					get_modem_debug_info();
 				}
 
 				//设置界面
@@ -878,6 +880,22 @@
 	<div class="cbi-map-descr"><%:Debug Your Module%></div>
 	<head>
 		<style type="text/css">
+
+		/* 消息样式 */
+		#info_message {
+			text-align: left;
+			font-size: 1.8em;
+		}
+
+		#info_message img {
+			vertical-align: middle;
+		}
+
+		#info_message a {
+			color: rgb(61, 143, 173);
+			font-size: 50%;
+		}
+		
 		/* table {
 			width: 100%;
 			border-spacing: 10px;
@@ -918,8 +936,8 @@
 			width:560px;
 			height:190px;
 			padding:20px;
-			background-color:gainsboro;  
-			border-style : solid;	
+			background-color:gainsboro; 
+			border-style : solid;
 			position:fixed;
 			top : 40%;
 			margin-left: auto;
@@ -929,6 +947,7 @@
 			text-align: center;
 			display:none;
 		}
+
 		</style>
 	</head>
 
@@ -938,8 +957,8 @@
 			<table class="table" id="message">
 				<tr class="tr">
 					<td colspan="2" class="td left">
-						<div align="left" id="info_message" style="font-size:1.875em">
-							<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle"/>
+						<div id="info_message">
+							<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>"/>
 							<%:Loading modem%>...
 						</div>
 					</td>
@@ -953,7 +972,7 @@
 			<!-- <legend><%:Modem Select%></legend> -->
 			<h3><%:Modem Select%></h3>
 			<div class="cbi-section-node">
-				<div class="cbi-value cbi-value-last">
+				<div class="cbi-value">
 					<label class="cbi-value-title"><%:Modem Name%></label>
 					<div class="cbi-value-field">
 						<div class="cbi-checkbox">
@@ -961,6 +980,17 @@
 						</div>
 						<div class="cbi-value-description">
 							<%:Select a modem for debugging%>
+						</div>
+					</div>
+				</div>
+				<div class="cbi-value cbi-value-last" style="display: none;">
+					<label class="cbi-value-title"><%:First Cache%></label>
+					<div class="cbi-value-field">
+						<div class="cbi-checkbox">
+							<input id="first_cache" type="checkbox" checked>
+						</div>
+						<div class="cbi-value-description">
+							<%:First view tab context%>
 						</div>
 					</div>
 				</div>
