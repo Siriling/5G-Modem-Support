@@ -780,6 +780,9 @@ service_triggers()
 
 start_service() {
 
+	#加载模组配置
+	config_load modem
+
 	#统计模组数量
 	modem_count=0
 	config_foreach count_modem_number "modem-device"
@@ -787,8 +790,6 @@ start_service() {
 	uci set modem.@global[0].modem_number=${modem_count}
 	uci commit modem
 
-	#加载模组配置
-	config_load modem
 	#手动设置模组信息
 	config_foreach manual_set_modem_config "modem-device"
 
