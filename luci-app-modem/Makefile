@@ -19,7 +19,7 @@ LUCI_DEPENDS:=+luci-compat \
 		+kmod-usb-net-cdc-ether \
 		+kmod-usb-net-cdc-mbim \
 		+kmod-usb-net-rndis \
-		kmod-usb-net-cdc-ncm kmod-usb-net-huawei-cdc-ncm\
+		+kmod-usb-net-cdc-ncm +kmod-usb-net-huawei-cdc-ncm \
 		+usbutils \
 		+kmod-pcie_mhi \
 		+pciutils \
