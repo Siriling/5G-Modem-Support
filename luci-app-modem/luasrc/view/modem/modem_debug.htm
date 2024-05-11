@@ -509,6 +509,9 @@
 			document.getElementById('mode_option').innerHTML=mode_option_view;
 
 			//设置拨号模式选项
+			if (current_mode=="gobinet") {
+				current_mode="qmi"
+			}
 			element=document.getElementById('mode_option_'+current_mode).checked=true;
 
 			//设置第一次获取数据标志

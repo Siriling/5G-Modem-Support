@@ -630,7 +630,7 @@ dial()
 	#获取模组的拨号模式
 	local time=0
 	local mode
-	while [ $time -lt 5 ]; do
+	while [ $time -lt 10 ]; do
 		mode=$(get_mode ${modem_no})
 		[ -n "$mode" ] && [ "$mode" != "unknown" ] && break
 		sleep 5s
@@ -653,7 +653,7 @@ dial()
 		#获取网络接口
 		local network_interface=$(uci -q get modem.modem${modem_no}.network_interface)
 		#设置网络接口
-		set_interface "${modem_no}" "$network_interface"
+		set_interface "${modem_no}" "${network_interface}"
 	else
 		local config_id=$(awk -v network="${network}" -F',' '!/^#/ && $0 ~ network { print $2 }' "${MODEM_RUN_CONFIG}")
 		#该移动网络已存在，且已有其他拨号配置在运行
