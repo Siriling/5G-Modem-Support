@@ -324,11 +324,19 @@ qmi()
 
 gobinet()
 {
+	#获取制造商
+	local manufacturer=$(uci -q get modem.modem${modem_no}.manufacturer)
+	
 	#拨号
-	procd_open_instance
-	procd_set_param command sh ${SCRIPT_DIR}/modem_network_task.sh "${id}" "${modem_no}" "gobinet"
-	procd_set_param respawn
-	procd_close_instance
+	case $manufacturer in
+		"quectel") qmi ;;
+		*)
+			procd_open_instance
+			procd_set_param command sh ${SCRIPT_DIR}/modem_network_task.sh "${id}" "${modem_no}" "gobinet"
+			procd_set_param respawn
+			procd_close_instance
+		;;
+	esac
 }
 
 ecm()
@@ -399,11 +407,11 @@ stop_gobinet()
 	#停止拨号
 	local at_command
 	if [ "$manufacturer" = "quectel" ]; then
-		at_command='ATI'
+		stop_qmi
 	elif [ "$manufacturer" = "fibocom" ]; then
 		at_command='AT$QCRMCALL=0,1'
 	elif [ "$manufacturer" = "meig" ]; then
-		at_command='ATI'
+		at_command="AT$QCRMCALL=0,1,${define_connect},2,1"
 	else
 		at_command='ATI'
 	fi
@@ -431,7 +439,7 @@ stop_ecm()
 			at_command="AT+GTRNDIS=0,${define_connect}"
 		fi
 	elif [ "$manufacturer" = "meig" ]; then
-		at_command="AT$QCRMCALL=0,1,${define_connect},2,1"
+		at_command="AT^NDISDUP=${define_connect},0"
 	else
 		at_command='ATI'
 	fi

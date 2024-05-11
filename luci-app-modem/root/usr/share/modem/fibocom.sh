@@ -109,17 +109,10 @@ fibocom_get_mode()
     case "$platform" in
         "qualcomm")
             case "$mode_num" in
-                "17") mode="qmi" ;; #-
-                "31") mode="qmi" ;; #-
-                "32") mode="qmi" ;;
-                "34") mode="qmi" ;;
+                "17"|"31"|"32"|"34") mode="qmi" ;;
                 # "32") mode="gobinet" ;;
-                "18") mode="ecm" ;;
-                "23") mode="ecm" ;; #-
-                "33") mode="ecm" ;; #-
-                "35") mode="ecm" ;; #-
-                "29") mode="mbim" ;; #-
-                "30") mode="mbim" ;;
+                "18"|"23"|"33"|"35") mode="ecm" ;;
+                "29"|"30") mode="mbim" ;;
                 "24") mode="rndis" ;;
                 "18") mode="ncm" ;;
                 *) mode="$mode_num" ;;
@@ -127,22 +120,17 @@ fibocom_get_mode()
         ;;
         "unisoc")
             case "$mode_num" in
-                "34") mode="ecm" ;;
-                "35") mode="ecm" ;; #-
-                "40") mode="mbim" ;;
-                "41") mode="mbim" ;; #-
-                "38") mode="rndis" ;;
-                "39") mode="rndis" ;; #-
-                "36") mode="ncm" ;;
-                "37") mode="ncm" ;; #-
+                "34"|"35") mode="ecm" ;;
+                "40"|"41") mode="mbim" ;;
+                "38"|"39") mode="rndis" ;;
+                "36"|"37") mode="ncm" ;;
                 *) mode="$mode_num" ;;
             esac
         ;;
         "mediatek")
             case "$mode_num" in
                 "29") mode="mbim" ;;
-                "40") mode="rndis" ;; #-
-                "41") mode="rndis" ;;
+                "40"|"41") mode="rndis" ;;
                 *) mode="$mode_num" ;;
             esac
         ;;

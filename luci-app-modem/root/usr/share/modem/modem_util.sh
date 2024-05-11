@@ -62,22 +62,28 @@ m_report_event()
 #模组预设
 # $1:AT串口
 # $2:连接定义
+# $3:制造商
 m_modem_presets()
 {
 	local at_port="$1"
 	local define_connect="$2"
+	local manufacturer="$3"
 
 	#运营商选择设置
 	local at_command='AT+COPS=0,0'
 	at "${at_port}" "${at_command}"
 
-	#设置IPv6地址格式
-	at_command='AT+CGPIAF=1,0,0,0'
-	at "${at_port}" "${at_command}"
-
 	#PDP设置
 	at_command="AT+CGDCONT=${define_connect},\"IPV4V6\",\"\""
 	at "${at_port}" "${at_command}"
+
+	#制造商私有预设
+	case $manufacturer in
+		"quectel") quectel_presets ;;
+		"fibocom") fibocom_presets ;;
+		"meig") meig_presets ;;
+		"simcom") simcom_presets ;;
+	esac
 }
 
 #获取设备物理路径
@@ -364,9 +370,9 @@ handle_special_modem_name()
 		modem_name="fm350-gl"
 	}
 
-	#RM500U-CNV
-	[[ "$modem_name" = *"rm500u-cn"* ]] && {
-		modem_name="rm500u-cn"
+	#SRM825-PV
+	[[ "$modem_name" = *"srm825-pv"* ]] && {
+		modem_name="srm825"
 	}
 
 	echo "$modem_name"
@@ -436,7 +442,7 @@ retry_set_modem_config()
 			done
 
 			#设置模组预设
-			m_modem_presets "${at_port}" "${define_connect}"
+			m_modem_presets "${at_port}" "${define_connect}" "${manufacturer}"
 
 			#打印日志
 			m_log "info" "Successfully retrying to configure the Modem ${modem_name}"
@@ -509,7 +515,7 @@ m_set_modem_config()
 	done
 
 	#设置模组预设
-	m_modem_presets "${at_port}" "${define_connect}"
+	m_modem_presets "${at_port}" "${define_connect}" "${manufacturer}"
 
 	#打印日志
 	m_log "info" "${log_message}"
@@ -532,7 +538,7 @@ m_set_usb_at_port()
 
 	local modem_at_port=$(uci -q get modem.modem${modem_no}.at_port)
 	[ -z "$modem_at_port" ] && {
-		local response="$(sh ${SCRIPT_DIR}/modem_at.sh ${port} 'ATI')"
+		local response="$(at ${port} 'ATI')"
 		local str1="No" #No response from modem.
 		local str2="failed"
 		if [[ "$response" != *"$str1"* ]] && [[ "$response" != *"$str2"* ]] && [ -n "$response" ]; then

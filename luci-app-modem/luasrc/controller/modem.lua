@@ -869,8 +869,10 @@ function getPluginInfo()
 
 	-- 获取拨号工具信息
 	local dial_tool_info={}
-	dial_tool_info["quectel-CM-5G"]="Not installed"
 	dial_tool_info["modemmanager"]="Not installed"
+	dial_tool_info["quectel-CM-5G"]="Not installed"
+	dial_tool_info["fibocom-dial"]="Not installed"
+	dial_tool_info["meig-cm"]="Not installed"
 	setPluginVersionInfo(dial_tool_info)
 
 	-- 获取通用驱动信息
@@ -882,21 +884,28 @@ function getPluginInfo()
 
 	-- 获取模组USB驱动信息
 	local usb_driver_info={}
+	--通用驱动
 	usb_driver_info["qmi_wwan.ko"]="Not loaded"
 	usb_driver_info["GobiNet.ko"]="Not loaded"
 	usb_driver_info["cdc_ether.ko"]="Not loaded"
 	usb_driver_info["cdc_mbim.ko"]="Not loaded"
 	usb_driver_info["rndis_host.ko"]="Not loaded"
 	usb_driver_info["cdc_ncm.ko"]="Not loaded"
+	--制造商私有驱动
+	usb_driver_info["qmi_wwan_q.ko"]="Not loaded"
+	usb_driver_info["qmi_wwan_f.ko"]="Not loaded"
+	usb_driver_info["meig_cdc_driver.ko"]="Not loaded"
 	setModelStatus(usb_driver_info)
 
 	-- 获取模组PCIE驱动信息
 	local pcie_driver_info={}
+	--通用驱动
 	pcie_driver_info["mhi_net.ko"]="Not loaded"
 	pcie_driver_info["qrtr_mhi.ko"]="Not loaded"
 	pcie_driver_info["mhi_pci_generic.ko"]="Not loaded"
 	pcie_driver_info["mhi_wwan_mbim.ko"]="Not loaded"
 	pcie_driver_info["mhi_wwan_ctrl.ko"]="Not loaded"
+	--制造商私有驱动
 	pcie_driver_info["pcie_mhi.ko"]="Not loaded"
 	pcie_driver_info["mtk_pcie_wwan_m80.ko"]="Not loaded"
 	setModelStatus(pcie_driver_info)

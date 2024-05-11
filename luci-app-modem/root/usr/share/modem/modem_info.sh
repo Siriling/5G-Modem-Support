@@ -358,7 +358,7 @@ get_modem_info()
 
 	#检查模块状态（是否处于重启，重置，串口异常状态）
     local at_command="ATI"
-	local response=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command)
+	local response=$(at ${at_port} ${at_command})
 	if [[ "$response" = *"failed"* ]] || [[ "$response" = *"$at_port"* ]]; then
 		debug "模组AT串口未就绪"
 		return
