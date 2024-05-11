@@ -643,11 +643,11 @@ msgstr "通用"
 msgid "Private"
 msgstr "私有"
 
-msgid "(Quectel)"
-msgstr "（移远）"
+msgid "Private (Quectel)"
+msgstr "私有（移远）"
 
-msgid "(Fibocom)"
-msgstr "（广和通）"
+msgid "Private (Fibocom)"
+msgstr "私有（广和通）"
 
-msgid "(Meig)"
-msgstr "（美格）"
+msgid "Private (Meig)"
+msgstr "私有（美格）"
