@@ -714,17 +714,10 @@ manual_set_modem_config()
 
 	#获取物理路径
 	local physical_path=$(m_get_device_physical_path ${network_path})
-
-	#获取模组数量
+	
+	#获取当前模组数量（下面新增配置会导致多一个，这里需要减掉一个）
 	local modem_number=$(uci -q get modem.@global[0].modem_number)
-	#模组配置是否存在
-	for i in $(seq 0 $((modem_number-1))); do
-		local modem_network=$(uci -q get modem.modem${i}.network)
-		if [ "$modem_network" = "$network" ]; then
-			# 配置已存在，退出
-			return
-		fi
-	done
+	uci set modem.@global[0].modem_number=$((modem_number-1))
 
 	#设置模组硬件配置
 	m_set_modem_hardware_config "${physical_path}"
