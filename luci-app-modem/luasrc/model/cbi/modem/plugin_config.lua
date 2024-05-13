@@ -63,7 +63,7 @@ o = s:option(DummyValue, "network", translate("Network"))
 o = s:option(DummyValue, "name", translate("Modem Name"))
 o.cfgvalue = function(t, n)
     local name = (Value.cfgvalue(t, n) or "")
-    return name:upper()
+    return translate(name:upper())
 end
 
 -- AT串口
