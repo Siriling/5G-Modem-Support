@@ -26,6 +26,11 @@ o = s:option(Flag, "manual_configuration", font_red..bold_on..translate("Manual 
 o.rmempty = false
 o.description = translate("Enable the manual configuration of modem information").." "..font_red..bold_on.. translate("(After enable, the automatic scanning and configuration function for modem information will be disabled)")..bold_off..font_off
 
+-- 启用网络接口别名
+o = s:option(Flag, "network_interface_alias", translate("Network Interface Alias"))
+o.rmempty = false
+o.description = translate("Enable automatic creation of network interface alias (Effective upon reinstatement of dialing configuration)")
+
 -- 配置模组信息
 s = m:section(TypedSection, "modem-device", translate("Modem Config"))
 s.anonymous = true

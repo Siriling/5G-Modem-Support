@@ -6,6 +6,7 @@ uci -q get modem.global >/dev/null || uci -q batch <<-EOF >/dev/null
 	set modem.@global[0].enable_dial=1
 	set modem.@global[0].modem_number=0
 	set modem.@global[0].manual_configuration=0
+	set modem.@global[0].network_interface_alias=1
 	commit modem
 EOF
 
