@@ -219,7 +219,7 @@ static int __mhi_download_rddm_in_panic(struct mhi_controller *mhi_cntrl)
 		      lower_32_bits(mhi_buf->dma_addr));
 
 	mhi_write_reg(mhi_cntrl, base, BHIE_RXVECSIZE_OFFS, mhi_buf->len);
-	sequence_id = prandom_u32_max(0xFFFFFFFF)() & BHIE_RXVECSTATUS_SEQNUM_BMSK;
+	sequence_id = prandom_u32_max(0xFFFFFFFF) & BHIE_RXVECSTATUS_SEQNUM_BMSK;
 
 	if (unlikely(!sequence_id))
 		sequence_id = 1;
@@ -312,7 +312,7 @@ int mhi_download_rddm_img(struct mhi_controller *mhi_cntrl, bool in_panic)
 
 	mhi_write_reg(mhi_cntrl, base, BHIE_RXVECSIZE_OFFS, mhi_buf->len);
 
-	sequence_id = prandom_u32_max(0xFFFFFFFF)() & BHIE_RXVECSTATUS_SEQNUM_BMSK;
+	sequence_id = prandom_u32_max(0xFFFFFFFF) & BHIE_RXVECSTATUS_SEQNUM_BMSK;
 	mhi_write_reg_field(mhi_cntrl, base, BHIE_RXVECDB_OFFS,
 			    BHIE_RXVECDB_SEQNUM_BMSK, BHIE_RXVECDB_SEQNUM_SHFT,
 			    sequence_id);
@@ -364,7 +364,7 @@ static int mhi_fw_load_amss(struct mhi_controller *mhi_cntrl,
 
 	mhi_write_reg(mhi_cntrl, base, BHIE_TXVECSIZE_OFFS, mhi_buf->len);
 
-	mhi_cntrl->sequence_id = prandom_u32_max(0xFFFFFFFF)() & BHIE_TXVECSTATUS_SEQNUM_BMSK;
+	mhi_cntrl->sequence_id = prandom_u32_max(0xFFFFFFFF) & BHIE_TXVECSTATUS_SEQNUM_BMSK;
 	mhi_write_reg_field(mhi_cntrl, base, BHIE_TXVECDB_OFFS,
 			    BHIE_TXVECDB_SEQNUM_BMSK, BHIE_TXVECDB_SEQNUM_SHFT,
 			    mhi_cntrl->sequence_id);
@@ -429,7 +429,7 @@ static int mhi_fw_load_sbl(struct mhi_controller *mhi_cntrl,
 	mhi_write_reg(mhi_cntrl, base, BHI_IMGADDR_HIGH, upper_32_bits(phys));
 	mhi_write_reg(mhi_cntrl, base, BHI_IMGADDR_LOW, lower_32_bits(phys));
 	mhi_write_reg(mhi_cntrl, base, BHI_IMGSIZE, size);
-	mhi_cntrl->session_id = prandom_u32_max(0xFFFFFFFF)() & BHI_TXDB_SEQNUM_BMSK;
+	mhi_cntrl->session_id = prandom_u32_max(0xFFFFFFFF) & BHI_TXDB_SEQNUM_BMSK;
 	mhi_write_reg(mhi_cntrl, base, BHI_IMGTXDB, mhi_cntrl->session_id);
 	read_unlock_bh(pm_lock);
 
