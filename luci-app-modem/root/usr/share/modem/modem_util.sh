@@ -83,6 +83,7 @@ m_modem_presets()
 		"fibocom") fibocom_presets ;;
 		"meig") meig_presets ;;
 		"simcom") simcom_presets ;;
+		"huawei") huawei_presets ;;
 	esac
 }
 

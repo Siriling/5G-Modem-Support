@@ -46,6 +46,39 @@
 				copy_to_input();
 		});
 
+		// 设置网络偏好事件
+		set_network_prefer_event();
+	}
+
+	// 设置频段偏好事件
+	function set_band_prefer_event(network_type)
+	{
+		//获取网络偏好选项元素
+		var prefer_option_auto = document.getElementById(network_type+'_prefer_option_auto');
+		var prefer_option_custom = document.getElementById(network_type+'_prefer_option_custom');
+		//网络偏好选项为自动时触发
+		prefer_option_auto.addEventListener('change', function() {
+			if (prefer_option_auto.checked)
+			{
+				//禁用偏好复选框
+				disabled_prefer_custom_config(network_type+"_",true);
+				//全选偏好复选框
+				all_choose_prefer_custom_config(network_type+"_",true);
+			}
+		});
+		//网络偏好选项为自定义时触发
+		prefer_option_custom.addEventListener('change', function() {
+			if (prefer_option_custom.checked)
+			{
+				//禁用偏好复选框
+				disabled_prefer_custom_config(network_type+"_",false);
+			}
+		});
+	}
+
+	// 设置网络偏好事件
+	function set_network_prefer_event()
+	{
 		//获取网络偏好选项元素
 		var prefer_option_auto = document.getElementById('prefer_option_auto');
 		var prefer_option_custom = document.getElementById('prefer_option_custom');
@@ -54,9 +87,9 @@
 			if (prefer_option_auto.checked)
 			{
 				//禁用偏好复选框
-				disabled_prefer_custom_config(true);
+				disabled_prefer_custom_config("",true);
 				//全选偏好复选框
-				all_choose_prefer_custom_config(true);
+				all_choose_prefer_custom_config("",true);
 			}
 		});
 		//网络偏好选项为自定义时触发
@@ -64,9 +97,15 @@
 			if (prefer_option_custom.checked)
 			{
 				//禁用偏好复选框
-				disabled_prefer_custom_config(false);
+				disabled_prefer_custom_config("",false);
 			}
 		});
+
+		//设置频段偏好事件
+		set_band_prefer_event("5g");
+		set_band_prefer_event("4g");
+		set_band_prefer_event("3g");
+		set_band_prefer_event("2g");
 	}
 
 	//设置标签菜单事件
@@ -412,9 +451,9 @@
 	}
 
 	// 全选网络偏好复选框
-	function all_choose_prefer_custom_config(status)
+	function all_choose_prefer_custom_config(id_prefix,status)
 	{
-		var checkboxes=document.getElementById('prefer_custom_config').querySelectorAll('input[type="checkbox"]');
+		var checkboxes=document.getElementById(id_prefix+'prefer_custom_config').querySelectorAll('input[type="checkbox"]');
 		for(checkbox of checkboxes)
 		{
 			//设置网络偏好复选框状态
@@ -423,14 +462,33 @@
 	}
 
 	// 禁用网络偏好复选框
-	function disabled_prefer_custom_config(status)
+	function disabled_prefer_custom_config(id_prefix,status)
 	{
-		var checkboxes=document.getElementById('prefer_custom_config').querySelectorAll('input[type="checkbox"]');
+		var checkboxes=document.getElementById(id_prefix+'prefer_custom_config').querySelectorAll('input[type="checkbox"]');
 		for(checkbox of checkboxes)
 		{
 			//禁用
 			checkbox.disabled=status;
 		}
+	}
+
+	// 禁用网络偏好功能
+	function disabled_network_prefer_function(id_prefix,status)
+	{
+		//偏好选项
+		var prefer_option_auto = document.getElementById('prefer_option_auto'); 
+		prefer_option_auto.disabled=status;
+		document.getElementById('prefer_option_custom').disabled=status;
+		
+		//网络偏好为自动则不启用
+		if (!prefer_option_auto.checked)
+		{
+			//偏好复选框
+			disabled_prefer_custom_config("",status);
+		}
+
+		//偏好按钮
+		document.getElementById(id_prefix+'_prefer_button').disabled=status;
 	}
 
 	// 禁用功能
@@ -454,20 +512,10 @@
 		//网络偏好
 		else if (function_name=="network_prefer")
 		{
-			//偏好选项
-			document.getElementById('prefer_option_auto').disabled=status;
-			document.getElementById('prefer_option_custom').disabled=status;
-			
-			//网络偏好为自动则不启用
-			var prefer_option_auto = document.getElementById('prefer_option_auto');
-			if (!prefer_option_auto.checked)
-			{
-				//偏好复选框
-				disabled_prefer_custom_config(status);
-			}
-
-			//偏好按钮
-			document.getElementById('network_prefer_button').disabled=status;
+			// 网络类型
+			disabled_network_prefer_function("network",status);
+			// 频段
+			disabled_network_prefer_function("band",status);
 		}
 	}
 
@@ -549,29 +597,131 @@
 		);
 	}
 
-	// 获取当前网络视图
-	function get_current_prefer_view(network_prefer)
+	// 设置网络偏好视图
+	function set_network_prefer_view(network_prefer)
 	{
-		var current_prefer_view="";
+		var current_prefer_view=""; //当前网络偏好
+		var prefer_check_view=""; //网络偏好复选框
+		var network_type_count=0; //统计已启用的网络类型
 
-		//自动状态判断（全部选中为自动）
-		if (network_prefer["3G"]&&network_prefer["4G"]&&network_prefer["5G"])
+		for(var keys of network_prefer)
 		{
-			//更新当前偏好
-			current_prefer_view="AUTO";
-		}
-		else
-		{
-			//更新当前偏好
-			for(key in network_prefer)
+			for(var key in keys)
 			{
-				if (network_prefer[key]) {
+				var band_info_display="none"; //频段偏好显示
+				var is_check=""; //是否选中（启用）
+				var network_type=key.toLowerCase(); //转小写
+				
+				//已启动的网络类型
+				if (keys[key]["enable"])
+				{
+					//设置偏好视图
 					current_prefer_view+=key+" ";
+					if (keys[key]["band"].length!=0) {
+						band_info_display="block";
+					}
+					is_check="checked";
+					network_type_count++;
 				}
+				//设置偏好复选框视图
+				prefer_check_view+='<span class="cbi-checkbox"><input id="prefer_config_'+network_type+'" type="checkbox" class="cbi-input-checkbox" value="'+network_type+'" '+is_check+'><span>'+key+'</span></span> &nbsp;';
+				
+				//频段偏好
+				var current_prefer_band_view=""; //当前频段偏好
+				var band_prefer_check_view=""; //频段偏好复选框
+				var band_count=0;  //统计已启用的频段
+
+				for(var bands of keys[key]["band"])
+				{
+					for(var band in bands)
+					{
+						var band_is_check=""; //是否选中（启用）
+						var band_name=band.toLowerCase(); //转小写
+						
+						//已启动的频段
+						if (bands[band])
+						{
+							//设置偏好视图
+							current_prefer_band_view+=band+" ";
+							band_is_check="checked";
+							band_count++;
+						}
+						//设置频段偏好复选框视图
+						band_prefer_check_view+='<span class="cbi-checkbox"><input id="band_prefer_config_'+band_name+'" type="checkbox" class="cbi-input-checkbox" value="'+band_name+'" '+band_is_check+'><span>'+band+'</span></span> &nbsp;';
+					}
+				}
+
+				//设置当前频段偏好（全未启用则为空）
+				if (band_count==0)
+				{
+					current_prefer_band_view="NONE";
+				}
+				document.getElementById(network_type+'_current_prefer').innerHTML=current_prefer_band_view;
+
+				var first_cache=document.getElementById("first_cache");
+				if (first_cache.checked)
+				{
+					//设置频段偏好复选框
+					document.getElementById(network_type+'_band_check').innerHTML=band_prefer_check_view;
+					
+					//自动状态判断（全部启用为自动）
+					if (band_count==Object.keys(keys[key]["band"]).length)
+					{
+						//设置偏好选项
+						document.getElementById(network_type+'_prefer_option_auto').checked=true;
+						//更新偏好配置
+						all_choose_prefer_custom_config(network_type+"_",true);
+						//禁用用偏好复选框
+						disabled_prefer_custom_config(network_type+"_",true);
+					}
+					else
+					{
+						//设置偏好选项
+						document.getElementById(network_type+'_prefer_option_custom').checked=true;
+						//启用偏好复选框
+						disabled_prefer_custom_config(network_type+"_",false);
+					}
+				}
+
+				//设置频段偏好显示
+				document.getElementById("cbi-"+network_type+"_band_info").style.display=band_info_display;
 			}
 		}
+
+		//设置当前网络偏好（全部启用为自动）
+		if (network_type_count==Object.keys(network_prefer).length) {
+			current_prefer_view="AUTO";
+		}
+		document.getElementById('current_prefer').innerHTML=current_prefer_view;
+
+		var first_cache=document.getElementById("first_cache");
+		if (first_cache.checked)
+		{
+			//设置网络偏好复选框
+			document.getElementById('network_type_check').innerHTML=prefer_check_view;
+
+			//自动状态判断（全部启用为自动）
+			if (network_type_count==Object.keys(network_prefer).length)
+			{
+				//设置偏好选项
+				document.getElementById('prefer_option_auto').checked=true;
+				//更新偏好配置
+				all_choose_prefer_custom_config("",true);
+				//禁用用偏好复选框
+				disabled_prefer_custom_config("",true);
+			}
+			else
+			{
+				//设置偏好选项
+				document.getElementById('prefer_option_custom').checked=true;
+				//启用偏好复选框
+				disabled_prefer_custom_config("",false);
+			}
+
+			//设置第一次获取数据标志
+			first_cache.checked=false;
+		}
 		
-		return current_prefer_view;
 	}
 
 	// 设置网络偏好信息
@@ -580,45 +730,57 @@
 		//获取模组网络偏好
 		var network_prefer=network_prefer_info["network_prefer"];
 
-		//获取偏好视图
-		var current_prefer_view=get_current_prefer_view(network_prefer);
+		//设置网络偏好视图
+		set_network_prefer_view(network_prefer);
 
-		//设置当前网络偏好
-		document.getElementById('current_prefer').innerHTML=current_prefer_view;
+		// //设置当前网络偏好
+		// document.getElementById('current_prefer').innerHTML=current_prefer_view;
 
-		//设置偏好选项和复选框
-		var first_cache=document.getElementById("first_cache");
-		if (first_cache.checked)
-		{
-			if (network_prefer["3G"]&&network_prefer["4G"]&&network_prefer["5G"])
-			{
-				//设置偏好选项
-				document.getElementById('prefer_option_auto').checked=true;
-				//更新偏好配置
-				all_choose_prefer_custom_config(true);
-				//禁用用偏好复选框
-				disabled_prefer_custom_config(true);
-			}
-			else
-			{
-				//设置偏好选项
-				document.getElementById('prefer_option_custom').checked=true;
-				//更新偏好配置
-				for (key in network_prefer)
-				{
-					//设置偏好配置
-					var prefer_config_element=document.getElementById('prefer_config_'+key.toLowerCase());
-					if (prefer_config_element!=null) {
-						prefer_config_element.checked=network_prefer[key];
-					}
-				}
-				//启用偏好复选框
-				disabled_prefer_custom_config(false);
-			}
+		// //设置偏好选项和复选框
+		// var first_cache=document.getElementById("first_cache");
+		// if (first_cache.checked)
+		// {
+		// 	var count=0; //统计启用
+		// 	var prefer_check_view="";
+		// 	for(var keys of network_prefer)
+		// 	{
+		// 		for(var key in keys)
+		// 		{
+		// 			var network_type=key.toLowerCase(); //转小写
+		// 			var is_check=""; //是否选中（启用）
+		// 			if (keys[key]["enable"])
+		// 			{
+		// 				is_check="checked";
+		// 				count++;
+		// 			}
+		// 			//设置偏好复选框视图
+		// 			prefer_check_view+='<span class="cbi-checkbox"><input id="prefer_config_'+network_type+'" type="checkbox" class="cbi-input-checkbox" value="'+network_type+'" '+is_check+'><span>'+key+'</span></span> &nbsp;';
+		// 		}
+		// 	}
 
-			//设置第一次获取数据标志
-			first_cache.checked=false;
-		}
+		// 	//设置网络偏好复现框
+		// 	document.getElementById('network_type_check').innerHTML=prefer_check_view;
+
+		// 	//自动状态判断（全部启用为自动）
+		// 	if (count==Object.keys(network_prefer).length) {
+		// 		//设置偏好选项
+		// 		document.getElementById('prefer_option_auto').checked=true;
+		// 		//更新偏好配置
+		// 		all_choose_prefer_custom_config("",true);
+		// 		//禁用用偏好复选框
+		// 		disabled_prefer_custom_config("",true);
+		// 	}
+		// 	else
+		// 	{
+		// 		//设置偏好选项
+		// 		document.getElementById('prefer_option_custom').checked=true;
+		// 		//启用偏好复选框
+		// 		disabled_prefer_custom_config("",false);
+		// 	}
+
+		// 	//设置第一次获取数据标志
+		// 	first_cache.checked=false;
+		// }
 	}
 
 	// 设置模组自检信息
@@ -708,39 +870,148 @@
 
 		//获取偏好配置
 		var network_prefer_config={};
-		if (prefer_option=="auto")
+
+		var checkboxes=document.getElementById('prefer_custom_config').querySelectorAll('input[type="checkbox"]');
+		for(checkbox of checkboxes)
 		{
-			network_prefer_config["3G"]=1;
-			network_prefer_config["4G"]=1;
-			network_prefer_config["5G"]=1;
-		}
-		else
-		{
-			var checkboxes=document.getElementById('prefer_custom_config').querySelectorAll('input[type="checkbox"]');
-			for(checkbox of checkboxes)
-			{
-				network_prefer_config[checkbox.value.toUpperCase()]=Number(checkbox.checked);
-			}
+			//获取网络类型配置
+			var network_prefer={};
+			network_prefer["enable"]=Number(checkbox.checked);
+
+			var network_type=checkbox.value;
+			network_prefer_config[network_type.toUpperCase()]=network_prefer;
 		}
 
 		//设置偏好
 		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "set_network_prefer")%>', {"port":at_port,"prefer_config":network_prefer_config},
 			function(x, data)
 			{
-				//获取模组网络偏好
-				var network_prefer=data["network_prefer"];
+				// //获取模组网络偏好
+				// var network_prefer=data["network_prefer"];
 
-				//获取当前偏好视图
-				var current_prefer_view=get_current_prefer_view(network_prefer);
+				// //获取当前偏好视图
+				// var current_prefer_view=get_current_prefer_view(network_prefer);
 				
-				//设置模组当前网络偏好
-				document.getElementById('current_prefer').innerHTML=current_prefer_view;
+				// //设置模组当前网络偏好
+				// document.getElementById('current_prefer').innerHTML=current_prefer_view;
 
 				//启用功能
 				disabled_function("network_prefer",false);
 			}
 		);
 	}
+
+	// 设置频段偏好
+	function set_band_prefer()
+	{
+		//禁用功能
+		disabled_function("network_prefer",true);
+
+		//获取偏好选项
+		var prefer_option = document.querySelector('input[name="prefer_option"]:checked').value;
+		//获取选中的模组
+		var at_port = document.getElementById("modem_select").value;
+
+		//获取偏好配置
+		var network_prefer_config={};
+		
+		var checkboxes=document.getElementById('prefer_custom_config').querySelectorAll('input[type="checkbox"]');
+		for(checkbox of checkboxes)
+		{
+			//获取网络类型配置
+			var network_prefer={};
+			network_prefer["enable"]=Number(checkbox.checked);
+
+			//获取频段配置
+			network_prefer["band"]=[];
+			if (checkbox.checked)
+			{
+				var network_type=checkbox.value;
+				var band_check_element=document.getElementById(network_type+"_band_check");
+				var bands=band_check_element.querySelectorAll('input[type="checkbox"]');
+				for(band of bands)
+				{
+					var band_config={};
+					band_config[band.value.toUpperCase().replace("-","_")]=Number(band.checked);
+					network_prefer["band"].push(band_config);
+				}
+			}
+
+			network_prefer_config[network_type.toUpperCase()]=network_prefer;
+		}
+
+		//设置偏好
+		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "set_band_prefer")%>', {"port":at_port,"prefer_config":network_prefer_config},
+			function(x, data)
+			{
+				// //获取模组网络偏好
+				// var network_prefer=data["network_prefer"];
+
+				// //获取当前偏好视图
+				// var current_prefer_view=get_current_prefer_view(network_prefer);
+				
+				// //设置模组当前网络偏好
+				// document.getElementById('current_prefer').innerHTML=current_prefer_view;
+
+				//启用功能
+				disabled_function("network_prefer",false);
+			}
+		);
+	}
+
+	// 设置网络偏好
+	// function set_band_prefer()
+	// {
+	// 	//禁用功能
+	// 	disabled_function("network_prefer",true);
+
+	// 	//获取偏好选项
+	// 	var prefer_option = document.querySelector('input[name="prefer_option"]:checked').value;
+	// 	//获取选中的模组
+	// 	var at_port = document.getElementById("modem_select").value;
+
+	// 	//获取偏好配置
+	// 	var network_prefer_config={};
+	// 	//获取网络类型配置
+	// 	var checkboxes=document.getElementById('prefer_custom_config').querySelectorAll('input[type="checkbox"]');
+	// 	for(checkbox of checkboxes)
+	// 	{
+	// 		network_prefer_config[checkbox.value.toUpperCase()]["enable"]=Number(checkbox.checked);
+			
+	// 		if (checkbox.checked)
+	// 		{
+	// 			//获取频段配置
+	// 			var band_checkboxes=document.getElementById(checkbox.value+'prefer_custom_config').querySelectorAll('input[type="checkbox"]');
+	// 			for(band_checkbox of band_checkboxes)
+	// 			{
+	// 				network_prefer_config[checkbox.value.toUpperCase()]["band"]=Number(band_checkbox.checked);
+	// 			}
+	// 		}
+	// 		else
+	// 		{
+	// 			network_prefer_config[checkbox.value.toUpperCase()]["band"]="[]";
+	// 		}
+
+	// 	}
+
+	// 	//设置偏好
+	// 	XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "set_network_prefer")%>', {"port":at_port,"prefer_config":network_prefer_config},
+	// 		function(x, data)
+	// 		{
+	// 			//获取模组网络偏好
+	// 			var network_prefer=data["network_prefer"];
+
+	// 			//获取当前偏好视图
+	// 			var current_prefer_view=get_current_prefer_view(network_prefer);
+				
+	// 			//设置模组当前网络偏好
+	// 			document.getElementById('current_prefer').innerHTML=current_prefer_view;
+
+	// 			//启用功能
+	// 			disabled_function("network_prefer",false);
+	// 		}
+	// 	);
+	// }
 
 	// 获取模组调试信息
 	function get_modem_debug_info()
@@ -1066,6 +1337,7 @@
 						<th class="th cbi-section-table-cell"><%:Option%></th>
 						<th class="th cbi-section-table-cell"><%:Config%></th>
 						<th class="th cbi-section-table-cell cbi-section-actions"></th>
+						<th class="th cbi-section-table-cell cbi-section-actions"></th>
 					</tr>
 					<tr class="tr cbi-section-table-row cbi-rowstyle-1">
 						<td class="td cbi-value-field" data-title="<%:Current%>" id="current_prefer"></td>
@@ -1082,8 +1354,8 @@
 							</div>
 						</td>
 						<td class="td cbi-value-field" data-title="<%:Config%>" id="prefer_custom_config">
-							<div>
-								<span class="cbi-checkbox">
+							<div id="network_type_check"></div>
+								<!-- <span class="cbi-checkbox">
 									<input id="prefer_config_3g" type="checkbox" class="cbi-input-checkbox" value="3g">
 									<span><%:3G%></span>
 								</span> &nbsp;
@@ -1095,11 +1367,17 @@
 									<input id="prefer_config_5g" type="checkbox" class="cbi-input-checkbox" value="5g">
 									<span><%:5G%></span>
 								</span>
-							</div>
+							</div> -->
 						</td>
 						<td class="td">
 							<div>
+								<!-- <button class="btn cbi-button cbi-button-apply" id="network_prefer_button" onclick="set_network_prefer()" alt="<%:Apply Network Prefer%>" title="<%:Apply Network Prefer%>"><%:Apply Network Prefer%></button> -->
 								<button class="btn cbi-button cbi-button-apply" id="network_prefer_button" onclick="set_network_prefer()" alt="<%:Apply%>" title="<%:Apply%>"><%:Apply%></button>
+							</div>
+						</td>
+						<td class="td" style="display: none;">
+							<div>
+								<button class="btn cbi-button cbi-button-apply" id="band_prefer_button" onclick="set_band_prefer()" alt="<%:Apply Band Prefer%>" title="<%:Apply Band Prefer%>"><%:Apply Band Prefer%></button>
 							</div>
 						</td>
 					</tr>
@@ -1186,6 +1464,146 @@
 			</table>
 		</div>
 	</div>
+
+	<fieldset class="cbi-section" id="cbi-5g_band_info" style="display: none;">
+		<div class="cbi-section fade-in">
+			<!-- <legend><%:5G Band Preferences%></legend> -->
+			<h3><%:5G Band Preferences%></h3>
+			<table class="table cbi-section-table">
+				<tbody>
+					<tr class="tr cbi-section-table-titles anonymous">
+						<th class="th cbi-section-table-cell"><%:Current%></th>
+						<th class="th cbi-section-table-cell"><%:Option%></th>
+						<th class="th cbi-section-table-cell"><%:Config%></th>
+						<th class="th cbi-section-table-cell cbi-section-actions"></th>
+					</tr>
+					<tr class="tr cbi-section-table-row cbi-rowstyle-1">
+						<td class="td cbi-value-field" data-title="<%:Current%>" id="5g_current_prefer"></td>
+						<td class="td cbi-value-field" data-title="<%:Option%>" id="5g_prefer_option">
+							<div>
+								<span class="cbi-radio">
+									<input type="radio" name="5g_prefer_option" id="5g_prefer_option_auto" value="auto" checked="true">
+									<span><%:Auto%></span>
+								</span>&nbsp;
+								<span class="cbi-radio">
+									<input type="radio" name="5g_prefer_option" id="5g_prefer_option_custom" value="custom">
+									<span><%:Custom%></span>
+								</span>
+							</div>
+						</td>
+						<td class="td cbi-value-field" data-title="<%:Config%>" id="5g_prefer_custom_config">
+							<div id="5g_band_check"></div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section" id="cbi-4g_band_info" style="display: none;">
+		<div class="cbi-section fade-in">
+			<!-- <legend><%:4G Band Preferences%></legend> -->
+			<h3><%:4G Band Preferences%></h3>
+			<table class="table cbi-section-table">
+				<tbody>
+					<tr class="tr cbi-section-table-titles anonymous">
+						<th class="th cbi-section-table-cell"><%:Current%></th>
+						<th class="th cbi-section-table-cell"><%:Option%></th>
+						<th class="th cbi-section-table-cell"><%:Config%></th>
+						<th class="th cbi-section-table-cell cbi-section-actions"></th>
+					</tr>
+					<tr class="tr cbi-section-table-row cbi-rowstyle-1">
+						<td class="td cbi-value-field" data-title="<%:Current%>" id="4g_current_prefer"></td>
+						<td class="td cbi-value-field" data-title="<%:Option%>" id="4g_prefer_option">
+							<div>
+								<span class="cbi-radio">
+									<input type="radio" name="4g_prefer_option" id="4g_prefer_option_auto" value="auto" checked="true">
+									<span><%:Auto%></span>
+								</span>&nbsp;
+								<span class="cbi-radio">
+									<input type="radio" name="4g_prefer_option" id="4g_prefer_option_custom" value="custom">
+									<span><%:Custom%></span>
+								</span>
+							</div>
+						</td>
+						<td class="td cbi-value-field" data-title="<%:Config%>" id="4g_prefer_custom_config">
+							<div id="4g_band_check"></div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section" id="cbi-3g_band_info" style="display: none;">
+		<div class="cbi-section fade-in">
+			<!-- <legend><%:3G Band Preferences%></legend> -->
+			<h3><%:3G Band Preferences%></h3>
+			<table class="table cbi-section-table">
+				<tbody>
+					<tr class="tr cbi-section-table-titles anonymous">
+						<th class="th cbi-section-table-cell"><%:Current%></th>
+						<th class="th cbi-section-table-cell"><%:Option%></th>
+						<th class="th cbi-section-table-cell"><%:Config%></th>
+						<th class="th cbi-section-table-cell cbi-section-actions"></th>
+					</tr>
+					<tr class="tr cbi-section-table-row cbi-rowstyle-1">
+						<td class="td cbi-value-field" data-title="<%:Current%>" id="3g_current_prefer"></td>
+						<td class="td cbi-value-field" data-title="<%:Option%>" id="3g_prefer_option">
+							<div>
+								<span class="cbi-radio">
+									<input type="radio" name="3g_prefer_option" id="3g_prefer_option_auto" value="auto" checked="true">
+									<span><%:Auto%></span>
+								</span>&nbsp;
+								<span class="cbi-radio">
+									<input type="radio" name="3g_prefer_option" id="3g_prefer_option_custom" value="custom">
+									<span><%:Custom%></span>
+								</span>
+							</div>
+						</td>
+						<td class="td cbi-value-field" data-title="<%:Config%>" id="3g_prefer_custom_config">
+							<div id="3g_band_check"></div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section" id="cbi-2g_band_info" style="display: none;">
+		<div class="cbi-section fade-in">
+			<!-- <legend><%:2G Band Preferences%></legend> -->
+			<h3><%:2G Band Preferences%></h3>
+			<table class="table cbi-section-table">
+				<tbody>
+					<tr class="tr cbi-section-table-titles anonymous">
+						<th class="th cbi-section-table-cell"><%:Current%></th>
+						<th class="th cbi-section-table-cell"><%:Option%></th>
+						<th class="th cbi-section-table-cell"><%:Config%></th>
+						<th class="th cbi-section-table-cell cbi-section-actions"></th>
+					</tr>
+					<tr class="tr cbi-section-table-row cbi-rowstyle-1">
+						<td class="td cbi-value-field" data-title="<%:Current%>" id="2g_current_prefer"></td>
+						<td class="td cbi-value-field" data-title="<%:Option%>" id="2g_prefer_option">
+							<div>
+								<span class="cbi-radio">
+									<input type="radio" name="2g_prefer_option" id="2g_prefer_option_auto" value="auto" checked="true">
+									<span><%:Auto%></span>
+								</span>&nbsp;
+								<span class="cbi-radio">
+									<input type="radio" name="2g_prefer_option" id="2g_prefer_option_custom" value="custom">
+									<span><%:Custom%></span>
+								</span>
+							</div>
+						</td>
+						<td class="td cbi-value-field" data-title="<%:Config%>" id="2g_prefer_custom_config">
+							<div id="2g_band_check"></div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</fieldset>
 
 </div>
 

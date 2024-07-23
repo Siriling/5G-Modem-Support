@@ -24,13 +24,13 @@ reset_network_interface()
     local interface_name_ipv6="wwan6_5g_${modem_no}"
 
     #获取IPv4地址
-    at_command="AT+CGPADDR=${define_connect}"
-    local ipv4=$(at ${at_port} ${at_command} | grep "+CGPADDR: " | awk -F',' '{print $2}' | sed 's/"//g')
+    local at_command="AT+CGPADDR=${define_connect}"
+    local ipv4=$(at ${at_port} ${at_command} | grep "+CGPADDR: " | sed -n '1p' | awk -F',' '{print $2}' | sed 's/"//g')
     #输出日志
     # echo "[$(date +"%Y-%m-%d %H:%M:%S")] Get Modem new IPv4 address : ${ipv4}" >> "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
 
     #获取DNS地址
-    dns=$(fibocom_get_dns ${at_port} ${define_connect})
+    local dns=$(fibocom_get_dns ${at_port} ${define_connect})
     local ipv4_dns1=$(echo "${dns}" | jq -r '.dns.ipv4_dns1')
     local ipv4_dns2=$(echo "${dns}" | jq -r '.dns.ipv4_dns2')
     #输出日志
@@ -117,12 +117,14 @@ ecm_dial()
     # at "${at_port}" "${at_command}"
 
     #拨号
-    at_command
+    local at_command
     if [ "$manufacturer" = "quectel" ]; then
         at_command="AT+QNETDEVCTL=${define_connect},3,1"
     elif [ "$manufacturer" = "fibocom" ]; then
         at_command="AT+GTRNDIS=1,${define_connect}"
     elif [ "$manufacturer" = "meig" ]; then
+        at_command="AT^NDISDUP=${define_connect},1"
+    elif [ "$manufacturer" = "huawei" ]; then
         at_command="AT^NDISDUP=${define_connect},1"
     else
         at_command='ATI'
@@ -150,10 +152,10 @@ rndis_dial()
     local define_connect="$4"
     local modem_no="$5"
 
-    #手动设置IP（广和通FM350-GL）
+    #手动拨号（广和通FM350-GL）
     if [ "$manufacturer" = "fibocom" ] && [ "$platform" = "mediatek" ]; then
 
-        at_command="AT+CGACT=1,${define_connect}"
+        local at_command="AT+CGACT=1,${define_connect}"
         #打印日志
         dial_log "${at_command}" "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
         #激活并拨号
@@ -228,7 +230,7 @@ modem_network_task()
 
         #网络连接检查
         local at_command="AT+CGPADDR=${define_connect}"
-        local ipv4=$(at ${at_port} ${at_command} | grep "+CGPADDR: " | awk -F',' '{print $2}' | sed 's/"//g')
+        local ipv4=$(at ${at_port} ${at_command} | grep "+CGPADDR: " | sed -n '1p' | awk -F',' '{print $2}' | sed 's/"//g')
 
         if [ -z "$ipv4" ]; then
 

@@ -55,7 +55,8 @@
                 "platform":"qualcomm",
                 "data_interface":"usb",
                 "define_connect":"1",
-                "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"]
+                "modes":["qmi","gobinet","ecm","mbim","rndis","ncm"],
+                "band_5g":"1,2,3,5,7,8,12,20,25,28,38,40,41,48,66,71,77,78,79,257,258,260,261"
             },
             "rm502q-ae":{
                 "manufacturer_id":"2c7c",
@@ -152,6 +153,18 @@
                 "data_interface":"usb",
                 "define_connect":"1",
                 "modes":["qmi","gobinet","ecm","rndis","ncm"]
+            },
+            "mh5000-31":{
+                "manufacturer_id":"12d1",
+                "manufacturer":"huawei",
+                "platform":"hisilicon",
+                "data_interface":"usb",
+                "define_connect":"1",
+                "modes":["ecm","ncm"],
+                "band_2g":"DCS_1800,E-GSM_900,P-GSM_900,GSM_850,R-GSM_900,PCS_1900",
+                "band_3g":"1,2,5,6,8,9,19",
+                "band_4g":"1,2,3,4,5,6,7,8,9,10,11,12,13,14,17,18,19,20,21,25,26,28,33,34,35,36,37,38,39,40,41,42,43",
+                "band_5g":"1,2,3,5,7,8,12,20,25,28,38,40,41,78,79"
             }
         },
         "pcie":{
@@ -257,6 +270,12 @@
                 "asrmicro":{
                     "vendor_id":["2dee"],
                     "product_id":["4d57","4d58","4d59"]
+                }
+            },
+            "huawei":{
+                "hisilicon":{
+                    "vendor_id":["12d1"],
+                    "product_id":["15c3"]
                 }
             }
         }

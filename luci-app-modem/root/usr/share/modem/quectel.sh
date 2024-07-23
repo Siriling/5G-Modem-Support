@@ -30,7 +30,7 @@ quectel_get_dns()
 
     #获取DNS地址
     at_command="AT+GTDNS=${define_connect}"
-    local response=$(at ${at_port} ${at_command} | grep "+GTDNS: ")
+    local response=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+GTDNS: ")
 
     local ipv4_dns1=$(echo "${response}" | awk -F'"' '{print $2}' | awk -F',' '{print $1}')
     [ -z "$ipv4_dns1" ] && {
@@ -174,12 +174,20 @@ quectel_set_mode()
 
 #获取网络偏好
 # $1:AT串口
+# $2:数据接口
+# $3:模组名称
 quectel_get_network_prefer()
 {
     local at_port="$1"
+    local data_interface="$2"
+    local modem_name="$3"
+
     at_command='AT+QNWPREFCFG="mode_pref"'
-    local response=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+QNWPREFCFG:" | awk -F',' '{print $2}' | sed 's/\r//g')
-    
+    local response=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+QNWPREFCFG:" | sed 's/\r//g')
+    local network_type_num=$(echo "$response" | awk -F',' '{print $2}')
+
+    #获取网络类型
+    # local network_prefer_2g="0";
     local network_prefer_3g="0";
     local network_prefer_4g="0";
     local network_prefer_5g="0";
@@ -205,14 +213,30 @@ quectel_get_network_prefer()
         fi
     fi
 
+    #获取频段信息
+    # local band_2g_info="[]"
+    local band_3g_info="[]"
+    local band_4g_info="[]"
+    local band_5g_info="[]"
+
+    #生成网络偏好
     local network_prefer="{
-        \"network_prefer\":{
-            \"3G\":$network_prefer_3g,
-            \"4G\":$network_prefer_4g,
-            \"5G\":$network_prefer_5g
-        }
+        \"network_prefer\":[
+            {\"3G\":{
+                \"enable\":$network_prefer_3g,
+                \"band\":$band_3g_info
+            }},
+            {\"4G\":{
+                \"enable\":$network_prefer_4g,
+                \"band\":$band_4g_info
+            }},
+            {\"5G\":{
+                \"enable\":$network_prefer_5g,
+                \"band\":$band_5g_info
+            }}
+        ]
     }"
-    echo "$network_prefer"
+    echo "${network_prefer}"
 }
 
 #设置网络偏好
@@ -223,32 +247,32 @@ quectel_set_network_prefer()
     local at_port="$1"
     local network_prefer="$2"
 
-    #获取网络偏好配置
+     #获取网络偏好配置
     local network_prefer_config
 
     #获取选中的数量
     local count=$(echo "$network_prefer" | grep -o "1" | wc -l)
-    #获取每个偏好的值
-    local network_prefer_3g=$(echo "$network_prefer" | jq -r '.["3G"]')
-    local network_prefer_4g=$(echo "$network_prefer" | jq -r '.["4G"]')
-    local network_prefer_5g=$(echo "$network_prefer" | jq -r '.["5G"]')
+    #获取启用的网络偏好
+    local enable_5g=$(echo "$network_prefer" | jq -r '.["5G"].enable')
+    local enable_4g=$(echo "$network_prefer" | jq -r '.["4G"].enable')
+    local enable_3g=$(echo "$network_prefer" | jq -r '.["3G"].enable')
 
     case "$count" in
         "1")
-            if [ "$network_prefer_3g" = "1" ]; then
+            if [ "$enable_3g" = "1" ]; then
                 network_prefer_config="WCDMA"
-            elif [ "$network_prefer_4g" = "1" ]; then
+            elif [ "$enable_4g" = "1" ]; then
                 network_prefer_config="LTE"
-            elif [ "$network_prefer_5g" = "1" ]; then
+            elif [ "$enable_5g" = "1" ]; then
                 network_prefer_config="NR5G"
             fi
         ;;
         "2")
-            if [ "$network_prefer_3g" = "1" ] && [ "$network_prefer_4g" = "1" ]; then
+            if [ "$enable_3g" = "1" ] && [ "$enable_4g" = "1" ]; then
                 network_prefer_config="WCDMA:LTE"
-            elif [ "$network_prefer_3g" = "1" ] && [ "$network_prefer_5g" = "1" ]; then
+            elif [ "$enable_3g" = "1" ] && [ "$enable_5g" = "1" ]; then
                 network_prefer_config="WCDMA:NR5G"
-            elif [ "$network_prefer_4g" = "1" ] && [ "$network_prefer_5g" = "1" ]; then
+            elif [ "$enable_4g" = "1" ] && [ "$enable_5g" = "1" ]; then
                 network_prefer_config="LTE:NR5G"
             fi
         ;;
@@ -934,7 +958,7 @@ quectel_cell_info()
     esac
 }
 
-# SIMCOM获取基站信息
+# Quectel获取基站信息
 Quectel_Cellinfo()
 {
     # return

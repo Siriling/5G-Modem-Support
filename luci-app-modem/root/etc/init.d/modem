@@ -445,6 +445,8 @@ stop_ecm()
 		fi
 	elif [ "$manufacturer" = "meig" ]; then
 		at_command="AT^NDISDUP=${define_connect},0"
+	elif [ "$manufacturer" = "huawei" ]; then
+		at_command="AT^NDISDUP=${define_connect},0"
 	else
 		at_command='ATI'
 	fi
@@ -633,13 +635,12 @@ dial()
 	[ -z "${modem_no}" ] && return 0
 	
 	#获取模组的拨号模式
-	local time=0
+	local time=20
 	local mode
-	while [ $time -lt 10 ]; do
+	for i in $(seq 1 ${time}); do
 		mode=$(get_mode ${modem_no})
 		[ -n "$mode" ] && [ "$mode" != "unknown" ] && break
 		sleep 5s
-		time=$((time+1))
     done
 
 	#获取不到拨号模式

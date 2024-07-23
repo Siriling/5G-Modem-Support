@@ -35,7 +35,7 @@ meig_get_dns()
 
     #获取DNS地址
     at_command="AT+CGCONTRDP=${define_connect}"
-    local response=$(at ${at_port} ${at_command} | grep "+CGCONTRDP: " | grep -E '[0-9]+.[0-9]+.[0-9]+.[0-9]+' | sed -n '1p')
+    local response=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+CGCONTRDP: " | grep -E '[0-9]+.[0-9]+.[0-9]+.[0-9]+' | sed -n '1p')
 
     local ipv4_dns1=$(echo "${response}" | awk -F',' '{print $7}' | awk -F' ' '{print $1}')
     [ -z "$ipv4_dns1" ] && {
@@ -161,28 +161,122 @@ meig_set_mode()
     sh ${SCRIPT_DIR}/modem_at.sh ${at_port} "${at_command}"
 }
 
+#获取位
+# $1:频段名称
+meig_get_bit()
+{
+    local band_name="$1"
+
+    local bit
+    case "$band_name" in
+        "DCS_1800") bit="8" ;;
+        "E-GSM_900") bit="9" ;;
+        "P-GSM_900") bit="10" ;;
+        "GSM_450") bit="17" ;;
+        "GSM_480") bit="18" ;;
+        "GSM_750") bit="19" ;;
+        "GSM_850") bit="20" ;;
+        "R-GSM_900") bit="21" ;;
+        "PCS_1900") bit="22" ;;
+    esac
+
+    echo "${bit}"
+}
+
+#获取频段信息
+# $1:频段二进制数
+# $2:支持的频段
+# $3:频段类型（2G，3G，4G，5G）
+meig_get_band_info()
+{
+    local band_bin="$1"
+    local support_band="$2"
+    local band_type="$3"
+
+    local band_info=""
+    local support_band=$(echo "$support_band" | sed 's/,/ /g')
+    if [ "$band_type" = "2G" ]; then
+
+        for band in $support_band; do
+            #获取bit位
+            local bit=$(meig_get_bit ${band})
+            #获取值
+            local enable="${band_bin: $((-bit)):1}"
+            [ -z "$enable" ] && enable="0"
+            #设置频段信息
+            # band_info=$(echo ${band_info} | jq '. += [{"'$band'":'$enable'}]')
+            band_info="${band_info},{\"$band\":$enable}"
+        done
+    else
+        #频段频段起始，前缀位置
+        local start_bit
+        local band_prefix
+        case "$band_type" in
+            "3G")
+                start_bit="23"
+                band_prefix="WCDMA_B"
+            ;;
+            "4G")
+                start_bit="1"
+                band_prefix="LTE_BC"
+            ;;
+            "5G")
+                start_bit="1"
+                band_prefix="NR5G_N"
+            ;;
+        esac
+
+        for band in $support_band; do
+            #获取值（从start_bit位开始）
+            local enable="${band_bin: $((-band-start_bit+1)):1}"
+            [ -z "$enable" ] && enable="0"
+            #设置频段信息
+            # band_info=$(echo ${band_info} | jq '. += [{'$band_prefix$band':'$enable'}]')
+            band_info="${band_info},{\"$band_prefix$band\":$enable}"
+        done
+    fi
+    #去掉第一个,
+    band_info="["${band_info/,/}"]"
+    # band_info="[${band_info%?}]"
+
+    echo "${band_info}"
+}
+
 #获取网络偏好
 # $1:AT串口
+# $2:数据接口
+# $3:模组名称
 meig_get_network_prefer()
 {
     local at_port="$1"
+    local data_interface="$2"
+    local modem_name="$3"
+
     at_command="AT^SYSCFGEX?"
-    local response=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "\^SYSCFGEX:" | awk -F'"' '{print $2}')
-    
+    local response=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "\^SYSCFGEX:" | sed 's/\^SYSCFGEX://g')
+    local network_type_num=$(echo "$response" | awk -F'"' '{print $2}')
+
+    #获取网络类型
+    local network_prefer_2g="0";
     local network_prefer_3g="0";
     local network_prefer_4g="0";
     local network_prefer_5g="0";
 
     #匹配不同的网络类型
-    local auto=$(echo "${response}" | grep "00")
+    local auto=$(echo "${network_type_num}" | grep "00")
     if [ -n "$auto" ]; then
+        network_prefer_2g="1"
         network_prefer_3g="1"
         network_prefer_4g="1"
         network_prefer_5g="1"
     else
-        local wcdma=$(echo "${response}" | grep "02")
-        local lte=$(echo "${response}" | grep "03")
-        local nr=$(echo "${response}" | grep "04")
+        local gsm=$(echo "${network_type_num}" | grep "01")
+        local wcdma=$(echo "${network_type_num}" | grep "02")
+        local lte=$(echo "${network_type_num}" | grep "03")
+        local nr=$(echo "${network_type_num}" | grep "04")
+        if [ -n "$gsm" ]; then
+            network_prefer_2g="1"
+        fi 
         if [ -n "$wcdma" ]; then
             network_prefer_3g="1"
         fi
@@ -194,14 +288,58 @@ meig_get_network_prefer()
         fi
     fi
 
+	#获取模组信息
+    local modem_info=$(jq '.modem_support.'$data_interface'."'$modem_name'"' ${SCRIPT_DIR}/modem_support.json)
+
+    #获取模组支持的频段
+    local support_2g_band=$(echo "$modem_info" | jq -r '.band_2g')
+    local support_3g_band=$(echo "$modem_info" | jq -r '.band_3g')
+    local support_4g_band=$(echo "$modem_info" | jq -r '.band_4g')
+    local support_5g_band=$(echo "$modem_info" | jq -r '.band_5g')
+
+    #获取2G，3G频段信息
+    local band_hex_2g_3g=$(echo "$response" | awk -F',' '{print $2}')
+    #十六进制转二进制
+    local bin_2g_3g=$(echo "obase=2; ibase=16; $band_hex_2g_3g" | bc)
+    local band_2g_info=$(meig_get_band_info "${bin_2g_3g}" "${support_2g_band}" "2G")
+    local band_3g_info=$(meig_get_band_info "${bin_2g_3g}" "${support_3g_band}" "3G")
+
+    #获取4G频段信息
+    local band_hex_4g_1=$(echo "$response" | awk -F',' '{print $5}' | sed 's/\r//g')
+    local band_hex_4g_2=$(echo "$response" | awk -F',' '{print $7}' | sed 's/\r//g')
+    #十六进制转二进制
+    local bin_4g=$(echo "obase=2; ibase=16; $band_hex_4g_1 + $band_hex_4g_2" | bc)
+    local band_4g_info=$(meig_get_band_info "${bin_4g}" "${support_4g_band}" "4G")
+    
+    #获取5G频段信息
+    local band_hex_5g_1=$(echo "$response" | awk -F',' '{print $8}' | sed 's/\r//g')
+    local band_hex_5g_2=$(echo "$response" | awk -F',' '{print $9}' | sed 's/\r//g')
+    #十六进制转二进制
+    local bin_5g=$(echo "obase=2; ibase=16; $band_hex_5g_1 + $band_hex_5g_2" | bc)
+    local band_5g_info=$(meig_get_band_info "${bin_5g}" "${support_5g_band}" "5G")
+
+    #生成网络偏好
     local network_prefer="{
-        \"network_prefer\":{
-            \"3G\":$network_prefer_3g,
-            \"4G\":$network_prefer_4g,
-            \"5G\":$network_prefer_5g
-        }
+        \"network_prefer\":[
+            {\"2G\":{
+                \"enable\":$network_prefer_2g,
+                \"band\":$band_2g_info
+            }},
+            {\"3G\":{
+                \"enable\":$network_prefer_3g,
+                \"band\":$band_3g_info
+            }},
+            {\"4G\":{
+                \"enable\":$network_prefer_4g,
+                \"band\":$band_4g_info
+            }},
+            {\"5G\":{
+                \"enable\":$network_prefer_5g,
+                \"band\":$band_5g_info
+            }}
+        ]
     }"
-    echo "$network_prefer"
+    echo "${network_prefer}"
 }
 
 #设置网络偏好
@@ -215,35 +353,18 @@ meig_set_network_prefer()
     #获取网络偏好配置
     local network_prefer_config
 
-    #获取选中的数量
-    local count=$(echo "$network_prefer" | grep -o "1" | wc -l)
-    #获取每个偏好的值
-    local network_prefer_3g=$(echo "$network_prefer" | jq -r '.["3G"]')
-    local network_prefer_4g=$(echo "$network_prefer" | jq -r '.["4G"]')
-    local network_prefer_5g=$(echo "$network_prefer" | jq -r '.["5G"]')
+    #获取启用的网络偏好
+    local enable_5g=$(echo "$network_prefer" | jq -r '.["5G"].enable')
+    local enable_4g=$(echo "$network_prefer" | jq -r '.["4G"].enable')
+    local enable_3g=$(echo "$network_prefer" | jq -r '.["3G"].enable')
 
-    case "$count" in
-        "1")
-            if [ "$network_prefer_3g" = "1" ]; then
-                network_prefer_config="02"
-            elif [ "$network_prefer_4g" = "1" ]; then
-                network_prefer_config="03"
-            elif [ "$network_prefer_5g" = "1" ]; then
-                network_prefer_config="04"
-            fi
-        ;;
-        "2")
-            if [ "$network_prefer_3g" = "1" ] && [ "$network_prefer_4g" = "1" ]; then
-                network_prefer_config="0302"
-            elif [ "$network_prefer_3g" = "1" ] && [ "$network_prefer_5g" = "1" ]; then
-                network_prefer_config="0402"
-            elif [ "$network_prefer_4g" = "1" ] && [ "$network_prefer_5g" = "1" ]; then
-                network_prefer_config="0403"
-            fi
-        ;;
-        "3") network_prefer_config="00" ;;
-        *) network_prefer_config="00" ;;
-    esac
+    #获取网络偏好配置
+    local network_prefer_config
+    [ "$enable_5g" = "1" ] && network_prefer_config="${network_prefer_config}04"
+    [ "$enable_4g" = "1" ] && network_prefer_config="${network_prefer_config}03"
+    [ "$enable_3g" = "1" ] && network_prefer_config="${network_prefer_config}02"
+
+    [ -z "$network_prefer_config" ] && network_prefer_config="00"
 
     #设置模组
     at_command='AT^SYSCFGEX="'${network_prefer_config}'",all,0,2,all,all,all,all,1'
@@ -314,7 +435,7 @@ meig_get_connect_status()
 #基本信息
 meig_base_info()
 {
-    debug "meig base info"
+    debug "Meig base info"
 
     #Name（名称）
     at_command="AT+CGMM"
@@ -365,7 +486,7 @@ meig_get_sim_status()
 #SIM卡信息
 meig_sim_info()
 {
-    debug "meig sim info"
+    debug "Meig sim info"
     
     #SIM Slot（SIM卡卡槽）
     at_command="AT^SIMSLOT?"
@@ -517,7 +638,7 @@ meig_get_lte_ambr()
 #网络信息
 meig_network_info()
 {
-    debug "meig network info"
+    debug "Meig network info"
 
     #Connect Status（连接状态）
     connect_status=$(meig_get_connect_status ${at_port} ${define_connect})

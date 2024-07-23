@@ -43,7 +43,7 @@ fibocom_get_dns()
 
     #获取DNS地址
     at_command="AT+GTDNS=${define_connect}"
-    local response=$(at ${at_port} ${at_command} | grep "+GTDNS: " | grep -E '[0-9]+.[0-9]+.[0-9]+.[0-9]+' | sed -n '1p')
+    local response=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+GTDNS: " | grep -E '[0-9]+.[0-9]+.[0-9]+.[0-9]+' | sed -n '1p')
 
     local ipv4_dns1=$(echo "${response}" | awk -F'"' '{print $2}' | awk -F',' '{print $1}')
     [ -z "$ipv4_dns1" ] && {
@@ -203,28 +203,31 @@ fibocom_set_mode()
 
 #获取网络偏好
 # $1:AT串口
+# $2:数据接口
+# $3:模组名称
 fibocom_get_network_prefer()
 {
     local at_port="$1"
-    at_command="AT+GTACT?"
-    local network_prefer_num=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $at_command | grep "+GTACT:" | awk -F',' '{print $1}' | sed 's/+GTACT: //g')
+    local data_interface="$2"
+    local modem_name="$3"
     
+    at_command="AT+GTACT?"
+    local response=$(sh ${SCRIPT_DIR}/modem_at.sh ${at_port} ${at_command} | grep "+GTACT:" | sed 's/+GTACT: //g')
+    local network_type_num=$(echo "$response" | awk -F',' '{print $1}')
+
+    #获取网络类型
+    # local network_prefer_2g="0";
     local network_prefer_3g="0";
     local network_prefer_4g="0";
     local network_prefer_5g="0";
 
     #匹配不同的网络类型
-    case "$network_prefer_num" in
+    case "$network_type_num" in
         "1") network_prefer_3g="1" ;;
         "2") network_prefer_4g="1" ;;
         "4")
             network_prefer_3g="1"
             network_prefer_4g="1"
-        ;;
-        "10")
-            network_prefer_3g="1"
-            network_prefer_4g="1"
-            network_prefer_5g="1"
         ;;
         "14") network_prefer_5g="1" ;;
         "16")
@@ -235,26 +238,37 @@ fibocom_get_network_prefer()
             network_prefer_4g="1"
             network_prefer_5g="1"
         ;;
-        "20")
-            network_prefer_3g="1"
-            network_prefer_4g="1"
-            network_prefer_5g="1"
-        ;;
-        *)
+        "10"|"20"|*)
             network_prefer_3g="1"
             network_prefer_4g="1"
             network_prefer_5g="1"
         ;;
     esac
 
+    #获取频段信息
+    # local band_2g_info="[]"
+    local band_3g_info="[]"
+    local band_4g_info="[]"
+    local band_5g_info="[]"
+
+    #生成网络偏好
     local network_prefer="{
-        \"network_prefer\":{
-            \"3G\":$network_prefer_3g,
-            \"4G\":$network_prefer_4g,
-            \"5G\":$network_prefer_5g
-        }
+        \"network_prefer\":[
+            {\"3G\":{
+                \"enable\":$network_prefer_3g,
+                \"band\":$band_3g_info
+            }},
+            {\"4G\":{
+                \"enable\":$network_prefer_4g,
+                \"band\":$band_4g_info
+            }},
+            {\"5G\":{
+                \"enable\":$network_prefer_5g,
+                \"band\":$band_5g_info
+            }}
+        ]
     }"
-    echo "$network_prefer"
+    echo "${network_prefer}"
 }
 
 #设置网络偏好
@@ -265,41 +279,41 @@ fibocom_set_network_prefer()
     local at_port="$1"
     local network_prefer="$2"
 
-    #获取网络偏好数字
-    local network_prefer_num
+    #获取网络偏好配置
+    local network_prefer_config
 
     #获取选中的数量
     local count=$(echo "$network_prefer" | grep -o "1" | wc -l)
-    #获取每个偏好的值
-    local network_prefer_3g=$(echo "$network_prefer" | jq -r '.["3G"]')
-    local network_prefer_4g=$(echo "$network_prefer" | jq -r '.["4G"]')
-    local network_prefer_5g=$(echo "$network_prefer" | jq -r '.["5G"]')
+    #获取启用的网络偏好
+    local enable_5g=$(echo "$network_prefer" | jq -r '.["5G"].enable')
+    local enable_4g=$(echo "$network_prefer" | jq -r '.["4G"].enable')
+    local enable_3g=$(echo "$network_prefer" | jq -r '.["3G"].enable')
 
     case "$count" in
         "1")
-            if [ "$network_prefer_3g" = "1" ]; then
-                network_prefer_num="1"
-            elif [ "$network_prefer_4g" = "1" ]; then
-                network_prefer_num="2"
-            elif [ "$network_prefer_5g" = "1" ]; then
-                network_prefer_num="14"
+            if [ "$enable_3g" = "1" ]; then
+                network_prefer_config="1"
+            elif [ "$enable_4g" = "1" ]; then
+                network_prefer_config="2"
+            elif [ "$enable_5g" = "1" ]; then
+                network_prefer_config="14"
             fi
         ;;
         "2")
-            if [ "$network_prefer_3g" = "1" ] && [ "$network_prefer_4g" = "1" ]; then
-                network_prefer_num="4"
-            elif [ "$network_prefer_3g" = "1" ] && [ "$network_prefer_5g" = "1" ]; then
-                network_prefer_num="16"
-            elif [ "$network_prefer_4g" = "1" ] && [ "$network_prefer_5g" = "1" ]; then
-                network_prefer_num="17"
+            if [ "$enable_3g" = "1" ] && [ "$enable_4g" = "1" ]; then
+                network_prefer_config="4"
+            elif [ "$enable_3g" = "1" ] && [ "$enable_5g" = "1" ]; then
+                network_prefer_config="16"
+            elif [ "$enable_4g" = "1" ] && [ "$enable_5g" = "1" ]; then
+                network_prefer_config="17"
             fi
         ;;
-        "3") network_prefer_num="20" ;;
-        *) network_prefer_num="10" ;;
+        "3") network_prefer_config="20" ;;
+        *) network_prefer_config="10" ;;
     esac
-
+echo "$network_prefer_config" >> /root/a
     #设置模组
-    at_command="AT+GTACT=$network_prefer_num"
+    at_command="AT+GTACT=${network_prefer_config}"
     sh ${SCRIPT_DIR}/modem_at.sh $at_port "$at_command"
 }
 
