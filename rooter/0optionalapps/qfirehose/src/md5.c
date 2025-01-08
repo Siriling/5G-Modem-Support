@@ -1,50 +1,43 @@
-/******************************************************************************
-  @file    mdm5.c
-  @brief   mdm4 checksum.
+/*
+    Copyright 2023 Quectel Wireless Solutions Co.,Ltd
 
-  DESCRIPTION
-  QFirehoe Tool for USB and PCIE of Quectel wireless cellular modules.
+    Quectel hereby grants customers of Quectel a license to use, modify,
+    distribute and publish the Software in binary form provided that
+    customers shall have no right to reverse engineer, reverse assemble,
+    decompile or reduce to source code form any portion of the Software.
+    Under no circumstances may customers modify, demonstrate, use, deliver
+    or disclose any portion of the Software in source code form.
+*/
 
-  INITIALIZATION AND SEQUENCING REQUIREMENTS
-  None.
-
-  ---------------------------------------------------------------------------
-  Copyright (c) 2016 - 2020 Quectel Wireless Solution, Co., Ltd.  All Rights Reserved.
-  Quectel Wireless Solution Proprietary and Confidential.
-  ---------------------------------------------------------------------------
-******************************************************************************/
 #include "md5.h"
 #include <endian.h> //for __BYTE_ORDER
 
-#define F(x, y, z)			((z) ^ ((x) & ((y) ^ (z))))
-#define G(x, y, z)			((y) ^ ((z) & ((x) ^ (y))))
-#define H(x, y, z)			(((x) ^ (y)) ^ (z))
-#define H2(x, y, z)			((x) ^ ((y) ^ (z)))
-#define I(x, y, z)			((y) ^ ((x) | ~(z)))
+#define F(x, y, z) ((z) ^ ((x) & ((y) ^ (z))))
+#define G(x, y, z) ((y) ^ ((z) & ((x) ^ (y))))
+#define H(x, y, z) (((x) ^ (y)) ^ (z))
+#define H2(x, y, z) ((x) ^ ((y) ^ (z)))
+#define I(x, y, z) ((y) ^ ((x) | ~(z)))
 
-#define STEP(f, a, b, c, d, x, t, s) \
-	(a) += f((b), (c), (d)) + (x) + (t); \
-	(a) = (((a) << (s)) | (((a) & 0xffffffff) >> (32 - (s)))); \
-	(a) += (b);
+#define STEP(f, a, b, c, d, x, t, s)                         \
+    (a) += f((b), (c), (d)) + (x) + (t);                     \
+    (a) = (((a) << (s)) | (((a)&0xffffffff) >> (32 - (s)))); \
+    (a) += (b);
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-#define SET(n) \
-	(*(uint32_t *)&ptr[(n) * 4])
-#define GET(n) \
-	SET(n)
+#define SET(n) (*(uint32_t *)&ptr[(n)*4])
+#define GET(n) SET(n)
 #else
-#define SET(n) \
-	(block[(n)] = \
-	(uint32_t)ptr[(n) * 4] | \
-	((uint32_t)ptr[(n) * 4 + 1] << 8) | \
-	((uint32_t)ptr[(n) * 4 + 2] << 16) | \
-	((uint32_t)ptr[(n) * 4 + 3] << 24))
-#define GET(n) \
-	(block[(n)])
+#define SET(n)                                                             \
+    (block[(n)] = (uint32_t)ptr[(n)*4] | ((uint32_t)ptr[(n)*4 + 1] << 8) | \
+                  ((uint32_t)ptr[(n)*4 + 2] << 16) | ((uint32_t)ptr[(n)*4 + 3] << 24))
+#define GET(n) (block[(n)])
 #endif
 
+extern char firehose_unzip_full_dir[256];
+extern char firehose_zip_name[80];
 
-static const void *body(md5_ctx_t *ctx, const void *data, unsigned long size) {
+static const void *body(md5_ctx_t *ctx, const void *data, unsigned long size)
+{
     const unsigned char *ptr;
     uint32_t a, b, c, d;
     uint32_t saved_a, saved_b, saved_c, saved_d;
@@ -59,7 +52,8 @@ static const void *body(md5_ctx_t *ctx, const void *data, unsigned long size) {
     c = ctx->c;
     d = ctx->d;
 
-    do {
+    do
+    {
         saved_a = a;
         saved_b = b;
         saved_c = c;
@@ -153,7 +147,8 @@ static const void *body(md5_ctx_t *ctx, const void *data, unsigned long size) {
     return ptr;
 }
 
-void md5_begin(md5_ctx_t *ctx) {
+void md5_begin(md5_ctx_t *ctx)
+{
     ctx->a = 0x67452301;
     ctx->b = 0xefcdab89;
     ctx->c = 0x98badcfe;
@@ -163,21 +158,23 @@ void md5_begin(md5_ctx_t *ctx) {
     ctx->hi = 0;
 }
 
-void md5_hash(const void *data, size_t size, md5_ctx_t *ctx) {
+void md5_hash(const void *data, size_t size, md5_ctx_t *ctx)
+{
     uint32_t saved_lo;
     unsigned long used, available;
 
     saved_lo = ctx->lo;
-    if ((ctx->lo = (saved_lo + size) & 0x1fffffff) < saved_lo)
-        ctx->hi++;
+    if ((ctx->lo = (saved_lo + size) & 0x1fffffff) < saved_lo) ctx->hi++;
     ctx->hi += size >> 29;
 
     used = saved_lo & 0x3f;
 
-    if (used) {
+    if (used)
+    {
         available = 64 - used;
 
-        if (size < available) {
+        if (size < available)
+        {
             memcpy(&ctx->buffer[used], data, size);
             return;
         }
@@ -188,16 +185,18 @@ void md5_hash(const void *data, size_t size, md5_ctx_t *ctx) {
         body(ctx, ctx->buffer, 64);
     }
 
-    if (size >= 64) {
-        data = body(ctx, data, size & ~((size_t) 0x3f));
+    if (size >= 64)
+    {
+        data = body(ctx, data, size & ~((size_t)0x3f));
         size &= 0x3f;
     }
 
     memcpy(ctx->buffer, data, size);
 }
 
-void md5_end(void *resbuf, md5_ctx_t *ctx) {
-    unsigned char *result = (unsigned char*)resbuf;
+void md5_end(void *resbuf, md5_ctx_t *ctx)
+{
+    unsigned char *result = (unsigned char *)resbuf;
     unsigned long used, available;
 
     used = ctx->lo & 0x3f;
@@ -206,12 +205,15 @@ void md5_end(void *resbuf, md5_ctx_t *ctx) {
 
     available = 64 - used;
 
-    if (available < 8) {
+    if (available < 8)
+    {
         memset(&ctx->buffer[used], 0, available);
         body(ctx, ctx->buffer, 64);
         used = 0;
         available = 64;
     }
+
+    if (used >= 64) return (void)0;
 
     memset(&ctx->buffer[used], 0, available - 8);
 
@@ -247,25 +249,25 @@ void md5_end(void *resbuf, md5_ctx_t *ctx) {
     memset(ctx, 0, sizeof(*ctx));
 }
 
-int md5sum(char *file, void *md5_buf) {
+int md5sum(char *file, void *md5_buf)
+{
     char buf[256];
     md5_ctx_t ctx;
     int ret = 0;
     FILE *f;
 
     f = fopen(file, "r");
-    if (!f)
-        return -1;
+    if (!f) return -1;
 
     md5_begin(&ctx);
-    do {
+    do
+    {
         int len = fread(buf, 1, sizeof(buf), f);
-        if (!len)
-            break;
+        if (!len) break;
 
         md5_hash(buf, len, &ctx);
         ret += len;
-    } while(1);
+    } while (1);
 
     md5_end(md5_buf, &ctx);
     fclose(f);
@@ -275,69 +277,201 @@ int md5sum(char *file, void *md5_buf) {
 
 int md5_check(const char *firehose_dir)
 {
-	FILE *fp = NULL;
-	char md5_file_path[256], buff[256], file_name[128], file_full_path[256], file_md5_value[64];
-	char *ps = NULL, *pe = NULL;
-	unsigned char compute_md5_buff[16];
-	char convert_md5_buff[33];
-	int i, file_count = 0, fail_count = 0;
+    FILE *fp = NULL;
+    char md5_file_path[256], buff[256], file_name[128], file_name_tmp[128], file_full_path[256],
+        file_md5_value[64];
+    char *ps = NULL, *pe = NULL;
+    unsigned char compute_md5_buff[16];
+    char convert_md5_buff[33];
+    int i, file_count = 0, fail_count = 0;
 
-	snprintf(md5_file_path, sizeof(md5_file_path), "%.240s/md5.txt", firehose_dir);
-	if (access(md5_file_path, R_OK)) {
-		dbg_time("Cann't find md5.txt in %s, Please check it!\n", firehose_dir);
-		return 0; //allow skip md5 check by delete md5.txt
-	} else {
-		dbg_time("Find md5 check file <%s>\n", md5_file_path);
-	}
-	
-	fp = fopen(md5_file_path, "rb");
-	if (fp == NULL) {
-		dbg_time("fail to fopen(%s), error: %d (%s)\n", md5_file_path, errno, strerror(errno));
-		return -1;
-	}
+    if (is_upgrade_fimeware_zip_7z)
+    {
+        memset(zip_cmd_buf, 0, sizeof(zip_cmd_buf));
 
-	while (fgets(buff, sizeof(buff), fp)) {
-		if (strstr(buff, "targetfiles.zip"))
-			continue;
-		
-		ps = strstr(buff, ":\\");
-		if (ps == NULL)
-			continue;
+        if (is_upgrade_fimeware_only_zip)
+        {
+            if (is_firehose_zip_7z_name_exit)
+            {
+                snprintf(zip_cmd_buf, sizeof(zip_cmd_buf),
+                         "unzip -o -q %.240s %.76s/'*md5.txt' -d /tmp/ > %s", firehose_dir,
+                         firehose_zip_name, ZIP_PROCESS_INFO);
+            }
+            else
+            {
+                snprintf(zip_cmd_buf, sizeof(zip_cmd_buf),
+                         "unzip -o -q %.240s '*md5.txt' -d /tmp/ > %s", firehose_dir,
+                         ZIP_PROCESS_INFO);
+            }
+        }
+        else
+        {
+            if (is_firehose_zip_7z_name_exit)
+            {
+                snprintf(zip_cmd_buf, sizeof(zip_cmd_buf), "7z x %.240s -o/tmp/ %.76s/md5.txt > %s",
+                         firehose_dir, firehose_zip_name, ZIP_PROCESS_INFO);
+            }
+            else
+            {
+                snprintf(zip_cmd_buf, sizeof(zip_cmd_buf), "7z x %.240s -o/tmp/ md5.txt > %s",
+                         firehose_dir, ZIP_PROCESS_INFO);
+            }
+        }
+        printf("%s zip_cmd_buf:%s\n", __func__, zip_cmd_buf);
 
-		file_count++;
-		ps = ps + 1;
-		pe = strstr(ps, ":");
-		memcpy(file_name, ps, pe - ps);
-		file_name[pe-ps] = '\0';
+        if (-1 == system(zip_cmd_buf))
+        {
+            printf("%s system return error\n", __func__);
+            return -1;
+        }
+        usleep(1000);
+        snprintf(md5_file_path, sizeof(md5_file_path), "%.240s/md5.txt", firehose_unzip_full_dir);
+        if (access(md5_file_path, R_OK))
+        {
+            dbg_time("Cann't find md5.txt in %s, Please check it!\n", md5_file_path);
+            return -1;
+        }
+        else
+        {
+            dbg_time("Find md5 check file <%s>\n", md5_file_path);
+        }
+    }
+    else
+    {
+        snprintf(md5_file_path, sizeof(md5_file_path), "%.240s/md5.txt", firehose_dir);
+        if (access(md5_file_path, R_OK))
+        {
+            dbg_time("Cann't find md5.txt in %s, Please check it!\n", firehose_dir);
+            return 0; // allow skip md5 check by delete md5.txt
+        }
+        else
+        {
+            dbg_time("Find md5 check file <%s>\n", md5_file_path);
+        }
+    }
 
-		for (i = 0; file_name[i] != '\0'; i++) {
-			if (file_name[i] == '\\')
-				file_name[i] = '/';
-		}
+    fp = fopen(md5_file_path, "rb");
+    if (fp == NULL)
+    {
+        dbg_time("fail to fopen(%s), error: %d (%s)\n", md5_file_path, errno, strerror(errno));
+        return -1;
+    }
 
-		memcpy(file_md5_value, pe + 1, 32);
-		file_md5_value[32] = '\0';
-		snprintf(file_full_path, sizeof(file_full_path), "%.160s%.80s", firehose_dir, file_name);
-		
-		md5sum(file_full_path, compute_md5_buff);
-		
-		for (i = 0; i< 16; i++) {
-			sprintf(convert_md5_buff+(i*2), "%02X", compute_md5_buff[i]);	
-		}
-		
-		if (strncasecmp(file_md5_value, convert_md5_buff, 16)) {
-			fail_count++;
-			dbg_time("md5 checking: %s fail\n", file_full_path);
-			dbg_time("find %s, should be %s\n", file_md5_value, convert_md5_buff);
-		} else {
-			dbg_time("md5 checking: %s pass\n", file_full_path);
-		}
-	}
+    while (fgets(buff, sizeof(buff), fp))
+    {
+        if (strstr(buff, "targetfiles.zip")) continue;
 
-	fclose(fp);
-	dbg_time("Totals checking %d files md5 value, %d file fail!\n", file_count, fail_count);
-	
-	return (fail_count? -1 : 0);
+        ps = strstr(buff, ":\\");
+        if (ps == NULL) continue;
+
+        file_count++;
+        ps = ps + 1;
+        pe = strstr(ps, ":");
+        if (pe == NULL) continue;
+
+        memcpy(file_name, ps, pe - ps);
+        file_name[pe - ps] = '\0';
+
+        for (i = 0; file_name[i] != '\0'; i++)
+        {
+            if (file_name[i] == '\\') file_name[i] = '/';
+        }
+
+        memcpy(file_md5_value, pe + 1, 32);
+        file_md5_value[32] = '\0';
+
+        if (is_upgrade_fimeware_zip_7z)
+        {
+            char *p1 = strchr(file_name, '/');
+            memset(file_name_tmp, 0, sizeof(file_name_tmp));
+            strncpy(file_name_tmp, p1 + 1, strlen(p1) - 1);
+            memset(zip_cmd_buf, 0, sizeof(zip_cmd_buf));
+
+            if (is_upgrade_fimeware_only_zip)
+            {
+                if (is_firehose_zip_7z_name_exit)
+                {
+                    snprintf(zip_cmd_buf, sizeof(zip_cmd_buf),
+                             "unzip -o -q %.240s %.76s/'*%.120s' -d /tmp/ > %s", firehose_dir,
+                             firehose_zip_name, file_name_tmp, ZIP_PROCESS_INFO);
+                }
+                else
+                {
+                    snprintf(zip_cmd_buf, sizeof(zip_cmd_buf),
+                             "unzip -o -q %.240s '*%.120s' -d /tmp/ > %s", firehose_dir,
+                             file_name_tmp, ZIP_PROCESS_INFO);
+                }
+            }
+            else
+            {
+                if (is_firehose_zip_7z_name_exit)
+                {
+                    snprintf(zip_cmd_buf, sizeof(zip_cmd_buf),
+                             "7z x %.240s -o/tmp/ %.76s/%.120s > %s", firehose_dir,
+                             firehose_zip_name, file_name_tmp, ZIP_PROCESS_INFO);
+                }
+                else
+                {
+                    snprintf(zip_cmd_buf, sizeof(zip_cmd_buf), "7z x %.240s -o/tmp/ %.120s > %s",
+                             firehose_dir, file_name_tmp, ZIP_PROCESS_INFO);
+                }
+            }
+            dbg_time("%s zip_cmd_buf:%s\n", __func__, zip_cmd_buf);
+
+            if (-1 == system(zip_cmd_buf))
+            {
+                dbg_time("%s system return error\n", __func__);
+                return -1;
+            }
+            usleep(1000);
+
+            snprintf(file_full_path, sizeof(file_full_path), "%.160s%.80s", firehose_unzip_full_dir,
+                     file_name);
+            dbg_time("%s file_full_path:%s\n", __func__, file_full_path);
+        }
+        else
+        {
+            snprintf(file_full_path, sizeof(file_full_path), "%.160s%.80s", firehose_dir,
+                     file_name);
+        }
+
+        if (access(file_full_path, R_OK))
+        {
+            continue;
+        }
+
+        md5sum(file_full_path, compute_md5_buff);
+
+        for (i = 0; i < 16; i++)
+        {
+            sprintf(convert_md5_buff + (i * 2), "%02X", compute_md5_buff[i]);
+        }
+
+        if (strncasecmp(file_md5_value, convert_md5_buff, 16))
+        {
+            fail_count++;
+            dbg_time("md5 checking: %s fail\n", file_full_path);
+            dbg_time("find %s, should be %s\n", file_md5_value, convert_md5_buff);
+        }
+        else
+        {
+            dbg_time("md5 checking: %s pass\n", file_full_path);
+        }
+
+        if (is_upgrade_fimeware_zip_7z)
+        {
+            dbg_time("%s delet %s ...\n", __func__, file_full_path);
+            unlink(file_full_path); // delete all file
+        }
+    }
+
+    fclose(fp);
+    if (is_upgrade_fimeware_zip_7z)
+    {
+        unlink(md5_file_path); // delete md5.txt
+    }
+
+    dbg_time("Totals checking %d files md5 value, %d file fail!\n", file_count, fail_count);
+
+    return (fail_count ? -1 : 0);
 }
-
-
