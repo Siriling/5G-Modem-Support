@@ -103,6 +103,24 @@ msgstr "选择一个模组进行调试"
 msgid "Network Preferences"
 msgstr "网络偏好"
 
+msgid "Apply Network Prefer"
+msgstr "应用网络偏好"
+
+msgid "Apply Band Prefer"
+msgstr "应用频段偏好"
+
+msgid "2G Band Preferences"
+msgstr "2G 频段偏好"
+
+msgid "3G Band Preferences"
+msgstr "3G 频段偏好"
+
+msgid "4G Band Preferences"
+msgstr "4G 频段偏好"
+
+msgid "5G Band Preferences"
+msgstr "5G 频段偏好"
+
 msgid "Self Test"
 msgstr "自检"
 
