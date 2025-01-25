@@ -276,8 +276,8 @@ config custom-commands
 	option command 'AT^SYSINFOEX'
 
 config custom-commands
-	option description '查询载波聚合小区信息 > AT^CELLINFO=3'
-	option command 'AT^CELLINFO=3'
+	option description '查询载波聚合小区信息 > AT^CELLINFO=1'
+	option command 'AT^CELLINFO=1'
 
 config custom-commands
 	option description '查询当前拨号模式 > AT+SER?'

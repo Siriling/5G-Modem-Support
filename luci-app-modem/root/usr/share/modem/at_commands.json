@@ -144,7 +144,7 @@
 				{"设置当前使用的为卡1 > AT^SIMSLOT=1":"AT^SIMSLOT=1"},
 				{"设置当前使用的为卡2 > AT^SIMSLOT=2":"AT^SIMSLOT=2"},
 				{"查询网络信息 > AT^SYSINFOEX":"AT^SYSINFOEX"},
-				{"查询载波聚合小区信息 > AT^CELLINFO=3":"AT^CELLINFO=3"},
+				{"查询载波聚合小区信息 > AT^CELLINFO=1":"AT^CELLINFO=1"},
 				{"查询当前拨号模式 > AT+SER?":"AT+SER?"},
 				{"QMI/GobiNet拨号模式 > AT+SER=1,1":"AT+SER=1,1"},
 				{"ECM拨号模式 > AT+SER=2,1":"AT+SER=2,1"},
