@@ -1,5 +1,5 @@
 #!/bin/sh
-# Usage: ./band_lock.sh "1,3,41" (locks NR bands 1, 3, 41)
+# Usage: ./band_lock.sh "1,3,41"
 BANDS="$1"
 if [ -z "$BANDS" ]; then
   echo "Error: Please provide band list (e.g., 1,3,41)"
