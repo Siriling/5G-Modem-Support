@@ -1,7 +1,7 @@
 #!/bin/sh
-# Auto-connect modem with QMI, MBIM, or PPP
-PROTOCOL="$1"  # e.g., qmi, mbim, ppp
-DEVICE="/dev/ttyUSB2"  # Adjust as needed
+# Usage: ./modem_connect.sh qmi|mbim|ppp
+PROTOCOL="$1"
+DEVICE="/dev/ttyUSB2"
 if [ -z "$PROTOCOL" ]; then
   echo "Error: Specify protocol (qmi, mbim, ppp)"
   exit 1
