@@ -2,6 +2,10 @@
 # Usage: ./modem_connect.sh qmi|mbim|ppp
 PROTOCOL="$1"
 DEVICE="/dev/ttyUSB2"
+if [ ! -e "$DEVICE" ]; then
+  echo "Error: Device $DEVICE not found"
+  exit 1
+fi
 if [ -z "$PROTOCOL" ]; then
   echo "Error: Specify protocol (qmi, mbim, ppp)"
   exit 1
