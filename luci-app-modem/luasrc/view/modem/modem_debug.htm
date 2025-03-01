@@ -683,8 +683,18 @@
 					}
 				}
 
-				//设置频段偏好显示
-				document.getElementById("cbi-"+network_type+"_band_info").style.display=band_info_display;
+				//设置频段偏好显示（beta功能）
+				band_info_display="none"; //不显示频段偏好
+
+				//获取当前启用的tab元素
+				var tab_menu = document.getElementById("tab_menu");
+				var tab_enable_element=get_tab_enable_element(tab_menu);
+				//获取当前选中的tab元素
+				var data_tab=tab_enable_element.getAttribute("data-tab").replace("_tab","");
+				if (data_tab=="network_prefer")
+				{
+					document.getElementById("cbi-"+network_type+"_band_info").style.display=band_info_display;
+				}
 			}
 		}
 
@@ -918,6 +928,8 @@
 		var checkboxes=document.getElementById('prefer_custom_config').querySelectorAll('input[type="checkbox"]');
 		for(checkbox of checkboxes)
 		{
+			//获取网络类型
+			var network_type=checkbox.value;
 			//获取网络类型配置
 			var network_prefer={};
 			network_prefer["enable"]=Number(checkbox.checked);
@@ -926,7 +938,6 @@
 			network_prefer["band"]=[];
 			if (checkbox.checked)
 			{
-				var network_type=checkbox.value;
 				var band_check_element=document.getElementById(network_type+"_band_check");
 				var bands=band_check_element.querySelectorAll('input[type="checkbox"]');
 				for(band of bands)
@@ -1013,6 +1024,17 @@
 	// 	);
 	// }
 
+	// 显示判断偏好
+	function display_band_prefer(status)
+	{
+		//不显示频段偏好
+		for (let i = 2; i <=5; i++)
+		{
+			network_type=i+"g";
+			document.getElementById("cbi-"+network_type+"_band_info").style.display=status;
+		}
+	}
+
 	// 获取模组调试信息
 	function get_modem_debug_info()
 	{
@@ -1026,7 +1048,11 @@
 		//获取当前选中的tab元素
 		var data_tab=tab_enable_element.getAttribute("data-tab").replace("_tab","");
 
-		if (data_tab=="mode") {
+		if (data_tab=="mode")
+		{
+			//不显示频段偏好
+			display_band_prefer("none");
+
 			//获取拨号模式信息
 			XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "get_mode_info")%>', {"port":at_port},
 				function(x, data)
@@ -1042,7 +1068,8 @@
 				}
 			);
 		}
-		else if (data_tab=="network_prefer") {
+		else if (data_tab=="network_prefer")
+		{
 			//获取网络偏好信息
 			XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "get_network_prefer_info")%>', {"port":at_port},
 				function(x, data)
@@ -1058,7 +1085,11 @@
 				}
 			);
 		}
-		else if (data_tab=="self_test") {
+		else if (data_tab=="self_test")
+		{
+			//不显示频段偏好
+			display_band_prefer("none");
+
 			//获取自检信息
 			XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "get_self_test_info")%>', {"port":at_port},
 				function(x, data)
@@ -1073,6 +1104,11 @@
 					set_modem_self_test_info(self_test_info);
 				}
 			);
+		}
+		else if (data_tab=="at_command")
+		{
+			//不显示频段偏好
+			display_band_prefer("none");
 		}
 	}
 

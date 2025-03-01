@@ -1,5 +1,5 @@
-obj-m := qmi_wwan.o
-GobiNet-objs := qmi_wwan.o
+obj-m := qmi_wwan_m.o
+GobiNet-objs := qmi_wwan_m.o
 
 PWD := $(shell pwd)
 OUTPUTDIR=/lib/modules/`uname -r`/kernel/drivers/net/usb/
@@ -25,10 +25,10 @@ default:
 
 install: default
 	mkdir -p $(OUTPUTDIR)
-	cp -f qmi_wwan.ko $(OUTPUTDIR)
+	cp -f qmi_wwan_m.ko $(OUTPUTDIR)
 	depmod
-	modprobe -r qmi_wwan
-	modprobe qmi_wwan
+	modprobe -r qmi_wwan_m
+	modprobe qmi_wwan_m
 
 clean:
 	rm -rf Makefile
