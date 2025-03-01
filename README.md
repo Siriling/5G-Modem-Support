@@ -3,12 +3,12 @@
 - Auto-detect WWAN cards (`detect_modem.sh`)
 - Band locking (`band_lock.sh`)
 - Diagnostics (`modem_diag.sh`)
-- Multi-protocol: QMI, MBIM, PPP (`modem_connect.sh`)
+- Multi-protocol support (`modem_connect.sh`)
+- Multi-modem detection (`multi_modem.sh`)
+- Signal monitoring (`signal_monitor.sh`)
 ## Installation
-1. Clone: `git clone git@github.com:Doanduy09/5G-Modem-Support.git`
-2. Copy: `scp scripts/* root@192.168.1.1:/usr/bin/`
+1. Clone repo: `git clone git@github.com:Doanduy09/5G-Modem-Support.git`
+2. Copy scripts: `scp scripts/* root@192.168.1.1:/usr/bin/`
 ## Usage
-- Detect: `sh /usr/bin/detect_modem.sh`
-- Lock bands: `sh /usr/bin/band_lock.sh "1,3,41"`
-- Diagnose: `sh /usr/bin/modem_diag.sh`
-- Connect: `sh /usr/bin/modem_connect.sh qmi`
+- Run: `sh /usr/bin/main.sh {detect|lock <bands>|diag|connect <protocol>}`
+- Example: `sh /usr/bin/main.sh lock "1,3,41"`
