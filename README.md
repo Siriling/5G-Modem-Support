@@ -12,3 +12,8 @@
 ## Usage
 - Run: `sh /usr/bin/main.sh {detect|lock <bands>|diag|connect <protocol>}`
 - Example: `sh /usr/bin/main.sh lock "1,3,41"`
+# 5G-Modem-Support Enhanced
+## Features
+- Auto IP recovery (`auto_reconnect.sh`)
+## Usage
+- Auto-reconnect: `sh /usr/bin/main.sh auto` (runs in background)
