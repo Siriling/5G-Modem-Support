@@ -10,6 +10,8 @@ case $ACTION in
   "auto") sh /usr/bin/auto_reconnect.sh ;;
   "update") sh /usr/bin/firmware_update.sh "$2" ;;
   "optimize") sh /usr/bin/optimize_network.sh ;;
+  "ai") sh /usr/bin/ai_band_select.sh ;;
+  "balance") sh /usr/bin/load_balance.sh ;;
   "luci") sh /usr/bin/luci_wwan.sh ;;
-  *) echo "Usage: $0 {detect|install|lock <bands>|diag|connect|auto|update <firmware>|optimize|luci}" ;;
+  *) echo "Usage: $0 {detect|install|lock <bands>|diag|connect|auto|update <firmware>|optimize|ai|balance|luci}" ;;
 esac
