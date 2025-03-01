@@ -1,13 +1,10 @@
-#!/bin/bash
-echo "Welcome to 5G Modem Support Tool"
-echo "1. Check modem status"
-echo "2. Connect to network"
-echo "3. Exit"
-read -p "Choose an option: " choice
-
-case $choice in
-  1) bash scripts/check_modem.sh ;;
-  2) bash examples/example_connect.sh ;;
-  3) echo "Goodbye!" ; exit 0 ;;
-  *) echo "Invalid option" ;;
+#!/bin/sh
+# Main script for 5G-Modem-Support
+ACTION="$1"
+case $ACTION in
+  "detect") sh /usr/bin/detect_modem.sh ;;
+  "lock") sh /usr/bin/band_lock.sh "$2" ;;
+  "diag") sh /usr/bin/modem_diag.sh ;;
+  "connect") sh /usr/bin/modem_connect.sh "$2" ;;
+  *) echo "Usage: $0 {detect|lock <bands>|diag|connect <protocol>}" ;;
 esac
