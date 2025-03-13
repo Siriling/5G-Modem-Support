@@ -2590,8 +2590,8 @@ static void mhi_netdev_get_drvinfo (struct net_device *ndev, struct ethtool_drvi
 {
 	//struct mhi_netdev *mhi_netdev = ndev_to_mhi(ndev);
 
-	strlcpy (info->driver, "pcie_mhi", sizeof info->driver);
-	strlcpy (info->version, PCIE_MHI_DRIVER_VERSION, sizeof info->version);
+	strscpy (info->driver, "pcie_mhi", sizeof info->driver);
+	strscpy (info->version, PCIE_MHI_DRIVER_VERSION, sizeof info->version);
 }
 
 static const struct ethtool_ops mhi_netdev_ethtool_ops = {
