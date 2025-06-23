@@ -1642,7 +1642,7 @@ static int of_parse_ev_cfg(struct mhi_controller *mhi_cntrl,
 		root@OpenWrt:/# cat /proc/interrupts | grep mhi
 		root@OpenWrt:/# cat /sys/kernel/debug/mhi_q/mhi_netdev/pcie_mhi_0306_00.01.00_0/rx_int 
 		*/
-		if (i == IPA_IN_EVENT_RING)
+		if (i == IPA_IN_EVENT_RING || i == IPA_OUT_EVENT_RING)
 			mhi_event->intmod = 5;
 
 #ifdef ENABLE_IP_SW0
@@ -1828,6 +1828,7 @@ static struct chan_cfg_t chan_cfg[] = {
 };
 
 extern int mhi_netdev_mbin_enabled(void);
+extern int mhi_netdev_use_xfer_type_dma(unsigned chan);
 static int of_parse_ch_cfg(struct mhi_controller *mhi_cntrl,
 			   struct device_node *of_node)
 {
@@ -1942,7 +1943,9 @@ static int of_parse_ch_cfg(struct mhi_controller *mhi_cntrl,
 
   		if (chan == MHI_CLIENT_IP_HW_0_OUT || chan == MHI_CLIENT_IP_SW_0_OUT)
 			mhi_chan->xfer_type = MHI_XFER_SKB;
-		else if (chan == MHI_CLIENT_IP_HW_0_IN || chan == MHI_CLIENT_IP_SW_0_IN)
+		else if (chan == MHI_CLIENT_IP_HW_0_IN)
+			mhi_chan->xfer_type = mhi_netdev_use_xfer_type_dma(chan) ? MHI_XFER_DMA: MHI_XFER_SKB;
+		else if (chan == MHI_CLIENT_IP_SW_0_IN)
 			mhi_chan->xfer_type = MHI_XFER_SKB; //MHI_XFER_DMA;
 #ifdef ENABLE_ADPL
   		else if (chan == MHI_CLIENT_ADPL)

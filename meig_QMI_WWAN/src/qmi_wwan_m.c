@@ -52,13 +52,13 @@ struct sk_buff *qmi_wwan_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t
 	if (dev->udev->descriptor.idVendor != cpu_to_le16(0x2C7C) &&
 	    dev->udev->descriptor.idVendor != cpu_to_le16(0x05c6) &&
             dev->udev->descriptor.idVendor != cpu_to_le16(0x2dee)){
-                dev_err(&dev->intf->dev,"zhangqingyun test 1");
+                // dev_err(&dev->intf->dev,"zhangqingyun test 1");
 		return skb;
             }
 	
 	// Skip Ethernet header from message
 	if (skb_pull(skb, ETH_HLEN)) {
-                dev_err(&dev->intf->dev, "zhangqingyu test 2");
+                // dev_err(&dev->intf->dev, "zhangqingyu test 2");
 		return skb;
 	} else {
 		dev_err(&dev->intf->dev, "Packet Dropped ");
@@ -70,6 +70,9 @@ struct sk_buff *qmi_wwan_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t
 }
 #endif
 #include <linux/version.h>
+
+#define VERSION_NUMBER "V1.0.1"
+#define MEIG_WWAN_VERSION "Meig_QMI_WWAN_Driver_"VERSION_NUMBER
 
 /* driver specific data */
 struct qmi_wwan_state {
@@ -994,4 +997,4 @@ module_usb_driver(qmi_wwan_driver);
 MODULE_AUTHOR("Bjørn Mork <bjorn@mork.no>");
 MODULE_DESCRIPTION("Qualcomm MSM Interface (QMI) WWAN driver");
 MODULE_LICENSE("GPL");
-
+MODULE_VERSION(MEIG_WWAN_VERSION);
