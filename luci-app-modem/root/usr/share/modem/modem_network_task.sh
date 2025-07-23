@@ -47,11 +47,15 @@ reset_network_interface()
         echo "[$(date +"%Y-%m-%d %H:%M:%S")] Reset network interface ${interface_name}" >> "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
 
         #设置静态地址
+        uci set network.wan.metric='2'
+	    uci set network.wan6.metric='2'
         uci set network.${interface_name}.proto='static'
         uci set network.${interface_name}.ipaddr="${ipv4}"
         uci set network.${interface_name}.netmask='255.255.255.0'
         uci set network.${interface_name}.gateway="${ipv4%.*}.1"
         uci set network.${interface_name}.peerdns='0'
+        uci set network.${interface_name}.metric='1'
+	    uci set network.${interface_name_ipv6}.metric='1'
         uci -q del network.${interface_name}.dns
         uci add_list network.${interface_name}.dns="${ipv4_dns1}"
         uci add_list network.${interface_name}.dns="${ipv4_dns2}"
