@@ -15,5 +15,9 @@ source "/usr/share/modem/modem_util.sh"
 #始终确保存在运行目录
 mkdir -m 0755 -p "${MODEM_RUNDIR}"
 
-#设置USB设备
+#USB扫描
+local usb_scan=$(uci -q get modem.@global[0].usb_scan)
+[ "${usb_scan}" = "0" ] && exit
+
+#检查USB设备
 m_check_usb_device "${ACTION}" "${DEVNUM}" "${PRODUCT}" "/sys${DEVPATH}"

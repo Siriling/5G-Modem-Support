@@ -103,11 +103,15 @@ gobinet_dial()
 # $1:AT串口
 # $2:制造商
 # $3:连接定义
+# $4:模组序号
 ecm_dial()
 {
     local at_port="$1"
     local manufacturer="$2"
     local define_connect="$3"
+    local modem_no="$4"
+
+    name=$(uci -q get modem.modem${modem_no}.name)
 
     #激活
     # local at_command="AT+CGACT=1,${define_connect}"
@@ -119,7 +123,7 @@ ecm_dial()
     #拨号
     local at_command
     if [ "$manufacturer" = "quectel" ]; then
-        at_command="AT+QNETDEVCTL=${define_connect},3,1"
+            at_command="AT+QNETDEVCTL=${define_connect},1,1"
     elif [ "$manufacturer" = "fibocom" ]; then
         at_command="AT+GTRNDIS=1,${define_connect}"
     elif [ "$manufacturer" = "meig" ]; then
@@ -260,7 +264,7 @@ modem_network_task()
             #拨号（针对获取IPv4返回为空的模组）
             case "$mode" in
                 "gobinet") gobinet_dial "${at_port}" "${manufacturer}" "${define_connect}" ;;
-                "ecm") ecm_dial "${at_port}" "${manufacturer}" "${define_connect}" ;;
+                "ecm") ecm_dial "${at_port}" "${manufacturer}" "${define_connect}" "${modem_no}" ;;
                 "rndis") rndis_dial "${at_port}" "${manufacturer}" "${platform}" "${define_connect}" "${modem_no}" ;;
                 "modemmanager") modemmanager_dial "${interface_name}" "${define_connect}" ;;
                 *) ecm_dial "${at_port}" "${manufacturer}" "${define_connect}" ;;

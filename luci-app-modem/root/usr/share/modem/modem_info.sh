@@ -92,6 +92,7 @@ init_modem_info()
 	lte_physical_cell_id=''
 	lte_earfcn=''
 	lte_freq_band_ind=''
+	lte_band=''
 	lte_ul_bandwidth=''
 	lte_dl_bandwidth=''
 	lte_tac=''
@@ -111,6 +112,8 @@ init_modem_info()
 	wcdma_uarfcn=''
 	wcdma_psc=''
 	wcdma_rac=''
+	wcdma_band=''
+	wcdma_rssi=''
 	wcdma_rscp=''
 	wcdma_ecio=''
 	wcdma_phych=''
@@ -281,6 +284,7 @@ set_cell_info()
 				{\"PSC\":\"$wcdma_psc\", \"full_name\":\"Primary Scrambling Code\"},
 				{\"RAC\":\"$wcdma_rac\", \"full_name\":\"Routing Area Code\"},
 				{\"Band\":\"$wcdma_band\", \"full_name\":\"Band\"},
+				{\"RSSI\":\"$wcdma_rssi\", \"full_name\":\"Received Signal Strength Indicator\"},
 				{\"RSCP\":\"$wcdma_rscp\", \"full_name\":\"Received Signal Code Power\"},
 				{\"Ec/Io\":\"$wcdma_ecio\", \"full_name\":\"Ec/Io\"},
 				{\"Ec/No\":\"$wcdma_ecno\", \"full_name\":\"Ec/No\"},

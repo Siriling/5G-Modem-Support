@@ -18,10 +18,18 @@ mkdir -m 0755 -p "${MODEM_RUNDIR}"
 # }
 
 if [[ "${INTERFACE}" = *"usb"* ]] || [[ "${INTERFACE}" = *"wwan"* ]] || [[ "${INTERFACE}" = *"eth"* ]]; then
+    #USB扫描
+    local usb_scan=$(uci -q get modem.@global[0].usb_scan)
+    [ "${usb_scan}" = "0" ] && exit
+
     #配置网络设备
     m_set_network_device "${ACTION}" "${INTERFACE}" "/sys${DEVPATH}" "usb"
 
 elif [[ "${INTERFACE}" = *"mhi_hwip"* ]] || [[ "${INTERFACE}" = *"rmnet_mhi"* ]]; then
+    #PCI扫描
+    local pci_scan=$(uci -q get modem.@global[0].pci_scan)
+    [ "${pci_scan}" = "0" ] && exit
+
     #配置网络设备
 	m_set_network_device "${ACTION}" "${INTERFACE}" "/sys${DEVPATH}" "pcie"
 else

@@ -16,6 +16,8 @@ source "/lib/functions.sh"
 source "/lib/netifd/netifd-proto.sh"
 source "${SCRIPT_DIR}/modem_debug.sh"
 
+#################################################################################通用方法#################################################################################
+
 #日志
 # $1:日志等级
 m_log()
@@ -25,20 +27,47 @@ m_log()
 }
 
 #生成16进制数
-generate_hex() {
+m_generate_hex() {
 	echo "$(openssl rand -hex 1)"
 }
 
 #生成随机MAC地址
-generate_mac_address() {
+m_generate_mac_address() {
 	local mac=""
 	for i in $(seq 1 6); do
-	  	mac="${mac}$(generate_hex)"
+	  	mac="${mac}$(m_generate_hex)"
 		if [[ $i != 6 ]]; then
 			mac="${mac}:"
 		fi
 	done
 	echo "$mac"
+}
+
+#获取制造商ID
+# $1:设备
+m_get_vendor_id()
+{
+    local device="$1"
+
+    local vendor
+    if [[ "$device" = *"usb"* ]]; then
+        # 检查必需的ID文件
+        if [[ ! -f "$device/idVendor" || ! -f "$device/idProduct" ]]; then
+            return
+        fi
+
+        # 获取制造商ID (移除0x前缀和换行符)
+        vendor=$(<"$device/idVendor" tr -d '\n' | sed 's/^0x//')
+    else
+        # 检查必需的ID文件
+        if [[ ! -f "$device/vendor" || ! -f "$device/device" ]]; then
+            return
+        fi
+
+        # 获取制造商ID (移除0x前缀和换行符)
+        vendor=$(<"$device/vendor" tr -d '\n' | sed 's/^0x//')
+    fi
+    echo "${vendor}"
 }
 
 #上报USB事件
@@ -84,6 +113,7 @@ m_modem_presets()
 		"meig") meig_presets ;;
 		"simcom") simcom_presets ;;
 		"huawei") huawei_presets ;;
+		"tdtech") tdtech_presets ;;
 	esac
 }
 
@@ -225,38 +255,18 @@ m_cdc_wdm()
     fi
 }
 
-#添加USB模组ID
-# $1:制造商ID
-# $2:产品ID
-m_add_usb_id()
-{
-	local manufacturer_id="$1"
-	local product_id="$2"
-
-	local new_id_path="/sys/bus/usb-serial/drivers/generic/new_id"
-
-	#如果已经添加则返回
-	grep -q "${manufacturer_id} ${product_id}" "${new_id_path}" && return
-
-	while true; do
-		if [ -f "$new_id_path" ]; then
-			#添加ID
-			echo "${manufacturer_id} ${product_id}" >> "${new_id_path}"
-			break
-		fi
-		sleep 5s
-	done
-}
-
 #设置模组硬件配置
 # $1:物理路径
 m_set_modem_hardware_config()
 {
 	local physical_path="$1"
 
+	#获取模组驱动
+	local driver=$(basename "$(readlink -f "${physical_path}/driver")")
+
 	#获取设备数据接口
 	local data_interface
-	if [[ "$physical_path" = *"usb"* ]]; then
+	if [[ "$driver" = "usb" ]]; then
 		data_interface="usb"
 	else
 		data_interface="pcie"
@@ -294,8 +304,11 @@ m_set_modem_hardware_config()
     uci set modem.modem${modem_no}="modem-device"
     uci set modem.modem${modem_no}.data_interface="${data_interface}"
     uci set modem.modem${modem_no}.path="${physical_path}"
+    uci set modem.modem${modem_no}.driver="${driver}"
 
 	uci commit modem
+
+	echo "${modem_no}"
 }
 
 #删除模组配置
@@ -310,10 +323,10 @@ m_del_modem_config()
 	local modem_no
 	for i in $(seq 0 $((modem_number-1))); do
 		local modem_path=$(uci -q get modem.modem${i}.path)
-		if [ "$modem_path" = "$physical_path" ]; then
+		[ "$modem_path" = "$physical_path" ] && {
 			modem_no="$i"
 			break
-		fi
+		}
 	done
 
 	[ -z "$modem_no" ] && return
@@ -328,6 +341,31 @@ m_del_modem_config()
 
 	#打印日志
 	m_log "info" "Modem${modem_no} (${physical_path}) removed"
+}
+
+#################################################################################USB事件#################################################################################
+
+#添加USB模组ID
+# $1:制造商ID
+# $2:产品ID
+m_add_usb_id()
+{
+	local manufacturer_id="$1"
+	local product_id="$2"
+
+	local new_id_path="/sys/bus/usb-serial/drivers/generic/new_id"
+
+	#如果已经添加则返回
+	grep -q "${manufacturer_id} ${product_id}" "${new_id_path}" && return
+
+	while true; do
+		if [ -f "$new_id_path" ]; then
+			#添加ID
+			echo "${manufacturer_id} ${product_id}" >> "${new_id_path}"
+			break
+		fi
+		sleep 5s
+	done
 }
 
 #设置USB设备
@@ -354,221 +392,10 @@ m_set_usb_device()
 		#手动配置
 		local manual_configuration=$(uci -q get modem.@global[0].manual_configuration)
 		[ "${manual_configuration}" = "1" ] && return
-
+		
 		#删除模组配置
 		m_del_modem_config "${physical_path}"
 	fi
-}
-
-#处理特殊的模组名称
-# $1:模组名称
-handle_special_modem_name()
-{
-	local modem_name="$1"
-
-	#FM350-GL-00 5G Module
-	[[ "$modem_name" = *"fm350-gl"* ]] && {
-		modem_name="fm350-gl"
-	}
-
-	#SRM825-PV
-	[[ "$modem_name" = *"srm825-pv"* ]] && {
-		modem_name="srm825"
-	}
-
-	echo "$modem_name"
-}
-
-#重新尝试设置模组
-# $1:模组序号
-# $2:AT串口
-# $3:模组支持列表
-retry_set_modem_config()
-{
-	local modem_no="$1"
-	local at_port="$2"
-	local modem_support="$3"
-
-	local time=0
-	while true; do
-
-		#打印日志
-		m_log "info" "Try again to configure the Modem${modem_no}"
-
-		[ "$time" = "2" ] && break
-
-       	#获取模组名称
-		local at_command="AT+CGMM?"
-		local modem_name=$(at ${at_port} ${at_command} | grep "+CGMM: " | awk -F'"' '{print $2}' | tr 'A-Z' 'a-z')
-
-		#再一次获取模组名称
-		[ -z "$modem_name" ] && {
-			at_command="AT+CGMM"
-			modem_name=$(at ${at_port} ${at_command} | grep "+CGMM: " | awk -F': ' '{print $2}' | sed 's/\r//g' | tr 'A-Z' 'a-z')
-		}
-
-		#再一次获取模组名称
-		[ -z "$modem_name" ] && {
-			at_command="AT+CGMM"
-			modem_name=$(at ${at_port} ${at_command} | sed -n '2p' | sed 's/\r//g' | tr 'A-Z' 'a-z')
-		}
-
-		#处理特殊的模组名称
-		[ -n "$modem_name" ] && {
-			modem_name="$(handle_special_modem_name ${modem_name})"
-		}
-
-		#获取模组信息
-		local data_interface=$(uci -q get modem.modem${modem_no}.data_interface)
-		local modem_info=$(echo ${modem_support} | jq '.modem_support.'$data_interface'."'$modem_name'"')
-
-		[ -n "$modem_name" ] && [ "$modem_info" != "null" ] && {
-
-			#获取制造商
-			local manufacturer=$(echo ${modem_info} | jq -r '.manufacturer')
-			#获取平台
-			local platform=$(echo ${modem_info} | jq -r '.platform')
-			#获取连接定义
-			local define_connect=$(echo ${modem_info} | jq -r '.define_connect')
-			#获取支持的拨号模式
-			local modes=$(echo ${modem_info} | jq -r '.modes[]')
-
-			uci set modem.modem${modem_no}.name="${modem_name}"
-			uci set modem.modem${modem_no}.manufacturer="${manufacturer}"
-			uci set modem.modem${modem_no}.platform="${platform}"
-			uci set modem.modem${modem_no}.define_connect="${define_connect}"
-			uci -q del modem.modem${modem_no}.modes #删除原来的拨号模式列表
-			for mode in $modes; do
-				uci add_list modem.modem${modem_no}.modes="${mode}"
-			done
-
-			#设置模组预设
-			m_modem_presets "${at_port}" "${define_connect}" "${manufacturer}"
-
-			#打印日志
-			m_log "info" "Successfully retrying to configure the Modem ${modem_name}"
-
-			break
-		}
-
-		time=$((time+1))
-        sleep 5s
-    done
-}
-
-#设置模组配置
-# $1:模组序号
-# $2:物理路径
-m_set_modem_config()
-{
-	local modem_no="$1"
-	local physical_path="$2"
-
-	#获取AT串口
-	local at_port=$(uci -q get modem.modem${modem_no}.at_port)
-
-	#获取模组名称
-	local modem_name=$(uci -q get modem.modem${modem_no}.name)
-	[ -z "$modem_name" ] && {
-		local at_command="AT+CGMM?"
-   		modem_name=$(at ${at_port} ${at_command} | grep "+CGMM: " | awk -F'"' '{print $2}' | tr 'A-Z' 'a-z')
-	}
-
-	#获取模组支持列表
-	local modem_support=$(cat ${SCRIPT_DIR}/modem_support.json)
-	#获取模组信息
-	local data_interface=$(uci -q get modem.modem${modem_no}.data_interface)
-    local modem_info=$(echo ${modem_support} | jq '.modem_support.'$data_interface'."'$modem_name'"')
-
-	local manufacturer
-	local platform
-	local define_connect
-	local modes
-	local log_message
-	if [ -z "$modem_name" ] || [ "$modem_info" = "null" ]; then
-        modem_name="unknown"
-        manufacturer="unknown"
-        platform="unknown"
-		define_connect="1"
-        modes="qmi gobinet ecm mbim rndis ncm"
-		#设置日志信息
-		log_message="An unknown Modem${modem_no} (${physical_path}) was found"
-	else
-		#获取制造商
-		manufacturer=$(echo ${modem_info} | jq -r '.manufacturer')
-		#获取平台
-		platform=$(echo ${modem_info} | jq -r '.platform')
-		#获取连接定义
-		define_connect=$(echo ${modem_info} | jq -r '.define_connect')
-		#获取支持的拨号模式
-		modes=$(echo ${modem_info} | jq -r '.modes[]')
-		#设置日志信息
-		log_message="Configuration Modem${modem_no} ${modem_name} (${physical_path}) successful"
-	fi
-
-	uci set modem.modem${modem_no}.name="${modem_name}"
-	uci set modem.modem${modem_no}.manufacturer="${manufacturer}"
-	uci set modem.modem${modem_no}.define_connect="${define_connect}"
-	uci set modem.modem${modem_no}.platform="${platform}"
-	uci -q del modem.modem${modem_no}.modes #删除原来的拨号模式列表
-	for mode in $modes; do
-		uci add_list modem.modem${modem_no}.modes="${mode}"
-	done
-
-	#设置模组预设
-	m_modem_presets "${at_port}" "${define_connect}" "${manufacturer}"
-
-	#打印日志
-	m_log "info" "${log_message}"
-
-	#重新尝试设置模组
-	[ "$modem_name" = "unknown" ] && {
-		retry_set_modem_config "${modem_no}" "${at_port}" "${modem_support}"
-	}
-}
-
-#设置USB AT串口
-# $1:模组序号
-# $2:串口
-# $3:物理路径
-m_set_usb_at_port()
-{
-	local modem_no="$1"
-	local port="$2"
-	local physical_path="$3"
-
-	local modem_at_port=$(uci -q get modem.modem${modem_no}.at_port)
-	[ -z "$modem_at_port" ] && {
-		local response="$(at ${port} 'ATI')"
-		local str1="No" #No response from modem.
-		local str2="failed"
-		if [[ "$response" != *"$str1"* ]] && [[ "$response" != *"$str2"* ]] && [ -n "$response" ]; then
-			#原先的AT串口会被覆盖掉（是否需要加判断）
-			uci set modem.modem${modem_no}.at_port="${port}"
-			
-			#设置模组配置
-			m_set_modem_config "${modem_no}" "${physical_path}"
-			uci commit modem
-		fi
-	}
-}
-
-#设置PCIE AT串口
-# $1:模组序号
-# $2:串口
-# $3:物理路径
-m_set_pcie_at_port()
-{
-	local modem_no="$1"
-	local port="$2"
-	local physical_path="$3"
-
-	#设置AT串口
-	uci set modem.modem${modem_no}.at_port="${port}"
-
-	#设置模组配置
-	m_set_modem_config "${modem_no}" "${physical_path}"
-	uci commit modem
 }
 
 #设置ttyUSB设备
@@ -606,7 +433,7 @@ m_set_tty_device()
 		uci commit modem
 
 		#设置AT串口
-		m_set_usb_at_port "${modem_no}" "${port}" "${physical_path}"
+		m_set_usb_at_port "${modem_no}" "${port}"
 	fi
 }
 
@@ -627,10 +454,10 @@ m_check_usb_device()
 	#获取产品ID
 	local product_id=$(echo "$device_id" | awk -F'/' '{printf "%04s", $2}' | tr ' ' '0')
 
-	#获取模组支持列表
-	local modem_support=$(cat ${SCRIPT_DIR}/modem_support.json)
+	#获取制造商支持列表
+	local vendor_support=$(cat ${SCRIPT_DIR}/vendor_support.json)
 
-	[[ "$modem_support" = *"$manufacturer_id"* ]] && {
+	[[ "$vendor_support" = *"$manufacturer_id"* ]] && {
 		#上报USB事件
 		m_report_event "${action}" "usb" "${manufacturer_id}:${product_id}" "${physical_path}"
 
@@ -644,28 +471,73 @@ m_check_usb_device()
 	}
 }
 
+#################################################################################NET事件#################################################################################
+
+#处理特殊的模组名称
+# $1:模组名称
+handle_special_modem_name()
+{
+	local modem_name="$1"
+
+	#FM350-GL-00 5G Module
+	[[ "$modem_name" = *"fm350-gl"* ]] && {
+		modem_name="fm350-gl"
+	}
+
+	#SRM825-PV
+	[[ "$modem_name" = *"srm825-pv"* ]] && {
+		modem_name="srm825"
+	}
+
+	echo "$modem_name"
+}
+
+#设置USB AT串口
+# $1:模组序号
+# $2:串口
+m_set_usb_at_port()
+{
+	local modem_no="$1"
+	local port="$2"
+	[ -z "$modem_no" ] && return
+
+	local modem_at_port=$(uci -q get modem.modem${modem_no}.at_port)
+	[ -z "$modem_at_port" ] && {
+		local response="$(at ${port} 'ATI')"
+		local str1="No" #No response from modem.
+		local str2="failed"
+		if [[ "$response" != *"$str1"* ]] && [[ "$response" != *"$str2"* ]] && [ -n "$response" ]; then
+			#原先的AT串口会被覆盖掉（是否需要加判断）
+			uci set modem.modem${modem_no}.at_port="${port}"
+		fi
+	}
+}
+
+#设置PCIE AT串口
+# $1:模组序号
+# $2:串口
+m_set_pcie_at_port()
+{
+	local modem_no="$1"
+	local port="$2"
+	[ -z "$modem_no" ] && return
+
+	#设置AT串口
+	uci set modem.modem${modem_no}.at_port="${port}"
+}
+
 #设置模组网络配置
-# $1:网络设备
-# $2:物理路径
+# $1:模组序号
+# $2:网络设备
 m_set_network_config()
 {
-	local network="$1"
-	local physical_path="$2"
-
-	#获取模组数量
-	local modem_number=$(uci -q get modem.@global[0].modem_number)
-	#获取模组序号
-	local modem_no
-	for i in $(seq 0 $((modem_number-1))); do
-		local modem_path=$(uci -q get modem.modem${i}.path)
-		if [ "$modem_path" = "$physical_path" ]; then
-			modem_no="${i}"
-			break
-		fi
-	done
-
-	#没有模组时跳过
+	local modem_no="$1"
+	local network="$2"
 	[ -z "$modem_no" ] && return
+
+	#获取模组路径
+	local physical_path=$(uci -q get modem.modem${modem_no}.path)
+	[ -z "$physical_path" ] && return
 
 	#判断地址是否为net
     # local path=$(basename "$physical_path")
@@ -682,7 +554,7 @@ m_set_network_config()
 	if [ "$net_count" = "2" ]; then
 		net_net_interface_path="$(find ${physical_path} -name net | sed -n '2p')"
 	fi
-	local network_interface=$(ls ${net_net_interface_path})
+	local network_interface=$(ls ${net_net_interface_path} | head -n 1)
 
 	#设置模组网络配置
 	uci set modem.modem${modem_no}.network="${network}"
@@ -695,7 +567,7 @@ m_set_network_config()
 
 #启用拨号
 # $1:网络设备
-enable_dial()
+m_enable_dial()
 {
 	local network="$1"
 	
@@ -706,10 +578,10 @@ enable_dial()
 		[ -z "$modem_network" ] && break
 		if [ "$network" = "$modem_network" ]; then
 			local enable=$(uci -q get modem.@dial-config[${i}].enable)
-			if [ "$enable" = "1" ]; then
+			[ "$enable" = "1" ] && {
 				service modem reload
 				break
-			fi
+			}
 		fi
 		i=$((i+1))
 	done
@@ -717,7 +589,7 @@ enable_dial()
 
 #禁用拨号
 # $1:网络设备
-disable_dial()
+m_disable_dial()
 {
 	local network="$1"
 
@@ -728,98 +600,420 @@ disable_dial()
 		[ -z "$modem_network" ] && break
 		if [ "$network" = "$modem_network" ]; then
 			local enable=$(uci -q get modem.@dial-config[${i}].enable)
-			if [ "$enable" = "1" ]; then
+			[ "$enable" = "1" ] && {
 				uci set modem.@dial-config[${i}].enable=0
 				uci commit modem
 				service modem reload
 				break
-			fi
+			}
 		fi
 		i=$((i+1))
 	done
 }
 
 #设置模组串口
-# $1:物理路径
-m_set_modem_port()
+# $1:模组序号
+# m_set_modem_port()
+# {
+#     local modem_no="$1"
+# 	[ -z "$modem_no" ] && return
+
+# 	#获取模组路径
+# 	local physical_path=$(uci -q get modem.modem${modem_no}.path)
+#     [ -z "$physical_path" ] && return
+
+# 	#获取当前路径下所有的串口
+# 	local data_interface=$(uci -q get modem.modem${modem_no}.data_interface)
+# 	local all_port
+# 	if [ "$data_interface" = "usb" ]; then
+# 		all_port=$(find ${physical_path} -name ttyUSB*)
+# 	else
+# 		local mhi_hwip=$(find ${physical_path} -name mhi_hwip*)
+# 		if [ -n "$mhi_hwip" ]; then
+# 			all_port=$(find ${physical_path} -name wwan*)
+# 			all_port=$(echo "$all_port" | sed '1,2d')
+# 		else
+# 			all_port=$(find ${physical_path} -name mhi_*)
+# 		fi
+# 	fi
+
+# 	#不存在串口，返回
+# 	[ -z "${all_port}" ] && return
+
+# 	#删除原串口
+# 	uci -q del modem.modem${modem_no}.ports
+# 	#设置串口
+# 	local port_cache
+# 	for port_path in $all_port; do
+
+# 		local port_tmp="$(basename ${port_path})"
+# 		local port="/dev/${port_tmp}"
+
+# 		#跳过重复的串口
+# 		[ "$port" = "$port_cache" ] && continue
+# 		#跳过多余串口（PCIE）
+# 		[[ "$port" = *"mhi_uci_q"* ]] && continue
+# 		[[ "$port" = *"mhi_cntrl_q"* ]] && continue
+
+# 		#添加串口
+# 		uci add_list modem.modem${modem_no}.ports="${port}"
+# 		uci commit modem
+
+# 		#设置AT串口
+# 		if [ "$data_interface" = "usb" ]; then
+# 			m_set_usb_at_port "${modem_no}" "${port}"
+# 		elif [[ "$port" = "*at*" ]]; then
+# 			m_set_pcie_at_port "${modem_no}" "${port}"
+# 		elif [[ "$port" = "*DUN*" ]]; then
+# 			m_set_pcie_at_port "${modem_no}" "${port}"
+# 		fi
+
+# 		#缓存当前串口
+# 		port_cache="${port}"
+#     done
+# }
+
+#重新尝试设置模组
+# $1:模组序号
+# $2:AT串口
+# $3:模组支持列表
+retry_set_modem_config()
 {
-	local physical_path="$1"
+	local modem_no="$1"
+	local at_port="$2"
+	local modem_support="$3"
 
-	#获取模组数量
-	local modem_number=$(uci -q get modem.@global[0].modem_number)
-	#获取模组序号
-	local modem_no
-	for i in $(seq 0 $((modem_number-1))); do
-		local modem_path=$(uci -q get modem.modem${i}.path)
-		if [ "$modem_path" = "$physical_path" ]; then
-			modem_no="${i}"
+	local time=2
+	for i in $(seq 1 ${time}); do
+
+		#打印日志
+		m_log "info" "Try again to configure the Modem${modem_no}"
+
+       	#获取模组名称
+		local at_command="AT+CGMM?"
+		local modem_name=$(at ${at_port} ${at_command} | grep "+CGMM: " | awk -F'"' '{print $2}' | tr 'A-Z' 'a-z')
+
+		#再一次获取模组名称
+		[ -z "$modem_name" ] && {
+			at_command="AT+CGMM"
+			modem_name=$(at ${at_port} ${at_command} | grep "+CGMM: " | awk -F': ' '{print $2}' | sed 's/\r//g' | tr 'A-Z' 'a-z')
+		}
+
+		#再一次获取模组名称
+		[ -z "$modem_name" ] && {
+			at_command="AT+CGMM"
+			modem_name=$(at ${at_port} ${at_command} | sed -n '2p' | sed 's/\r//g' | tr 'A-Z' 'a-z')
+		}
+
+		#处理特殊的模组名称
+		[ -n "$modem_name" ] && {
+			modem_name="$(handle_special_modem_name ${modem_name})"
+		}
+
+		#获取模组信息
+		local data_interface=$(uci -q get modem.modem${modem_no}.data_interface)
+		local modem_info=$(echo ${modem_support} | jq '.modem_support.'$data_interface'."'$modem_name'"')
+
+		[ -n "$modem_name" ] && [ -n "$modem_info" ] && [ "$modem_info" != "null" ] && {
+
+			#获取制造商
+			local manufacturer=$(echo ${modem_info} | jq -r '.manufacturer')
+			#获取平台
+			local platform=$(echo ${modem_info} | jq -r '.platform')
+			#获取连接定义
+			local define_connect=$(echo ${modem_info} | jq -r '.define_connect')
+			#获取支持的拨号模式
+			local modes=$(echo ${modem_info} | jq -r '.modes[]')
+
+			uci set modem.modem${modem_no}.name="${modem_name}"
+			uci set modem.modem${modem_no}.manufacturer="${manufacturer}"
+			uci set modem.modem${modem_no}.platform="${platform}"
+			uci set modem.modem${modem_no}.define_connect="${define_connect}"
+			uci -q del modem.modem${modem_no}.modes #删除原来的拨号模式列表
+			for mode in $modes; do
+				uci add_list modem.modem${modem_no}.modes="${mode}"
+			done
+
+			#设置模组预设
+			m_modem_presets "${at_port}" "${define_connect}" "${manufacturer}"
+
+			#打印日志
+			m_log "info" "Successfully retrying to configure the Modem ${modem_name}"
+
 			break
-		fi
-	done
+		}
 
-	#没有模组时跳过
+        sleep 5s
+    done
+
+	uci commit modem
+}
+
+#设置模组更多配置
+# $1:模组序号
+m_set_modem_more_config()
+{
+	local modem_no="$1"
 	[ -z "$modem_no" ] && return
 
-	#获取当前路径下所有的串口
+	#获取模组路径
+	local physical_path=$(uci -q get modem.modem${modem_no}.path)
+    [ -z "$physical_path" ] && return
+
+	#获取AT串口
+	local at_port=$(uci -q get modem.modem${modem_no}.at_port)
+
+	#获取模组名称
+	local modem_name=$(uci -q get modem.modem${modem_no}.name)
+	[ -z "$modem_name" ] || [[ "$modem_name" = *"modem"* ]] && {
+		local at_command="AT+CGMM?"
+   		local modem_name_tmp=$(at ${at_port} ${at_command} | grep "+CGMM: " | awk -F'"' '{print $2}' | tr 'A-Z' 'a-z')
+		[ -n "$modem_name_tmp" ] && {
+			modem_name="${modem_name_tmp}"
+		}
+	}
+
+	#获取模组支持列表
+	local modem_support=$(cat ${SCRIPT_DIR}/modem_support.json)
+	#获取模组信息
 	local data_interface=$(uci -q get modem.modem${modem_no}.data_interface)
-	local all_port
-	if [ "$data_interface" = "usb" ]; then
-		all_port=$(find ${physical_path} -name ttyUSB*)
+    local modem_info=$(echo ${modem_support} | jq '.modem_support.'$data_interface'."'$modem_name'"')
+
+	local manufacturer=$(uci -q get modem.modem${modem_no}.manufacturer)
+	local platform="unknown"
+	local define_connect="1"
+	local modes="qmi gobinet ecm mbim rndis ncm"
+	local log_message
+	if [ -z "$modem_info" ] || [ "$modem_info" = "null" ]; then
+
+		#设置日志信息
+		log_message="An ${modem_name} Modem${modem_no} (${physical_path}) was found"
+
+		[ -z "$modem_name" ] && {
+			modem_name="unknown"
+			manufacturer="unknown"
+			#设置日志信息
+			log_message="An unknown Modem${modem_no} (${physical_path}) was found"
+		}
+
 	else
-		local mhi_hwip=$(find ${physical_path} -name mhi_hwip*)
-		if [ -n "$mhi_hwip" ]; then
-			all_port=$(find ${physical_path} -name wwan*)
-			all_port=$(echo "$all_port" | sed '1,2d')
-		else
-			all_port=$(find ${physical_path} -name mhi_*)
-		fi
+		#获取制造商
+		manufacturer=$(echo ${modem_info} | jq -r '.manufacturer')
+		#获取平台
+		platform=$(echo ${modem_info} | jq -r '.platform')
+		#获取连接定义
+		define_connect=$(echo ${modem_info} | jq -r '.define_connect')
+		#获取支持的拨号模式
+		modes=$(echo ${modem_info} | jq -r '.modes[]')
+		#设置日志信息
+		log_message="Configuration Modem${modem_no} ${modem_name} (${physical_path}) successful"
 	fi
 
-	#不存在串口，返回
-	[ -z "${all_port}" ] && return
+	uci set modem.modem${modem_no}.name="${modem_name}"
+	uci set modem.modem${modem_no}.manufacturer="${manufacturer}"
+	uci set modem.modem${modem_no}.define_connect="${define_connect}"
+	uci set modem.modem${modem_no}.platform="${platform}"
+	uci -q del modem.modem${modem_no}.modes #删除原来的拨号模式列表
+	for mode in $modes; do
+		uci add_list modem.modem${modem_no}.modes="${mode}"
+	done
 
-	#删除原串口
-	uci -q del modem.modem${modem_no}.ports
-	#设置串口
-	local port_cache
-	for port_path in $all_port; do
+	uci commit modem
 
-		local port_tmp="$(basename ${port_path})"
-		local port="/dev/${port_tmp}"
+	#设置模组预设
+	m_modem_presets "${at_port}" "${define_connect}" "${manufacturer}"
 
-		#跳过重复的串口
-		[ "$port" = "$port_cache" ] && continue
-		#跳过多余串口（PCIE）
-		[[ "$port" = *"mhi_uci_q"* ]] && continue
-		[[ "$port" = *"mhi_cntrl_q"* ]] && continue
+	#打印日志
+	m_log "info" "${log_message}"
 
-		#添加串口
-		uci add_list modem.modem${modem_no}.ports="${port}"
-		uci commit modem
+	#重新尝试设置模组
+	[ "$modem_name" = "unknown" ] || [[ "$modem_name" = *"modem"* ]] && {
+		retry_set_modem_config "${modem_no}" "${at_port}" "${modem_support}"
+	}
+}
 
-		#设置AT串口
-		if [ "$data_interface" = "usb" ]; then
-			m_set_usb_at_port "${modem_no}" "${port}" "${physical_path}"
-		elif [[ "$port" = *"at"* ]]; then
-			m_set_pcie_at_port "${modem_no}" "${port}" "${physical_path}"
-		elif [[ "$port" = *"DUN"* ]]; then
-			m_set_pcie_at_port "${modem_no}" "${port}" "${physical_path}"
-		fi
+#设置子设备配置（网络，串口）
+# $1:模组序号
+# $2:自动配置标志
+m_set_subdevice_config()
+{
+    local modem_no="$1"
+	local auto_config="$2"
+	[ -z "$modem_no" ] && return
 
-		#缓存当前串口
-		port_cache="${port}"
-    done
+	# 获取模组路径
+	local physical_path=$(uci -q get modem.modem${modem_no}.path)
+    [ -z "$physical_path" ] && return
+
+    # 删除原串口
+    uci -q del modem.modem${modem_no}.ports
+
+    # 获取模组驱动
+	local driver=$(uci -q get modem.modem${modem_no}.driver)
+    if [ "$driver" = "usb" ]; then  # USB驱动
+        # 遍历子设备（/sys/bus/usb/devices/2-1/2-1:1.0）
+        for dir in ${physical_path}/*:*; do
+            if [ -d "$dir/net" ]; then
+                #获取网络驱动
+	            local net_driver=$(basename "$(readlink -f "${dir}/driver")")
+                uci set modem.modem${modem_no}.net_driver="${net_driver}"
+
+                local network=$(basename $(ls -d $dir/net/*/ | head -n 1))
+                # 设置模组网络配置
+                m_set_network_config "${modem_no}" "${network}"
+            else
+                # 获取子设备路径（/sys/bus/usb/devices/2-1/2-1:1.0/ttyUSB0）
+                local subdevice_path="$dir/ttyUSB*"
+                [ -d ${subdevice_path} ] && {
+                    local port_tmp=$(basename $(ls -d ${subdevice_path} | head -n 1))
+                    [ -n "$port_tmp" ] && {
+						local port="/dev/${port_tmp}"
+						# 添加串口
+						uci add_list modem.modem${modem_no}.ports="${port}"
+
+						# 设置AT串口
+						[ "$auto_config" != "1" ] && {
+							m_set_usb_at_port "${modem_no}" "${port}"
+						}
+						uci commit modem
+					}
+                }
+            fi
+        done
+	elif [ "$driver" = "mhi-pci-generic" ]; then # 通用PCI驱动
+		# 遍历子设备MHI（/sys/bus/pci/devices/0000:05:00.0/mhi0）
+		for mhi_path in ${physical_path}/mhi*; do
+			# 遍历子设备WWAN（/sys/bus/pci/devices/0000:05:00.0/mhi0/wwan/wwan0）
+			for wwan_path in ${mhi_path}/wwan/wwan*; do
+				# 遍历子设备（/sys/bus/pci/devices/0000:05:00.0/mhi0/wwan/wwan0/wwan0at0）
+				local wwan_device_path="${wwan_path}/wwan*"
+				for path in ${wwan_device_path}; do
+					local port_tmp=$(basename ${path})
+					[ -n "$port_tmp" ] && {
+						local port="/dev/${port_tmp}" # /dev/wwan0at0
+						# 添加串口
+						uci add_list modem.modem${modem_no}.ports="${port}"
+
+						# 设置AT串口（/dev/wwan0at0）
+						[ "$auto_config" != "1" ] && [[ "${port}" = "*at*" ]] && {
+							m_set_pcie_at_port "${modem_no}" "${port}"
+						}
+						uci commit modem
+					}
+				done
+			done
+
+			# 遍历子设备（/sys/bus/pci/devices/0000:05:00.0/mhi0/mhi0_IP_HW0）
+			for dir in ${mhi_path}/mhi*; do
+				[ -d "$dir/net" ] && {
+					#获取网络驱动
+					local net_driver=$(basename "$(readlink -f "${dir}/driver")")
+					uci set modem.modem${modem_no}.net_driver="${net_driver}"
+					
+					local network=$(basename $(ls -d $dir/net/*/ | head -n 1))
+					# 设置模组网络配置
+					m_set_network_config "${modem_no}" "${network}"
+				}
+			done
+		done
+	elif  [ "$driver" = "mhi_q" ]; then # 第三方PCI驱动
+		# 获取设备ID
+		local device_id=$(<"$physical_path/device" tr -d '\n' | sed 's/^0x//')
+
+		# 遍历子设备MHI Control（/sys/bus/pci/devices/0000:04:00.0/mhi_cntrl_q）
+		for dir in ${physical_path}/mhi_cntrl*; do
+			local port_tmp=$(basename $(ls -d $dir/mhi_*/ | head -n 1))
+			[ -n "$port_tmp" ] && {
+				local port="/dev/${port_tmp}" # /dev/mhi_BHI
+				# 添加串口
+				uci add_list modem.modem${modem_no}.ports="${port}"
+			}
+		done
+
+		# 遍历子设备（/sys/bus/pci/devices/0000:04:00.0/0306_00.04.00_DUN）
+		for dir in ${physical_path}/*${device_id}*; do
+			if [ -d "$dir/net" ]; then
+				#获取网络驱动
+				local net_driver=$(basename "$(readlink -f "${dir}/driver")")
+				uci set modem.modem${modem_no}.net_driver="${net_driver}"
+
+				local network=$(basename $(ls -d $dir/net/*/ | head -n 1))
+				# 设置模组网络配置
+				m_set_network_config "${modem_no}" "${network}"
+			else
+				# 获取子设备路径（/sys/bus/pci/devices/0000:04:00.0/0306_00.04.00_DUN/mhi_uci_q/mhi_DUN）
+				local subdevice_path="$dir/mhi_uci_q/mhi_*"
+				[ -d ${subdevice_path} ] && {
+					local port_tmp=$(basename $(ls -d ${subdevice_path} | head -n 1))
+					[ -n "$port_tmp" ] && {
+						local port="/dev/${port_tmp}"
+						# 添加串口
+						uci add_list modem.modem${modem_no}.ports="${port}"
+
+						# 设置AT串口（/dev/mhi_DUN）
+						[ "$auto_config" != "1" ] && [[ "$port" = "*DUN*" ]]  && {
+							m_set_pcie_at_port "${modem_no}" "${port}"
+						}
+						uci commit modem
+					}
+				}
+			fi
+		done
+	fi
+}
+
+#设置模组配置
+# $1:设备
+# $2:制造商
+m_set_modem_config()
+{
+    local device="$1"
+    local manufacturer="$2"
+
+	#获取真实物理路径
+	physical_path=$(readlink -f ${device})
+
+	# 设置模组硬件配置
+	local modem_no=$(m_set_modem_hardware_config "${physical_path}")
+	[ -z "$modem_no" ] && return
+
+	# 设置制造商
+	local modem_name="${manufacturer} modem"
+	uci set modem.modem${modem_no}.name="${modem_name}"
+	uci set modem.modem${modem_no}.manufacturer="${manufacturer}"
+	uci commit modem
+
+	# 设置子设备配置（网络，串口）
+	m_set_subdevice_config "${modem_no}" "0"
+
+	# 设置模组更多配置
+	m_set_modem_more_config "${modem_no}"
+}
+
+#处理设备
+# $1:制造商ID
+# $2:物理路径
+m_handle_device()
+{
+    local vendor="$1"
+    local device="$2"
+    
+    # 获取制造商支持列表
+    local vendor_support=$(cat ${SCRIPT_DIR}/vendor_support.json)
+    local manufacturer=$(echo ${vendor_support} | jq -r '.vendor_support."'$vendor'"')
+
+    [ -n "$manufacturer" ] && [ "$manufacturer" != "null" ] && {
+		m_set_modem_config "${device}" "${manufacturer}"
+    }
 }
 
 #设置物理设备
 # $1:事件行为（add，remove，bind，scan）
-# $2:网络设备
-# $3:物理路径
+# $2:物理路径
 m_set_physical_device()
 {
 	local action="$1"
-	local network="$2"
-	local physical_path="$3"
+	local physical_path="$2"
 
 	if [ "$action" = "add" ]; then
 
@@ -827,28 +1021,24 @@ m_set_physical_device()
 		local physical_path_status=$(m_get_physical_path_status ${physical_path})
 		[ "$physical_path_status" = "processed" ] && return
 
-		#设置模组硬件配置
-		m_set_modem_hardware_config "${physical_path}"
+        # 获取制造商ID
+        local vendor=$(m_get_vendor_id "${physical_path}")
+        [ -z "${vendor}" ] && return
 
-		#设置模组网络配置
-		m_set_network_config "${network}" "${physical_path}"
-
-		#设置模组串口
-		m_set_modem_port "${physical_path}"
+		# 设置模组配置
+		m_handle_device "${vendor}" "${physical_path}"
 
 	elif [ "$action" = "remove" ]; then
 		#删除模组配置
 		m_del_modem_config "${physical_path}"
 	elif [ "$action" = "scan" ]; then
-		
-		#设置模组硬件配置
-		m_set_modem_hardware_config "${physical_path}"
 
-		#设置模组网络配置
-		m_set_network_config "${network}" "${physical_path}"
+        # 获取制造商ID
+        local vendor=$(m_get_vendor_id "${physical_path}")
+        [ -z "${vendor}" ] && return
 
-		#设置模组串口
-		m_set_modem_port "${physical_path}"
+		# 设置模组配置
+		m_handle_device "${vendor}" "${physical_path}"
 	fi
 }
 
@@ -869,9 +1059,7 @@ m_set_network_device()
 	[ "$count" -ge "2" ] && return
 
 	#判断路径是否带有usb（排除其他eth网络设备）
-	if [[ "$network" = *"eth"* ]] && [[ "$network_path" != *"usb"* ]]; then
-		return
-	fi
+	[[ "$network" = *"eth"* ]] && [[ "$network_path" != *"usb"* ]] && return
 
 	#上报事件
     m_report_event "${action}" "net" "${network}" "${network_path}"
@@ -886,18 +1074,18 @@ m_set_network_device()
 			#获取物理路径
 			local device_physical_path=$(m_get_device_physical_path ${network_path})
 			#设置USB网络设备
-			# m_set_network_config "${network}" "${device_physical_path}"
+			# m_set_network_config "${modem_no}" "${network}"
 			#设置物理设备
-			m_set_physical_device "${action}" "${network}" "${device_physical_path}"
+			m_set_physical_device "${action}" "${device_physical_path}"
 		else
 			#获取物理路径
 			local device_physical_path=$(m_get_device_physical_path ${network_path})
 			#设置物理设备
-			m_set_physical_device "${action}" "${network}" "${device_physical_path}"
+			m_set_physical_device "${action}" "${device_physical_path}"
 		fi
 		#启用拨号
 		# sleep 60s
-		enable_dial "${network}"
+		m_enable_dial "${network}"
 
 	elif [ "$action" = "remove" ]; then
 		
@@ -906,16 +1094,18 @@ m_set_network_device()
 			#获取物理路径
 			local device_physical_path=$(m_get_device_physical_path ${network_path})
 			#设置物理设备
-			m_set_physical_device "${action}" "${network}" "${device_physical_path}"
+			m_set_physical_device "${action}" "${device_physical_path}"
 		}
 
 		#停止拨号
-		# disable_dial "${network}"
+		# m_disable_dial "${network}"
 
 		#打印日志
 		m_log "info" "Network ${network} (${network_path}) removed"
 	fi
 }
+
+#################################################################################测试#################################################################################
 
 #测试Net热插拔
 test_net_hotplug()

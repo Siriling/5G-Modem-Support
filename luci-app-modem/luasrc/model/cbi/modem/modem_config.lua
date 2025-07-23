@@ -99,11 +99,7 @@ function getMobileNetwork()
 
 	--遍历所有网络接口
 	for network in string.gmatch(networks, "%S+") do
-
-		-- 只处理最上级的网络设备
-		-- local count=$(echo "${network_path}" | grep -o "/net" | wc -l)
-		-- [ "$count" -ge "2" ] && return
-	
+		
 		-- 获取网络设备路径
 		local command="readlink -f /sys/class/net/"..network
 		local network_path=shell(command)
@@ -111,6 +107,18 @@ function getMobileNetwork()
 		-- 判断路径是否带有usb（排除其他eth网络设备）
 		local flag="0"
 		if network_path:find("eth") and not network_path:find("usb") then
+			flag="1"
+		end
+
+		-- 只处理最上级的网络设备（wwan0.1，rmnet_mhi0.1）
+		-- local count=0
+		-- for _ in network_path:gmatch("/net") do
+		-- 	count = count + 1
+		-- end
+		-- if count > 1 then
+		-- 	flag="1"
+		-- end
+		if network:find("%.") then
 			flag="1"
 		end
 
@@ -123,7 +131,7 @@ function getMobileNetwork()
 				mobile_network:value(network)
 			end
 		end
-
+		
 	end
 end
 

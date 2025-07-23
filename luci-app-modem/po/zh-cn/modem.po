@@ -3,7 +3,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: luci-app-modem 1.4.1-1\n"
+"Project-Id-Version: luci-app-modem 1.4.6-1\n"
 "POT-Creation-Date: 2024-04-20 12:07+0100\n"
 "PO-Revision-Date: 2024-04-24 18:08+0000\n"
 "Last-Translator: Siriling <siriling@gmail.com>\n"
@@ -81,6 +81,9 @@ msgstr "未启用"
 
 msgid "Data Interface"
 msgstr "数据接口"
+
+msgid "Network Driver"
+msgstr "网络驱动"
 
 msgid "Mode"
 msgstr "模式"
@@ -595,6 +598,18 @@ msgstr "正在扫描中..."
 msgid "The automatic configuration modem is triggered only at modem startup, otherwise, manual scanning is necessary"
 msgstr "自动配置模组只有在模组启动的时候才会触发，其他情况需要手动点击扫描"
 
+msgid "Enable USB Device Scan"
+msgstr "启用USB设备扫描"
+
+msgid "(After disable, the automatic scanning and configuration function for USB modem information will be stopped)"
+msgstr "禁用后将停止自动扫描并配置USB模组信息功能"
+
+msgid "Enable PCI Device Scan"
+msgstr "启用PCI设备扫描"
+
+msgid "(After disable, the automatic scanning and configuration function for PCI modem information will be stopped)"
+msgstr "禁用后将停止自动扫描并配置PCI模组信息功能"
+
 msgid "Manual Configuration"
 msgstr "手动配置"
 
@@ -675,3 +690,6 @@ msgstr "私有（广和通）"
 
 msgid "Private (Meig)"
 msgstr "私有（美格）"
+
+msgid "Private (T&W)"
+msgstr "私有（同维）"

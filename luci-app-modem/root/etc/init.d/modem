@@ -15,90 +15,6 @@ MODEM_RUN_CONFIG="${MODEM_RUNDIR}/config.cache"
 #导入组件工具
 source "${SCRIPT_DIR}/modem_scan.sh"
 
-#设置拨号模式
-# $1:拨号模式
-# set_mode()
-# {
-# 	#获取AT串口、制造商、模块名
-# 	local at_port=$(uci -q get modem.modem${modem_no}.at_port)
-# 	local manufacturer=$(uci -q get modem.modem${modem_no}.manufacturer)
-# 	local name=$(uci -q get modem.modem${modem_no}.name)
-
-# 	#分制造商设置不同的AT命令
-# 	local command
-# 	if [ "$manufacturer" = "quectel" ]; then
-# 		local mode_num
-# 		case $1 in
-# 			"qmi") mode_num='0' ;;
-# 			"gobinet") mode_num='0' ;;
-# 			"ecm") mode_num='1' ;;
-# 			"mbim") mode_num='2' ;;
-# 			"rndis") mode_num='3' ;;
-# 			"ncm") mode_num='5' ;;
-# 			*) mode_num='0' ;;
-# 		esac
-
-# 		#查询当前拨号模式
-# 		command='AT+QCFG="usbnet"'
-# 		local at_result=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $command)
-# 		if [[ "$at_result" != *"$mode_num"* ]]; then
-			
-# 			#切换到指定的拨号模式
-# 			case $1 in
-# 				"qmi") command='AT+QCFG="usbnet",0' ;;
-# 				"gobinet") command='AT+QCFG="usbnet",0' ;;
-# 				"ecm") command='AT+QCFG="usbnet",1' ;;
-# 				"mbim") command='AT+QCFG="usbnet",2' ;;
-# 				"rndis") command='AT+QCFG="usbnet",3' ;;
-# 				"ncm") command='AT+QCFG="usbnet",5' ;;
-# 				*) command='AT+QCFG="usbnet",0' ;;
-# 			esac
-# 			at_result=$(sh ${SCRIPT_DIR}/modem_at.sh "$at_port" "$command")
-# 			#移远切换模式后，还需要重启模块，待测试
-# 			sleep 5
-# 			modem_scan
-#         fi
-# 	elif [ "$manufacturer" = "fibocom" ]; then
-# 		if [ "$name" = "fm150-ae" ]; then
-# 			local mode_num
-# 			case $1 in
-# 				"qmi") mode_num='32' ;;
-# 				"gobinet") mode_num='32' ;;
-# 				"ecm") mode_num='23' ;;
-# 				"mbim") mode_num='29' ;;
-# 				"rndis") mode_num='24' ;;
-# 				"ncm") mode_num='23' ;;
-# 				*) mode_num='32' ;;
-# 			esac
-
-# 			#查询当前拨号模式
-# 			command='AT+GTUSBMODE?'
-# 			local at_result=$(sh ${SCRIPT_DIR}/modem_at.sh $at_port $command)
-# 			if [[ "$at_result" != *"$mode_num"* ]]; then
-# 				#切换到指定的拨号模式
-# 				case $1 in
-# 					"qmi") command='AT+GTUSBMODE=32' ;;
-# 					"gobinet") command='AT+GTUSBMODE=32' ;;
-# 					"ecm") command='AT+GTUSBMODE=23' ;;
-# 					"mbim") command='AT+GTUSBMODE=29' ;;
-# 					"rndis") command='AT+GTUSBMODE=24' ;;
-# 					"ncm") command='AT+GTUSBMODE=23' ;;
-# 					*) command='AT+GTUSBMODE=32' ;;
-# 				esac
-# 				at_result=$(sh ${SCRIPT_DIR}/modem_at.sh "$at_port" "$command")
-# 				sleep 5
-# 				modem_scan
-# 			fi
-# 		elif [ "$name" = "fm650" ]; then
-# 			#待处理
-# 			echo "fm650"
-# 		fi
-# 	else
-# 		#没有匹配到制造商，需要手动切换模块的拨号模式
-# 		echo "请手动切换模块的拨号模式"
-# 	fi
-# }
-
 #设置防火墙
 # $1:网络接口名称
 set_firewall()
@@ -211,7 +127,7 @@ set_quectel_mac()
 		#方法一（lua）
 		# local mac_address=$(lua -e 'math.randomseed(os.time()); for i=1,6 do io.write(string.format("%02X", math.random(0, 255))); if i < 6 then io.write(":") end; end')
 		#方法二（shell）
-		mac_address="$(generate_mac_address)"
+		mac_address="$(m_generate_mac_address)"
 		ifconfig "${network}" hw ether "${mac_address}"
 	}
 }
@@ -426,7 +342,8 @@ stop_gobinet()
 
 stop_ecm()
 {
-	#获取AT串口、制造商、平台、连接定义
+	#获取名称、AT串口、制造商、平台、连接定义
+	local name=$(uci -q get modem.modem${modem_no}.name)
 	local at_port=$(uci -q get modem.modem${modem_no}.at_port)
 	local manufacturer=$(uci -q get modem.modem${modem_no}.manufacturer)
 	local platform=$(uci -q get modem.modem${modem_no}.platform)
@@ -435,7 +352,7 @@ stop_ecm()
 	#停止拨号
 	local at_command
 	if [ "$manufacturer" = "quectel" ]; then
-		at_command="AT+QNETDEVCTL=${define_connect},2,1"
+			at_command="AT+QNETDEVCTL=${define_connect},0,1"
 	elif [ "$manufacturer" = "fibocom" ]; then
 		#联发科平台（广和通FM350-GL）
 		if [ "$platform" = "mediatek" ]; then
@@ -446,6 +363,8 @@ stop_ecm()
 	elif [ "$manufacturer" = "meig" ]; then
 		at_command="AT^NDISDUP=${define_connect},0"
 	elif [ "$manufacturer" = "huawei" ]; then
+		at_command="AT^NDISDUP=${define_connect},0"
+	elif [ "$manufacturer" = "tdtech" ]; then
 		at_command="AT^NDISDUP=${define_connect},0"
 	else
 		at_command='ATI'
@@ -514,9 +433,9 @@ get_instance_status()
 	done
 }
 
-#获取拨号模式
-# $1:模块号
-get_mode()
+#通过AT命令获取拨号模式
+# $1:模组序号
+get_mode_by_at_command()
 {
 	local modem_no="$1"
 
@@ -525,6 +444,34 @@ get_mode()
 	local platform=$(uci -q get modem.modem${modem_no}.platform)
 
 	mode=$(${manufacturer}_get_mode ${at_port} ${platform})
+	echo "$mode"
+}
+
+#获取拨号模式
+# $1:模组序号
+get_mode()
+{
+	local modem_no="$1"
+
+	#获取模组驱动
+	local driver=$(uci -q get modem.modem${modem_no}.net_driver)
+
+	local mode
+	if [[ "$driver" = *"qmi_wwan"* ]] || [ "$driver" = "mhi_wwan_ctrl" ] || [ "$driver" = "mhi_net" ] || [ "$driver" = "mhi_netdev" ]; then
+		mode="qmi"
+	elif [[ "$driver" = *"GobiNet"* ]]; then
+		mode="gobinet"
+	elif [ "$driver" = "cdc_ether" ]; then
+		mode="ecm"
+	elif [ "$driver" = "cdc_mbim" ] || ["$driver" = "mhi_wwan_mbim"]; then
+		mode="mbim"
+	elif [ "$driver" = "rndis_host" ]; then
+		mode="rndis"
+	elif [ "$driver" = "cdc_ncm" ]; then
+		mode="ncm"
+	else
+		mode="unknown"
+	fi
 	echo "$mode"
 }
 
@@ -714,9 +661,7 @@ manual_set_modem_config()
 	[ "$count" -ge "2" ] && return
 
     #判断路径是否带有usb（排除其他eth网络设备）
-	if [[ "$network" = *"eth"* ]] && [[ "$network_path" != *"usb"* ]]; then
-		return
-	fi
+	[[ "$network" = *"eth"* ]] && [[ "$network_path" != *"usb"* ]] && return
 
 	#获取物理路径
 	local physical_path=$(m_get_device_physical_path ${network_path})
@@ -726,28 +671,17 @@ manual_set_modem_config()
 	uci set modem.@global[0].modem_number=$((modem_number-1))
 
 	#设置模组硬件配置
-	m_set_modem_hardware_config "${physical_path}"
-
-	#设置模组网络配置
-	m_set_network_config "${network}" "${physical_path}"
-
-	#设置模组串口
-	m_set_modem_port "${physical_path}"
+	local modem_no=$(m_set_modem_hardware_config "${physical_path}")
+	[ -z "$modem_no" ] && return
 	
-	#获取模组数量
-	modem_number=$(uci -q get modem.@global[0].modem_number)
-	#获取模组序号
-	local modem_no
-	for i in $(seq 0 $((modem_number-1))); do
-		local modem_path=$(uci -q get modem.modem${i}.path)
-		if [ "$modem_path" = "$physical_path" ]; then
-			modem_no="${i}"
-			break
-		fi
-	done
+	#设置模组网络配置
+	# m_set_network_config "${modem_no}" "${network}"
 
-	#设置模组配置（由于AT串口已经提前设置，则跳过了模组配置，这里需要手动执行一次）
-	m_set_modem_config "${modem_no}" "${physical_path}"
+	#设置模组子设备配置（网络和串口）
+	m_set_subdevice_config "${modem_no}" "1"
+
+	#设置模组配置
+	m_set_modem_more_config "${modem_no}"
 	uci commit modem
 }
 

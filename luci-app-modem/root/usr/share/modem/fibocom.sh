@@ -311,7 +311,7 @@ fibocom_set_network_prefer()
         "3") network_prefer_config="20" ;;
         *) network_prefer_config="10" ;;
     esac
-echo "$network_prefer_config" >> /root/a
+
     #设置模组
     at_command="AT+GTACT=${network_prefer_config}"
     sh ${SCRIPT_DIR}/modem_at.sh $at_port "$at_command"

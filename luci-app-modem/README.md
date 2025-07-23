@@ -48,7 +48,7 @@
 | 广和通   | FM350-GL                                           | 联发科   | USB          | RNDIS                        |
 | 广和通   | FM150-AE-01，FM150-AE-11，FM150-AE-21，FM150-NA-01 | 高通     | USB          | RMNET，ECM，MBIM，RNDIS，NCM |
 | 广和通   | FM350-GL                                           | 联发科   | PCIE         | MBIM                         |
-| 广和通   | FM150-AE-00，FM150-AE-10，FM150-AE-20，FM150-NA-00 | 高通     | PCIE         | QMI                          |
+| 广和通   | FM150-AE-00，FM150-AE-10，FM150-AE-20，FM150-NA-00 | 高通     | PCIE         | RMNET                        |
 | 美格智能 | SRM815                                             | 高通     | USB          | RMNET，ECM，MBIM，RNDIS，NCM |
 | 美格智能 | SRM825                                             | 高通     | USB          | RMNET，ECM，MBIM，RNDIS，NCM |
 | 美格智能 | SRM825N                                            | 高通     | USB          | RMNET，ECM，MBIM，RNDIS，NCM |
