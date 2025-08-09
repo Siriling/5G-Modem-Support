@@ -16,7 +16,7 @@ source "/usr/share/modem/modem_util.sh"
 mkdir -m 0755 -p "${MODEM_RUNDIR}"
 
 #USB扫描
-local usb_scan=$(uci -q get modem.@global[0].usb_scan)
+usb_scan=$(uci -q get modem.@global[0].usb_scan)
 [ "${usb_scan}" = "0" ] && exit
 
 #检查USB设备
