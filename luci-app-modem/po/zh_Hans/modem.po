@@ -271,6 +271,12 @@ msgstr "自动选择"
 msgid "quectel-CM"
 msgstr "移远模组拨号工具"
 
+msgid "fibocom-dial"
+msgstr "广和通模组拨号工具"
+
+msgid "meig-cm"
+msgstr "美格模组拨号工具"
+
 msgid "mmcli"
 msgstr "调制解调器管理工具"
 
@@ -601,11 +607,17 @@ msgstr "自动配置模组只有在模组启动的时候才会触发，其他情
 msgid "Enable USB Device Scan"
 msgstr "启用USB设备扫描"
 
+msgid "Enable scanning of USB devices for modems"
+msgstr "启用对USB模组设备的扫描"
+
 msgid "(After disable, the automatic scanning and configuration function for USB modem information will be stopped)"
 msgstr "禁用后将停止自动扫描并配置USB模组信息功能"
 
 msgid "Enable PCI Device Scan"
 msgstr "启用PCI设备扫描"
+
+msgid "Enable scanning of PCI devices for modems"
+msgstr "启用对PCI模组设备的扫描"
 
 msgid "(After disable, the automatic scanning and configuration function for PCI modem information will be stopped)"
 msgstr "禁用后将停止自动扫描并配置PCI模组信息功能"

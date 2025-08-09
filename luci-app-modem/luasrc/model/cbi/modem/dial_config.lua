@@ -11,6 +11,42 @@ s.dynamic = false
 s:tab("general", translate("General Settings"))
 s:tab("advanced", translate("Advanced Settings"))
 
+--[[
+@Description 执行Shell脚本
+@Params
+	command sh命令
+]]
+function shell(command)
+	local odpall = io.popen(command)
+	local odp = odpall:read("*a")
+	odpall:close()
+	return odp
+end
+
+--[[
+@Description 插件是否存在
+@Params
+	name 插件名称
+]]
+function isPluginExist(name)
+
+	local isExist=false
+
+	-- 正则表达式
+	local version_regular_expression="[0-9]+.[0-9]+.[0-9]+"
+
+	-- 获取插件版本
+	local command="opkg list-installed | grep -oE '"..name.." - "..version_regular_expression.."' | awk -F' ' '{print $3}' | tr -d '\n'"
+	local plugin_version=shell(command)
+
+	if plugin_version~="" then
+		isExist=true
+	end
+
+	return isExist
+end
+
+
 --------general--------
 
 -- 是否启用
@@ -82,8 +118,18 @@ dial_tool = s:taboption("advanced", ListValue, "dial_tool", translate("Dial Tool
 dial_tool.description = translate("After switching the dialing tool, it may be necessary to restart the module or restart the router to recognize the module.")
 dial_tool.rmempty = true
 dial_tool:value("", translate("Auto Choose"))
-dial_tool:value("quectel-CM", translate("quectel-CM"))
-dial_tool:value("mmcli", translate("mmcli"))
+if isPluginExist("quectel-CM-5G") then
+	dial_tool:value("quectel-CM", translate("quectel-CM"))
+end
+if isPluginExist("fibocom-dial") then
+	dial_tool:value("fibocom-dial", translate("fibocom-dial"))
+end
+if isPluginExist("meig-cm") then
+	dial_tool:value("meig-cm", translate("meig-cm"))
+end
+if isPluginExist("modemmanager") then
+	dial_tool:value("mmcli", translate("mmcli"))
+end
 
 -- 网络类型
 pdp_type= s:taboption("advanced", ListValue, "pdp_type", translate("PDP Type"))
