@@ -71,7 +71,7 @@ modem_scan_by_network()
     sys_network="$(find /sys/class/net -name eth*)" #RNDIS
     set_sys_network_config "$sys_network"
 
-    #PCIE
+    #PCI
     sys_network="$(find /sys/class/net -name mhi_hwip*)" #（通用mhi驱动）
     set_sys_network_config "$sys_network"
     sys_network="$(find /sys/class/net -name rmnet_mhi*)" #（制造商mhi驱动）

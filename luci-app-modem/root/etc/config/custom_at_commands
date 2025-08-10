@@ -144,7 +144,7 @@ config custom-commands
 	option command 'AT+QCFG="data_interface",0,0'
 
 config custom-commands
-	option description '切换为PCIE通信端口 > AT+QCFG="data_interface",1,0'
+	option description '切换为PCI通信端口 > AT+QCFG="data_interface",1,0'
 	option command 'AT+QCFG="data_interface",1,0'
 
 config custom-commands

@@ -611,7 +611,7 @@ msgid "Enable scanning of USB devices for modems"
 msgstr "启用对USB模组设备的扫描"
 
 msgid "(After disable, the automatic scanning and configuration function for USB modem information will be stopped)"
-msgstr "禁用后将停止自动扫描并配置USB模组信息功能"
+msgstr "（禁用后将停止自动扫描并配置USB模组信息功能）"
 
 msgid "Enable PCI Device Scan"
 msgstr "启用PCI设备扫描"
@@ -620,7 +620,7 @@ msgid "Enable scanning of PCI devices for modems"
 msgstr "启用对PCI模组设备的扫描"
 
 msgid "(After disable, the automatic scanning and configuration function for PCI modem information will be stopped)"
-msgstr "禁用后将停止自动扫描并配置PCI模组信息功能"
+msgstr "（禁用后将停止自动扫描并配置PCI模组信息功能）"
 
 msgid "Manual Configuration"
 msgstr "手动配置"
@@ -685,8 +685,8 @@ msgstr "未加载"
 msgid "Modem USB Driver Info"
 msgstr "模组USB驱动信息"
 
-msgid "Modem PCIE Driver Info"
-msgstr "模组PCIE驱动信息"
+msgid "Modem PCI Driver Info"
+msgstr "模组PCI驱动信息"
 
 msgid "General"
 msgstr "通用"

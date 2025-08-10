@@ -73,9 +73,9 @@
 			var usb_driver_info=data["usb_driver_info"];
 			set_status(usb_driver_info,translation);
 
-			// 设置模组PCIE驱动信息的状态
-			var pcie_driver_info=data["pcie_driver_info"];
-			set_status(pcie_driver_info,translation);
+			// 设置模组PCI驱动信息的状态
+			var pci_driver_info=data["pci_driver_info"];
+			set_status(pci_driver_info,translation);
 		}
 	);
 //]]>
@@ -167,7 +167,7 @@
 
 	<fieldset class="cbi-section" id="cbi-modem" style="display: block;">
 		<div class="cbi-section fade-in">
-			<!-- <legend><%:Modem PCIE Driver Info%></legend> -->
+			<!-- <legend><%:Modem General Driver Info%></legend> -->
 			<h3><%:Modem General Driver Info%></h3>
 			<table class="table cbi-section-table">
 				<tbody>
@@ -263,6 +263,12 @@
 						<td class="td cbi-value-field" data-title="<%:Status%>" id="qmi_wwan_m_status">-</td>
 					</tr>
 					<tr class="tr cbi-section-table-row cbi-rowstyle-2">
+						<td class="td cbi-value-field" data-title="<%:Driver Type%>"><%:Private (T&W)%></td>
+						<td class="td cbi-value-field" data-title="<%:Mode%>"><%:QMI%></td>
+						<td class="td cbi-value-field" data-title="<%:Kernel Model%>" id="qmi_wwan_t_kernel_model_name">qmi_wwan_t.ko</td>
+						<td class="td cbi-value-field" data-title="<%:Status%>" id="qmi_wwan_t_status">-</td>
+					</tr>
+					<tr class="tr cbi-section-table-row cbi-rowstyle-1">
 						<td class="td cbi-value-field" data-title="<%:Driver Type%>"><%:Private (Meig)%></td>
 						<td class="td cbi-value-field" data-title="<%:Mode%>"><%:NCM%></td>
 						<td class="td cbi-value-field" data-title="<%:Kernel Model%>" id="meig_cdc_driver_kernel_model_name">meig_cdc_driver.ko</td>
@@ -275,8 +281,8 @@
 
 	<fieldset class="cbi-section" id="cbi-modem" style="display: block;">
 		<div class="cbi-section fade-in">
-			<!-- <legend><%:Modem PCIE Driver Info%></legend> -->
-			<h3><%:Modem PCIE Driver Info%></h3>
+			<!-- <legend><%:Modem PCI Driver Info%></legend> -->
+			<h3><%:Modem PCI Driver Info%></h3>
 			<table class="table cbi-section-table">
 				<tbody>
 					<tr class="tr cbi-section-table-titles anonymous">

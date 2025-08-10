@@ -960,18 +960,18 @@ function getPluginInfo()
 	usb_driver_info["meig_cdc_driver.ko"]="Not loaded"
 	setModelStatus(usb_driver_info)
 
-	-- 获取模组PCIE驱动信息
-	local pcie_driver_info={}
+	-- 获取模组PCI驱动信息
+	local pci_driver_info={}
 	--通用驱动
-	pcie_driver_info["mhi_net.ko"]="Not loaded"
-	pcie_driver_info["qrtr_mhi.ko"]="Not loaded"
-	pcie_driver_info["mhi_pci_generic.ko"]="Not loaded"
-	pcie_driver_info["mhi_wwan_mbim.ko"]="Not loaded"
-	pcie_driver_info["mhi_wwan_ctrl.ko"]="Not loaded"
+	pci_driver_info["mhi_net.ko"]="Not loaded"
+	pci_driver_info["qrtr_mhi.ko"]="Not loaded"
+	pci_driver_info["mhi_pci_generic.ko"]="Not loaded"
+	pci_driver_info["mhi_wwan_mbim.ko"]="Not loaded"
+	pci_driver_info["mhi_wwan_ctrl.ko"]="Not loaded"
 	--制造商私有驱动
-	pcie_driver_info["pcie_mhi.ko"]="Not loaded"
-	pcie_driver_info["mtk_pcie_wwan_m80.ko"]="Not loaded"
-	setModelStatus(pcie_driver_info)
+	pci_driver_info["pcie_mhi.ko"]="Not loaded"
+	pci_driver_info["mtk_pcie_wwan_m80.ko"]="Not loaded"
+	setModelStatus(pci_driver_info)
 
 	-- 设置值
 	local data={}
@@ -980,7 +980,7 @@ function getPluginInfo()
 	data["dial_tool_info"]=dial_tool_info
 	data["general_driver_info"]=general_driver_info
 	data["usb_driver_info"]=usb_driver_info
-	data["pcie_driver_info"]=pcie_driver_info
+	data["pci_driver_info"]=pci_driver_info
 
 	-- 写入Web界面
 	luci.http.prepare_content("application/json")
