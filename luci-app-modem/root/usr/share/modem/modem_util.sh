@@ -135,7 +135,7 @@ m_get_device_physical_path()
 			return
 		}
 
-		#PCIE设备
+		#PCI设备
 		[ -f "${tmp_path}"/vendor ] && [ -f "${tmp_path}"/device ] && {
 			tmp_path=$(readlink -f "$tmp_path")
 			echo "${tmp_path}"
@@ -268,7 +268,7 @@ m_set_modem_hardware_config()
 	if [[ "$driver" = "usb" ]]; then
 		data_interface="usb"
 	else
-		data_interface="pcie"
+		data_interface="pci"
 	fi
 
 	# [ "$data_interface" = "usb" ] && {
@@ -512,10 +512,10 @@ m_set_usb_at_port()
 	}
 }
 
-#设置PCIE AT串口
+#设置PCI AT串口
 # $1:模组序号
 # $2:串口
-m_set_pcie_at_port()
+m_set_pci_at_port()
 {
 	local modem_no="$1"
 	local port="$2"
@@ -650,7 +650,7 @@ m_disable_dial()
 
 # 		#跳过重复的串口
 # 		[ "$port" = "$port_cache" ] && continue
-# 		#跳过多余串口（PCIE）
+# 		#跳过多余串口（PCI）
 # 		[[ "$port" = *"mhi_uci_q"* ]] && continue
 # 		[[ "$port" = *"mhi_cntrl_q"* ]] && continue
 
@@ -662,9 +662,9 @@ m_disable_dial()
 # 		if [ "$data_interface" = "usb" ]; then
 # 			m_set_usb_at_port "${modem_no}" "${port}"
 # 		elif [[ "$port" = "*at*" ]]; then
-# 			m_set_pcie_at_port "${modem_no}" "${port}"
+# 			m_set_pci_at_port "${modem_no}" "${port}"
 # 		elif [[ "$port" = "*DUN*" ]]; then
-# 			m_set_pcie_at_port "${modem_no}" "${port}"
+# 			m_set_pci_at_port "${modem_no}" "${port}"
 # 		fi
 
 # 		#缓存当前串口
@@ -895,7 +895,7 @@ m_set_subdevice_config()
 
 						# 设置AT串口（/dev/wwan0at0）
 						[ "$auto_config" != "1" ] && [[ "${port}" = "*at*" ]] && {
-							m_set_pcie_at_port "${modem_no}" "${port}"
+							m_set_pci_at_port "${modem_no}" "${port}"
 						}
 						uci commit modem
 					}
@@ -951,7 +951,7 @@ m_set_subdevice_config()
 
 						# 设置AT串口（/dev/mhi_DUN）
 						[ "$auto_config" != "1" ] && [[ "$port" = "*DUN*" ]]  && {
-							m_set_pcie_at_port "${modem_no}" "${port}"
+							m_set_pci_at_port "${modem_no}" "${port}"
 						}
 						uci commit modem
 					}
@@ -1089,7 +1089,7 @@ m_set_network_device()
 	elif [ "$action" = "remove" ]; then
 		
 		#USB设备通过USB事件删除
-		[ "$data_interface" = "pcie" ] && {
+		[ "$data_interface" = "pci" ] && {
 			#获取物理路径
 			local device_physical_path=$(m_get_device_physical_path ${network_path})
 			#设置物理设备

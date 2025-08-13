@@ -24,12 +24,12 @@ o.template = "modem/modem_scan"
 -- 启用USB扫描
 o = s:option(Flag, "usb_scan", translate("Enable USB Device Scan"))
 o.rmempty = false
-o.description = translate("Enable scanning of USB devices for modems").." "..font_red..bold_on.. translate("(After enable, the automatic scanning and configuration function for USB modem information will be stopped)")..bold_off..font_off
+o.description = translate("Enable scanning of USB devices for modems").." "..font_red..bold_on.. translate("(After disable, the automatic scanning and configuration function for USB modem information will be stopped)")..bold_off..font_off
 
 -- 启用PCI扫描
 o = s:option(Flag, "pci_scan", translate("Enable PCI Device Scan"))
 o.rmempty = false
-o.description = translate("Enable scanning of PCI devices for modems").." "..font_red..bold_on.. translate("(After enable, the automatic scanning and configuration function for PCI modem information will be stopped)")..bold_off..font_off
+o.description = translate("Enable scanning of PCI devices for modems").." "..font_red..bold_on.. translate("(After disable, the automatic scanning and configuration function for PCI modem information will be stopped)")..bold_off..font_off
 
 -- 启用手动配置
 o = s:option(Flag, "manual_configuration", font_red..bold_on..translate("Manual Configuration")..bold_off..font_off)

@@ -211,6 +211,7 @@ modem_network_task()
     local manufacturer=$(uci -q get modem.modem${modem_no}.manufacturer)
     local platform=$(uci -q get modem.modem${modem_no}.platform)
     local define_connect=$(uci -q get modem.modem${modem_no}.define_connect)
+    local network=$(uci -q get modem.modem${modem_no}.network)
     local interface_name="wwan_5g_${modem_no}"
     local interface_name_ipv6="wwan6_5g_${modem_no}"
 
@@ -316,6 +317,8 @@ modem_network_task()
                 ifup "${interface_name_ipv6}"
             }
         fi
+        rdisc6 "${network}" &
+        ndisc6 fe80::1 "${network}" &
         sleep 5s
     done
 }

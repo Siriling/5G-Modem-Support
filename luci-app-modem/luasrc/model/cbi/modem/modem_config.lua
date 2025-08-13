@@ -52,8 +52,8 @@ function getManufacturers()
 	end
 
 	-- 获取支持的模组
-	local support_modem=getSupportModems("pcie")
-	-- PCIE
+	local support_modem=getSupportModems("pci")
+	-- PCI
 	for modem in pairs(support_modem) do
 
 		local manufacturer=support_modem[modem]["manufacturer"]
@@ -127,7 +127,7 @@ function getMobileNetwork()
 				--设置USB移动网络
 				mobile_network:value(network)
 			elseif network:find("mhi_hwip") or network:find("rmnet_mhi") then
-				--设置PCIE移动网络
+				--设置PCI移动网络
 				mobile_network:value(network)
 			end
 		end
