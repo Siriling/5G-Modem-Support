@@ -110,6 +110,33 @@ set_interface()
 	local modem_no="$1"
 	local network_interface="$2"
 
+	if [ "$(uci -q get modem.modem${modem_no}.manufacturer)" = "baiwang" ]; then
+		local managed_interface=$(uci -q get modem.modem${modem_no}.managed_interface)
+		# Rediscovery must adopt an existing DHCP owner, not create a second one.
+		if [ -z "$managed_interface" ]; then
+			local candidate
+			for candidate in $(uci -q show network | sed -n 's/^network\.\([^.=]*\)=interface$/\1/p'); do
+				if [ "$(uci -q get network.${candidate}.device)" = "$network_interface" ] &&
+				   [ "$(uci -q get network.${candidate}.proto)" = "dhcp" ]; then
+					managed_interface="$candidate"
+					break
+				fi
+			done
+		fi
+		[ -n "$managed_interface" ] || managed_interface="wwan_5g_${modem_no}"
+		uci set modem.modem${modem_no}.managed_interface="$managed_interface"
+		uci commit modem
+		if [ "$(uci -q get network.${managed_interface}.device)" = "$network_interface" ] &&
+		   [ "$(uci -q get network.${managed_interface}.proto)" = "dhcp" ]; then
+			ifup "$managed_interface"
+		else
+			uci set network.${managed_interface}='interface'
+			uci set network.${managed_interface}.metric='10'
+			set_ipv4_interface "$managed_interface" "$network_interface"
+		fi
+		return
+	fi
+
 	case $pdp_type in
 		"ipv4") set_ipv4_interface "wwan_5g_${modem_no}" "${network_interface}" ;;
 		"ipv6") set_ipv6_interface "wwan6_5g_${modem_no}" "${network_interface}" ;;
@@ -351,7 +378,12 @@ stop_ecm()
 
 	#停止拨号
 	local at_command
-	if [ "$manufacturer" = "quectel" ]; then
+	if [ "$manufacturer" = "baiwang" ]; then
+		local managed_interface=$(uci -q get modem.modem${modem_no}.managed_interface)
+		[ -n "$managed_interface" ] && ifdown "$managed_interface"
+		baiwang_stop_dial "$at_port" "$define_connect"
+		return
+	elif [ "$manufacturer" = "quectel" ]; then
 			at_command="AT+QNETDEVCTL=${define_connect},0,1"
 	elif [ "$manufacturer" = "fibocom" ]; then
 		#联发科平台（广和通FM350-GL）
@@ -479,6 +511,17 @@ get_mode()
 connect_presets()
 {
 	local at_port=$(uci -q get modem.modem${modem_no}.at_port)
+
+	if [ "$(uci -q get modem.modem${modem_no}.manufacturer)" = "baiwang" ]; then
+		# An empty APN means keep the working carrier profile, not erase it.
+		if [ -n "$apn" ]; then
+			local context=$(uci -q get modem.modem${modem_no}.define_connect)
+			local type=$(echo "${pdp_type:-ipv4v6}" | tr 'a-z' 'A-Z')
+			[ "$type" = "IPV4" ] && type="IP"
+			at "$at_port" "AT+CGDCONT=${context},\"${type}\",\"${apn}\""
+		fi
+		return
+	fi
 
 	#运营商选择设置
 	local at_command='AT+COPS=0,0'
@@ -615,6 +658,12 @@ dial()
 			uci commit modem
 			return 0
 		fi
+	fi
+
+	# A rescan may replace the device profile while the dial cache remains.
+	if [ "$(uci -q get modem.modem${modem_no}.manufacturer)" = "baiwang" ] &&
+	   [ -z "$(uci -q get modem.modem${modem_no}.managed_interface)" ]; then
+		set_interface "$modem_no" "$(uci -q get modem.modem${modem_no}.network_interface)"
 	fi
 
 	#设置网络预设

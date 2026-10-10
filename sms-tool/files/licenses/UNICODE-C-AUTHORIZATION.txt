@@ -1,0 +1,43 @@
+* Author: 
+
+Ben Bullock <benkasminbullock@gmail.com>, <bkb@cpan.org>
+
+* Repository: 
+
+    https://github.com/benkasminbullock/unicode-c
+
+* Licence: 
+
+You can use this C code under the BSD three-clause licence, the GNU
+General Public Licence, either version 2 or later, or the Perl
+artistic licence.
+
+* Version:
+
+There is no version for this, please use the git commit numbers.
+
+* Installation:
+
+Building from scratch requires cfunctions:
+
+    https://github.com/benkasminbullock/cfunctions
+
+Alternatively, copy the header file from a Perl distribution:
+
+    https://metacpan.org/release/JSON-Parse
+
+The header file is under "Browse" then "unicode.h".
+
+* Testing:
+
+Compile with -DTEST or use "make test" to run the tests. The tests are
+contained in unicode.c itself. Please refer to the source code.
+
+* Documentation:
+
+Documentation currently consists of the comments in the source code.
+
+* Bugs:
+
+Either send email or use the github "issues" pages to report bugs.
+

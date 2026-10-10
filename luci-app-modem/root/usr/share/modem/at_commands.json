@@ -15,6 +15,9 @@
 			{"全功能模式 > AT+CFUN=1":"AT+CFUN=1"},
 			{"重启模组 > AT+CFUN=1,1":"AT+CFUN=1,1"}
 		],
+		"baiwang":{
+			"qualcomm":[]
+		},
 		"quectel":{
 			"qualcomm":[
 				{"SIM卡状态上报 > AT+QSIMSTAT?":"AT+QSIMSTAT?"},

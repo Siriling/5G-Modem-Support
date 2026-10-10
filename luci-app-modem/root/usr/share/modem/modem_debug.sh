@@ -5,6 +5,7 @@
 SCRIPT_DIR="/usr/share/modem"
 
 source "${SCRIPT_DIR}/quectel.sh"
+source "${SCRIPT_DIR}/baiwang.sh"
 source "${SCRIPT_DIR}/fibocom.sh"
 source "${SCRIPT_DIR}/meig.sh"
 source "${SCRIPT_DIR}/huawei.sh"
@@ -40,7 +41,7 @@ at()
 	# echo -e "${at_command}"" > "${at_port}" 2>&1
 
 	#sms_tool
-	sms_tool -d "${at_port}" at "${at_command}" 2>&1
+	flock "/var/lock/modem-at-${at_port##*/}.lock" sms_tool -d "${at_port}" at "${at_command}" 2>&1
 }
 
 #测试时打开

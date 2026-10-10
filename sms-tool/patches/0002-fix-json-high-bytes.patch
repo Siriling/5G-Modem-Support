@@ -1,0 +1,10 @@
+--- a/sms_main.c
++++ b/sms_main.c
+@@ -5,0 +6 @@
++/* Modified by ainuoyan, 2026-10-10: fix JSON high-byte signedness. */
+@@ -144 +145 @@
+-static void print_json_escape_char(char c1, char c2)
++static void print_json_escape_char(unsigned char c1, unsigned char c2)
+@@ -156 +157 @@
+-		else if(c2 < ' ') printf("\\u00%02x", c2);
++		else if(c2 < ' ' || c2 >= 0x80) printf("\\u00%02x", c2);

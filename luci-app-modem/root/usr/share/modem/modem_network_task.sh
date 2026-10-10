@@ -116,6 +116,11 @@ ecm_dial()
     local modem_no="$4"
 
     name=$(uci -q get modem.modem${modem_no}.name)
+    if [ "$manufacturer" = "baiwang" ]; then
+        dial_log "AT+CGACT=1,${define_connect}" "${MODEM_RUNDIR}/modem${modem_no}_dial.cache"
+        baiwang_dial "$at_port" "$define_connect"
+        return
+    fi
 
     #激活
     # local at_command="AT+CGACT=1,${define_connect}"
@@ -214,6 +219,10 @@ modem_network_task()
     local network=$(uci -q get modem.modem${modem_no}.network)
     local interface_name="wwan_5g_${modem_no}"
     local interface_name_ipv6="wwan6_5g_${modem_no}"
+    if [ "$manufacturer" = "baiwang" ]; then
+        interface_name=$(uci -q get modem.modem${modem_no}.managed_interface)
+        [ -n "$interface_name" ] || interface_name="wwan_5g_${modem_no}"
+    fi
 
     #AT串口未获取到重新获取（解决模组还在识别中，就已经开始拨号的问题）
     while [ -z "$manufacturer" ] || [ "$manufacturer" = "unknown" ]; do
@@ -285,7 +294,7 @@ modem_network_task()
             #拨号
             case "$mode" in
                 "gobinet") gobinet_dial "${at_port}" "${manufacturer}" "${define_connect}" ;;
-                "ecm") ecm_dial "${at_port}" "${manufacturer}" "${define_connect}" ;;
+                "ecm") ecm_dial "${at_port}" "${manufacturer}" "${define_connect}" "${modem_no}" ;;
                 "rndis") rndis_dial "${at_port}" "${manufacturer}" "${platform}" "${define_connect}" "${modem_no}" ;;
                 "modemmanager") modemmanager_dial "${interface_name}" "${define_connect}" ;;
                 *) ecm_dial "${at_port}" "${manufacturer}" "${define_connect}" ;;
@@ -314,11 +323,13 @@ modem_network_task()
             [ "$mode" != "modemmanager" ] && {
                 #重新启动网络接口
                 ifup "${interface_name}"
-                ifup "${interface_name_ipv6}"
+                [ "$manufacturer" = "baiwang" ] || ifup "${interface_name_ipv6}"
             }
         fi
-        rdisc6 "${network}" &
-        ndisc6 fe80::1 "${network}" &
+        if [ "$manufacturer" != "baiwang" ]; then
+            rdisc6 "${network}" &
+            ndisc6 fe80::1 "${network}" &
+        fi
         sleep 5s
     done
 }

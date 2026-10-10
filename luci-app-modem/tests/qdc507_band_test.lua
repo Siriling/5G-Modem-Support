@@ -1,0 +1,15 @@
+local bands = dofile(arg[1] or "luci-app-modem/root/usr/share/modem/baiwang_band.lua")
+local allowed = { 1, 2, 3, 4, 5, 7, 8, 12, 13, 18, 19, 20, 25, 26, 28, 34, 38, 39, 40, 41, 66, 71 }
+local original = "0x42000001e20b0e18df"
+local decoded = bands.decode(original, allowed)
+assert(bands.encode(decoded, allowed) == original, "Full mask must round-trip without losing B66/B71")
+assert(bands.encode({ { B3 = 1 } }, allowed) == "0x4")
+assert(bands.encode({ { B66 = 1 }, { B71 = 1 } }, allowed) == "0x420000000000000000")
+assert(bands.decode("0x4", { 3, 66, 71 })[3].B71 == 0)
+assert(not pcall(bands.encode, {}, allowed))
+assert(not pcall(bands.encode, { { B3 = 0 } }, allowed))
+assert(not pcall(bands.encode, { { B99 = 1 } }, allowed))
+assert(not pcall(bands.encode, { { B3 = 2 } }, allowed))
+assert(not pcall(bands.encode, { { B3 = 1 }, { B3 = 1 } }, allowed))
+assert(not pcall(bands.decode, "not-hex", allowed))
+print("QDC507 band mask: 10 assertions passed")

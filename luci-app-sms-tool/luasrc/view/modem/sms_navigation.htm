@@ -1,0 +1,7 @@
+<nav aria-label="<%:短信功能%>" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+	<a class="cbi-button cbi-button-neutral" href="<%=luci.dispatcher.build_url('admin', 'network', 'modem', 'sms', 'readsms')%>"><%:收件箱%></a>
+	<a class="cbi-button cbi-button-action" href="<%=luci.dispatcher.build_url('admin', 'network', 'modem', 'sms', 'sendsms')%>"><%:发送短信%></a>
+	<a class="cbi-button cbi-button-neutral" href="<%=luci.dispatcher.build_url('admin', 'network', 'modem', 'sms', 'ussd')%>"><%:USSD%></a>
+	<a class="cbi-button cbi-button-neutral" href="<%=luci.dispatcher.build_url('admin', 'network', 'modem', 'sms', 'atcommands')%>"><%:AT 命令%></a>
+	<a class="cbi-button cbi-button-neutral" href="<%=luci.dispatcher.build_url('admin', 'network', 'modem', 'sms', 'smsconfig')%>"><%:短信设置%></a>
+</nav>

@@ -1,0 +1,30 @@
+Local SMS adaptations by ainuoyan, 2026-10-10
+
+Upstream C program: https://github.com/obsy/sms_tool
+Native OpenWrt source: 57a68d07c3d38fd8766d2705fd2a2c1ae01ee004
+Package definition: https://github.com/Siriling/5G-Modem-Support
+Package baseline: b1d9a12ac4c209b82fb9db533b067c3fec95a9a6
+
+Local patch 0002 fixes JSON byte signedness and marks sms_main.c as modified.
+Local patch 0003 restores the Unicode conversion authorship and license
+references. It changes comments only. Local patch 0004 includes each original
+PDU in JSON output for durable archiving and verified per-slot cleanup.
+Native builds also retain Siriling's
+original 0001 patch by dwj0 (2021-10-14).
+
+The main C program and local patches use Apache-2.0.
+The inherited ucs2_to_utf8 implementation contains code by Ben Bullock,
+distributed here under his BSD-3-Clause option, with HTML Tidy portions
+under the HTML Tidy License. Existing lovewilliam attribution is preserved.
+Full permission, license and copyright texts are provided in licenses/.
+
+Unicode source history:
+https://github.com/benkasminbullock/unicode-c/blob/c597e7116cb0270d14059f7280c9e9d4ba8da9b2/unicode.c
+Author's BSD-3-Clause permission:
+https://github.com/benkasminbullock/unicode-c/blob/3d40ba142222911570332f7b631c2b5f46d26028/README
+HTML Tidy copyright and license:
+https://github.com/htacg/tidy-html5/blob/1ca37471b48a3498f985509828cb3cf85ea129f8/README/LICENSE.txt
+
+This is a modified source package. No prebuilt binary or static runtime is
+distributed by this PR. Native package installation retains the license
+and permission texts under /usr/share/sms-tool/.

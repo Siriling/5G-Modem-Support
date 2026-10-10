@@ -1,0 +1,5 @@
+#!/bin/sh
+# Copyright (C) 2026 ainuoyan; GNU General Public License v3.
+/etc/init.d/sms-inbox enable
+/etc/init.d/sms-inbox start
+exit 0

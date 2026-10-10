@@ -1,3 +1,4 @@
+-- Modified by ainuoyan, 2026-10-10: distinguish local history from reception buffers.
 local util = require "luci.util"
 local fs = require "nixio.fs"
 local sys = require "luci.sys"
@@ -30,7 +31,7 @@ local devv = tostring(uci:get("sms_tool", "general", "readport"))
 
 local smsmem = tostring(uci:get("sms_tool", "general", "storage"))
 
-local statusb = luci.util.exec("sms_tool -s".. smsmem .. " -d ".. devv .. " status")
+local statusb = luci.util.exec("flock /var/lock/modem-at-" .. devv:match("[^/]+$") .. ".lock sms_tool -s".. smsmem .. " -d ".. devv .. " status")
 
 local smsnum = string.sub (statusb, 23, 27)
 
@@ -38,6 +39,8 @@ local smscount = string.match(smsnum, '%d+')
 
 m = Map("sms_tool", translate("配置短信工具"),
 	translate("sms_tool和gui应用程序的配置面板。"))
+
+m:append(Template("modem/sms_navigation"))
 
 s = m:section(NamedSection, 'general' , "sms_tool" , "" .. translate(""))
 s.anonymous = true
@@ -56,7 +59,7 @@ dev1:value(node, node)
 end
 end
 
-mem = s:taboption(this_tab, ListValue, "storage", translate("信息存储区"), translate("信息存储在一个特定的位置（例如，在SIM卡或调制解调器内存），但根据设备的类型，其他区域也可能是可用的。"))
+mem = s:taboption(this_tab, ListValue, "storage", translate("短信接收缓冲区"), translate("短信长期保存在路由器本地。此处选择模组接收新短信时使用的缓冲区；后台核验本地保存成功后自动释放槽位，并读取设备支持的 SIM 和模组内存中的已有短信。"))
 mem.default = "SM"
 mem:value("SM", translate("SIM 卡"))
 mem:value("ME", translate("调制解调器内存"))

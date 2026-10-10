@@ -598,11 +598,12 @@
 	}
 
 	// 设置网络偏好视图
-	function set_network_prefer_view(network_prefer)
+	function set_network_prefer_view(network_prefer, band_lock)
 	{
 		var current_prefer_view=""; //当前网络偏好
 		var prefer_check_view=""; //网络偏好复选框
 		var network_type_count=0; //统计已启用的网络类型
+		document.getElementById('band_prefer_button').parentElement.parentElement.style.display=band_lock ? "" : "none";
 
 		for(var keys of network_prefer)
 		{
@@ -611,13 +612,14 @@
 				var band_info_display="none"; //频段偏好显示
 				var is_check=""; //是否选中（启用）
 				var network_type=key.toLowerCase(); //转小写
+				var network_bands=Array.isArray(keys[key]["band"]) ? keys[key]["band"] : [];
 				
 				//已启动的网络类型
 				if (keys[key]["enable"])
 				{
 					//设置偏好视图
 					current_prefer_view+=key+" ";
-					if (keys[key]["band"].length!=0) {
+					if (network_bands.length!=0) {
 						band_info_display="block";
 					}
 					is_check="checked";
@@ -631,7 +633,7 @@
 				var band_prefer_check_view=""; //频段偏好复选框
 				var band_count=0;  //统计已启用的频段
 
-				for(var bands of keys[key]["band"])
+				for(var bands of network_bands)
 				{
 					for(var band in bands)
 					{
@@ -665,7 +667,7 @@
 					document.getElementById(network_type+'_band_check').innerHTML=band_prefer_check_view;
 					
 					//自动状态判断（全部启用为自动）
-					if (band_count==Object.keys(keys[key]["band"]).length)
+					if (band_count==network_bands.length)
 					{
 						//设置偏好选项
 						document.getElementById(network_type+'_prefer_option_auto').checked=true;
@@ -684,7 +686,7 @@
 				}
 
 				//设置频段偏好显示（beta功能）
-				band_info_display="none"; //不显示频段偏好
+				if (!band_lock) band_info_display="none";
 
 				//获取当前启用的tab元素
 				var tab_menu = document.getElementById("tab_menu");
@@ -741,7 +743,7 @@
 		var network_prefer=network_prefer_info["network_prefer"];
 
 		//设置网络偏好视图
-		set_network_prefer_view(network_prefer);
+		set_network_prefer_view(network_prefer, network_prefer_info["band_lock"]);
 
 		// //设置当前网络偏好
 		// document.getElementById('current_prefer').innerHTML=current_prefer_view;
@@ -896,6 +898,7 @@
 		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "set_network_prefer")%>', {"port":at_port,"prefer_config":network_prefer_config},
 			function(x, data)
 			{
+				if (data && data.success === false) alert(data.error);
 				// //获取模组网络偏好
 				// var network_prefer=data["network_prefer"];
 
@@ -955,6 +958,7 @@
 		XHR.get('<%=luci.dispatcher.build_url("admin", "network", "modem", "set_band_prefer")%>', {"port":at_port,"prefer_config":network_prefer_config},
 			function(x, data)
 			{
+				if (data && data.success === false) alert(data.error);
 				// //获取模组网络偏好
 				// var network_prefer=data["network_prefer"];
 

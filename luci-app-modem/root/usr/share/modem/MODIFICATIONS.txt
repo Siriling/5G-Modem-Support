@@ -1,0 +1,12 @@
+Modifications by ainuoyan, 2026-10-10
+
+Original project: https://github.com/Siriling/5G-Modem-Support
+Fixed baseline: b1d9a12ac4c209b82fb9db533b067c3fec95a9a6
+Package: luci-app-modem 1.4.4
+License: GNU General Public License version 3; see LICENSE.
+Original copyright and author notices remain in the source files.
+
+Changes add QDC507 recognition, ECM interface reuse, CNUM parsing,
+network mode and LTE band controls, quick-command metadata and serial
+locking. License metadata is corrected and this notice is installed.
+This is a modified version; hardware acceptance is described in QDC507.md.

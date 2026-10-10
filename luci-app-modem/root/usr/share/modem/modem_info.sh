@@ -371,6 +371,7 @@ get_modem_info()
     debug "根据模组的制造商获取信息"
 	#更多信息获取
 	case $manufacturer in
+		"baiwang") get_baiwang_info "${at_port}" "${platform}" "${define_connect}" ;;
 		"quectel") get_quectel_info "${at_port}" "${platform}" "${define_connect}" ;;
 		"fibocom") get_fibocom_info "${at_port}" "${platform}" "${define_connect}" ;;
 		"meig") get_meig_info "${at_port}" "${platform}" "${define_connect}" ;;

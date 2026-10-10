@@ -1,0 +1,20 @@
+--- a/sms_main.c
++++ b/sms_main.c
+@@ -6,0 +7 @@
++/* Modified by ainuoyan, 2026-10-10: include original PDU for verified SMS archiving. */
+@@ -323 +324 @@
+-				if(!fgets(buf, sizeof buf, pfi))
++				if(!fgets(buf, sizeof buf, pfi)) {
+@@ -324,0 +326,10 @@
++					return 1;
++				}
++				size_t pdu_length = strcspn(buf, "\r\n");
++				if (pdu_length == 0 || pdu_length > 2 * sizeof(pdu) ||
++				    pdu_length % 2 != 0 ||
++				    strspn(buf, "0123456789abcdefABCDEF") != pdu_length) {
++					fprintf(stderr, "invalid original PDU\n");
++					return 1;
++				}
++				buf[pdu_length] = '\0';
+@@ -330,0 +342 @@
++					printf("\"pdu\":\"%.*s\",", (int)pdu_length, buf);

@@ -1,5 +1,9 @@
 # 中文 | [English](https://github.com/Siriling/5G-Modem-Support/blob/main/EngLish.md)
 
+DJI / Baiwang QDC507 4G 模组的适配说明、验证范围和回归测试见 [QDC507.md](QDC507.md)。
+
+ainuoyan 于 2026-10-10 增加 QDC507 适配，保留 Siriling 等原作者署名及 [GPL-3.0](LICENSE)；安装包随附 [修改说明](root/usr/share/modem/MODIFICATIONS.txt)。短信后台保存与浏览器收件说明见 [短信插件](../luci-app-sms-tool/README.md)。
+
 # luci-app-modem
 
 # 目录

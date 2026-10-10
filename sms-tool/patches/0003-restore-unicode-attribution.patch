@@ -1,0 +1,10 @@
+--- a/pdu_lib/ucs2_to_utf8.c
++++ b/pdu_lib/ucs2_to_utf8.c
+@@ -3,0 +4,7 @@
++ * Portions by Ben Bullock, unicode-c, under BSD-3-Clause.
++ * Source history: c597e7116cb0270d14059f7280c9e9d4ba8da9b2.
++ * Author's license grant: 3d40ba142222911570332f7b631c2b5f46d26028/README.
++ * Four-byte encoding portions from HTML Tidy, under HTMLTIDY:
++ * (c) 1998-2007 (W3C) MIT, ERCIM, Keio University.
++ * Full license and permission texts accompany this distribution in licenses/.
++ * Modified by ainuoyan, 2026-10-10: restore attribution; encoding unchanged.

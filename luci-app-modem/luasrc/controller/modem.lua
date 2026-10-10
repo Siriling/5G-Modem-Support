@@ -642,6 +642,17 @@ function setNetworkPrefer()
 		end
 	end)
 
+	if manufacturer == "baiwang" then
+		local config = http.formvalue("prefer_config")
+		if type(config) == "table" then config = json.stringify(config) end
+		local command = "source " .. script_path .. "modem_debug.sh && baiwang_set_network_prefer "
+			.. luci.util.shellquote(at_port) .. " " .. luci.util.shellquote(config or "")
+		local result = json.parse(shell(command)) or { success = false, error = "Invalid modem response" }
+		luci.http.prepare_content("application/json")
+		luci.http.write_json(result)
+		return
+	end
+
 	--设置模组网络偏好
 	local command="source "..script_path..manufacturer..".sh && "..manufacturer.."_set_network_prefer "..at_port.." "..network_prefer_config
 	shell(command)
@@ -678,6 +689,17 @@ function setBandPrefer()
 			return true --跳出循环
 		end
 	end)
+
+	if manufacturer == "baiwang" then
+		local config = http.formvalue("prefer_config")
+		if type(config) == "table" then config = json.stringify(config) end
+		local command = "source " .. script_path .. "modem_debug.sh && baiwang_set_band_prefer "
+			.. luci.util.shellquote(at_port) .. " " .. luci.util.shellquote(config or "")
+		local result = json.parse(shell(command)) or { success = false, error = "Invalid modem response" }
+		luci.http.prepare_content("application/json")
+		luci.http.write_json(result)
+		return
+	end
 
 	--设置模组网络偏好
 	local command="source "..script_path..manufacturer..".sh && "..manufacturer.."_set_band_prefer "..at_port.." "..network_prefer_config

@@ -1,0 +1,19 @@
+Modifications by ainuoyan, 2026-10-10
+
+Original project: https://github.com/Siriling/5G-Modem-Support
+Fixed baseline: b1d9a12ac4c209b82fb9db533b067c3fec95a9a6
+Package: luci-app-sms-tool 1.0.0
+License: GNU General Public License version 3; see LICENSE.
+Original Siriling and Rafal Wabik (IceG) notices remain in the source files.
+
+Changes add unified and standalone SMS menus, QDC507 port selection,
+multipart grouping, a separate collection service, durable PDU archives,
+verified per-slot buffer cleanup, browser polling and local-record deletion.
+Sending, USSD, AT and reception share per-port locks; user input is quoted.
+Sample contacts and example device identifiers are removed from defaults.
+
+Original PDUs and decoded messages are saved and read back before SIM
+identity and modem slot contents are verified for cleanup. The browser
+reads local history and uses CSRF-protected POST for selected local records.
+The separate sms-tool C executable retains Apache-2.0, BSD-3-Clause and
+HTML Tidy attribution and licenses under /usr/share/sms-tool/.

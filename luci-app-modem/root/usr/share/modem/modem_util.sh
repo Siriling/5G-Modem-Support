@@ -98,6 +98,9 @@ m_modem_presets()
 	local define_connect="$2"
 	local manufacturer="$3"
 
+	# QDC507 already manages its ECM session; discovery must preserve its APN.
+	[ "$manufacturer" = "baiwang" ] && return
+
 	#运营商选择设置
 	local at_command='AT+COPS=0,0'
 	at "${at_port}" "${at_command}"
@@ -477,6 +480,9 @@ m_check_usb_device()
 handle_special_modem_name()
 {
 	local modem_name="$1"
+
+	# Baiwang firmware and USB product strings use different model names.
+	case "$modem_name" in *qdc507*) modem_name="qdc507" ;; esac
 
 	#FM350-GL-00 5G Module
 	[[ "$modem_name" = *"fm350-gl"* ]] && {

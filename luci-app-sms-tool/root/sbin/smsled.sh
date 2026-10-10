@@ -1,11 +1,12 @@
 #!/bin/sh
 # Copyright 2020-2021 Rafał Wabik (IceG) - From eko.one.pl forum
 # Licensed to the GNU General Public License v3.0.
+# Modified by ainuoyan, 2026-10-10: share the SMS collector's serial lock.
 
 	DEV=$(uci -q get sms_tool.general.readport)
 	LEDX=$(uci -q get sms_tool.general.smsled)
 	MEM=$(uci -q get sms_tool.general.storage)
-	STX=$(sms_tool -s $MEM -d $DEV status | cut -c23-27)
+	STX=$(flock "/var/lock/modem-at-${DEV##*/}.lock" sms_tool -s "$MEM" -d "$DEV" status | cut -c23-27)
 	SMS=$(echo $STX | tr -dc '0-9')
 	SMSC=$(cat /etc/config/sms_count)
 	LEDT="/sys/class/leds/$LEDX/trigger"
